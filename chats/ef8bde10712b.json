@@ -1,0 +1,39 @@
+{
+  "id": "ef8bde10712b",
+  "title": "hi",
+  "ts": 1779598122,
+  "messages": [
+    {
+      "role": "user",
+      "text": "hi"
+    },
+    {
+      "role": "smith",
+      "text": "Hey, Yuvan! Great to see you. What's on your mind today?"
+    },
+    {
+      "role": "user",
+      "text": "hello"
+    },
+    {
+      "role": "smith",
+      "text": "Good morning, Yuvan! It's lovely to hear from you. How can I help?"
+    },
+    {
+      "role": "user",
+      "text": "today weather"
+    },
+    {
+      "role": "smith",
+      "text": "Which city, Yuvan?"
+    },
+    {
+      "role": "user",
+      "text": "kothgudem"
+    },
+    {
+      "role": "smith",
+      "text": "Searching weather for kothgudem...\n\nToday in Kothagudem, the weather is sunny with a high of 42.9°C (109.2°F). Winds are blowing at 12.8 mph. The forecast shows mostly dry conditions with a maximum temperature expected to reach around 45°C."
+    }
+  ]
+}

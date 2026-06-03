@@ -1,0 +1,15 @@
+{
+  "id": "0433a333336f",
+  "title": "give me the test code for esp 32",
+  "ts": 1780404798,
+  "messages": [
+    {
+      "role": "user",
+      "text": "give me the test code for esp 32"
+    },
+    {
+      "role": "smith",
+      "text": "Sure! Here's a simple test code for the ESP32 that blinks an LED:\n\n\n```cpp\nvoid setup() {\n  pinMode(LED_BUILTIN, OUTPUT); // Initialize the LED_BUILTIN pin as an output\n}\n\nvoid loop() {\n  digitalWrite(LED_BUILTIN, HIGH); // Turn the LED on\n  delay(1000);                     // Wait for a second\n  digitalWrite(LED_BUILTIN, LOW);  // Turn the LED off\n  delay(1000);                     // Wait for a second\n}\n```\n\nThis code will blink the built-in LED on the ESP32 every second. Would you like to know more about how it works or how to upload it to your board?"
+    }
+  ]
+}

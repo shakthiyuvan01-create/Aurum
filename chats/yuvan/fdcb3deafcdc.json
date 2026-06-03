@@ -1,0 +1,23 @@
+{
+  "id": "fdcb3deafcdc",
+  "title": "can you create an image of a bird",
+  "ts": 1779860997,
+  "messages": [
+    {
+      "role": "user",
+      "text": "can you create an image of a bird"
+    },
+    {
+      "role": "smith",
+      "text": "[IMAGE]/uploads/image_1779860979.png"
+    },
+    {
+      "role": "user",
+      "text": "Describe this screenshot: /uploads/screenshot_1779860994.png"
+    },
+    {
+      "role": "smith",
+      "text": "I've taken a screenshot and saved it for you."
+    }
+  ]
+}

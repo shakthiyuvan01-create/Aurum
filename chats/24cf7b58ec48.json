@@ -1,0 +1,39 @@
+{
+  "id": "24cf7b58ec48",
+  "title": "today weather",
+  "ts": 1779597313,
+  "messages": [
+    {
+      "role": "user",
+      "text": "today weather"
+    },
+    {
+      "role": "smith",
+      "text": "Let me search the web for that.\n\nToday, in Harbour Island, Bahamas, it is currently 26.4°C (79.5°F) with clear conditions. Winds are blowing at 20.1 mph. In Hagerstown, Maryland, it's forecasted to be between 71°F to 81°F during the day."
+    },
+    {
+      "role": "user",
+      "text": "in kotha gudem"
+    },
+    {
+      "role": "smith",
+      "text": "I can't provide real-time weather updates, but you can check a weather website or app for the latest forecast in Kotha Gudem. If you need help with anything else, feel free to ask!"
+    },
+    {
+      "role": "user",
+      "text": "kothagudem"
+    },
+    {
+      "role": "smith",
+      "text": "Kothagudem is a town in the Bhadradri Kothagudem district of Telangana, India. It's known for its coal mining and power generation industries. If you have specific questions about Kothagudem, feel free to ask!"
+    },
+    {
+      "role": "user",
+      "text": "weather in kothagudem"
+    },
+    {
+      "role": "smith",
+      "text": "Let me search the web for that.\n\nThe current weather in Kothagudem, Telangana is sunny with a temperature of 42.9°C (109.2°F). The wind speed is 12.8 mph. Over the next 30 days, temperatures are expected to stay above 35°C, with a maximum of 45°C on the 24th and 25th. There will be 4 days of rain during this period."
+    }
+  ]
+}

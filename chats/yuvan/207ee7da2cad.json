@@ -1,0 +1,23 @@
+{
+  "id": "207ee7da2cad",
+  "title": "give me the test code of esp 32",
+  "ts": 1779808416,
+  "messages": [
+    {
+      "role": "user",
+      "text": "give me the test code of esp 32"
+    },
+    {
+      "role": "smith",
+      "text": "Sure! Here's a simple test code for an ESP32 that connects to Wi-Fi and prints the IP address to the Serial Monitor:\n\n```cpp\n#include <WiFi.h>\n\nconst char* ssid = \"your_SSID\";  // Replace with your network SSID\nconst char* password = \"your_PASSWORD\";  // Replace with your network password\n\nvoid setup() {\n  Serial.begin(115200);\n  WiFi.begin(ssid, password);\n\n  while (WiFi.status() != WL_CONNECTED) {\n    delay(1000);\n    Serial.println(\"Connecting to WiFi...\");\n  }\n\n  Serial.println(\"Connected to WiFi!\");\n  Serial.print(\"IP Address: \");\n  Serial.println(WiFi.localIP());\n}\n\nvoid loop() {\n  // Your main code here\n}\n```\n\nMake sure to replace `your_SSID` and `your_PASSWORD` with your actual Wi-Fi credentials. If you need further explanation or want to debug something specific, let me know!"
+    },
+    {
+      "role": "user",
+      "text": "give me the test code of esp 32"
+    },
+    {
+      "role": "smith",
+      "text": "Sure! Here's a simple test code for the ESP32 that blinks an LED:\n\n```cpp\n#define LED_PIN 2\n\nvoid setup() {\n  pinMode(LED_PIN, OUTPUT);\n}\n\nvoid loop() {\n  digitalWrite(LED_PIN, HIGH); // Turn the LED on\n  delay(1000);                 // Wait for a second\n  digitalWrite(LED_PIN, LOW);  // Turn the LED off\n  delay(1000);                 // Wait for a second\n}\n```\n\nThis code will blink an LED connected to pin 2 every second. Let me know if you’d like me to explain any part of it!"
+    }
+  ]
+}
