@@ -11,3 +11,5 @@ pyautogui
 screen-brightness-control
 pytesseract
 pystray
+flask
+python-dotenv
