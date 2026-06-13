@@ -1,53 +1,65 @@
 # 🚀 Assist Neo
 
-A powerful multi-brain AI assistant with voice, memory, web search, file analysis, and self-improving capabilities.
+**Assist Neo** is a powerful multi-brain AI assistant designed to run locally and on the web. It combines multiple AI models, voice interaction, file analysis, memory, automation, and self-improving capabilities into one intelligent assistant.
 
----
-
-# 👨‍💻 Created By
-
-# Yuvan Industries
-
-**Yuvan Industries** is an upcoming future technology company dedicated to building advanced AI systems, robotics, automation platforms, and intelligent software.
-
-> **"Building the Future, One Innovation at a Time."**
+🌐 **Live Website:** https://assistneo.onrender.com
 
 ---
 
 # ✨ Features
 
-- 🧠 Multi-AI Brain System
-- 🌐 Web Interface
-- 🎤 Voice Assistant
-- 🔊 Natural Text-to-Speech
-- 📁 File Analysis
-- 🖼 Image Generation
-- 🔍 Web Search
-- 📧 Email Monitoring
-- 💾 Memory System
-- 🖥 System Monitoring
-- 🤖 Self-Evolution Engine
-- 🏠 Local and Private AI
+* 🧠 Multi-AI System
+* 🌐 Web Interface
+* 🎤 Voice Assistant
+* 🔊 Natural Text-to-Speech
+* 📁 File Analysis
+* 🖼 Image Generation
+* 🔍 Web Search
+* 💾 Memory System
+* 🖥 System Monitoring
+* 🤖 Self-Evolution Engine
+* 🔒 Privacy Focused
 
 ---
 
-# 📋 Requirements
+# 🧠 AI Providers
 
-### Python 3.10+
+Assist Neo automatically switches between:
 
-Download:
+1. **Google Gemini 2.0 Flash**
+2. **GitHub Models**
+3. **Local Ollama Models**
 
-https://www.python.org/downloads/
+If one AI is unavailable, another takes over automatically.
 
 ---
 
-### Ollama
+# 📦 Installation
 
-Download:
+## 1. Clone the Repository
 
-https://ollama.com/
+```bash
+git clone https://github.com/YOUR_USERNAME/Assist-Neo.git
+cd Assist-Neo
+```
 
-Install models:
+---
+
+## 2. Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## 3. Install Ollama
+
+Download Ollama:
+
+https://ollama.com
+
+Install required models:
 
 ```bash
 ollama pull llama3.2
@@ -56,112 +68,47 @@ ollama pull llava
 
 ---
 
-# ⚙️ Installation
+## 4. Create a `.env` File
 
-## Step 1: Clone Repository
-
-```bash
-git clone https://github.com/YOUR_USERNAME/Assist-Neo.git
-
-cd Assist-Neo
-```
-
----
-
-## Step 2: Install Required Packages
-
-```bash
-pip install -r requirements.txt
-```
-
-Or:
-
-```bash
-pip install flask requests python-dotenv pyttsx3 pygame psutil plyer edge-tts
-```
-
----
-
-## Step 3: Create Environment File
-
-Create a file called:
-
-```text
-.env
-```
-
-Add:
+Create a file named `.env` and add:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key
-
 GITHUB_TOKEN=your_github_token
-
 WEB_SEARCH_KEY=your_tavily_api_key
 ```
 
 ---
 
-## Step 4: Start Ollama
-
-Open terminal and run:
+## 5. Start Ollama
 
 ```bash
 ollama serve
-```
-
-Verify:
-
-```bash
-ollama list
-```
-
-You should see:
-
-```
-llama3.2
-llava
 ```
 
 ---
 
 # 🚀 Running Assist Neo
 
-## Background Assistant
-
-```bash
-python assistant.py
-```
-
----
-
-## Chat Mode
+### Chat Mode
 
 ```bash
 python assistant.py --chat
 ```
 
----
-
-## Voice Mode
+### Voice Mode
 
 ```bash
 python assistant.py --voice
 ```
 
----
-
-## Install Startup Service
+### Background Assistant
 
 ```bash
-python assistant.py --install
+python assistant.py
 ```
 
----
-
-## Web Interface
-
-Run:
+### Web Interface
 
 ```bash
 python smith_web.py
@@ -175,19 +122,13 @@ http://localhost:5000
 
 ---
 
-# 🧠 AI Brain Priority
+# 🌐 Online Version
 
-Assist Neo automatically uses:
+Visit:
 
-```
-Gemini
-   ↓
-GitHub Models
-   ↓
-Ollama
-```
+### https://assistneo.onrender.com
 
-If one AI fails, the next AI automatically takes over.
+No installation is required to try the web version.
 
 ---
 
@@ -200,105 +141,55 @@ Assist-Neo
 ├── ai_brain.py
 ├── smith_web.py
 ├── evolution_worker.py
-│
 ├── uploads/
 ├── chats/
 ├── memory.json
 ├── users.json
 ├── .env
-│
-├── backup_manager.py
-├── ceo_agent.py
-├── learning_agent.py
-├── auto_programmer.py
-├── tester.py
-├── github_agent.py
-└── logger_agent.py
+└── requirements.txt
 ```
 
 ---
 
-# 💬 Example Commands
+# 🛣 Roadmap
 
-### Open Applications
-
-```
-open chrome
-open youtube
-open notepad
-```
-
-### Ask Questions
-
-```
-What is the latest AI news?
-
-Explain Python lists.
-
-Summarize this file.
-
-Create an image of a futuristic city.
-```
+* Multi-Agent System
+* Vector Memory
+* RAG Knowledge Base
+* Vision Agent
+* Coding Agent
+* Planner Agent
+* Android Application
+* Desktop GUI
+* Robotics Integration
 
 ---
 
-# 🤖 Self-Evolution System
+# 👨‍💻 Created By
 
-Assist Neo can:
+# Yuvan Industries
 
-```
-Think
- ↓
-Learn
- ↓
-Write Code
- ↓
-Run Tests
- ↓
-Push Updates
-```
+### A Future Technology Company
 
-Making it a continuously improving AI assistant.
+Yuvan Industries is an upcoming technology company focused on building:
 
----
+* Artificial Intelligence
+* Robotics
+* Autonomous Systems
+* Smart Software
+* Intelligent Platforms
+* Future Technologies
 
-# 🔮 Future Roadmap
-
-- [ ] Multi-Agent System
-- [ ] Vector Memory (FAISS)
-- [ ] RAG Knowledge Base
-- [ ] Planner Agent
-- [ ] Vision Agent
-- [ ] Coding Agent
-- [ ] Android App
-- [ ] Desktop GUI
-- [ ] Autonomous Programming
-- [ ] Robotics Integration
-- [ ] AI Operating System
+> **"The Future Is Not Coming. We Are Building It."**
 
 ---
 
-# 🌟 About Yuvan Industries
+# 📧 Contact
 
-**Yuvan Industries** is a future technology company currently under development.
+For questions, suggestions, or collaborations:
 
-Our vision is to create:
-
-- 🤖 AI Systems
-- 🧠 Autonomous Agents
-- 🏠 Smart Devices
-- 🚗 Robotics
-- ⚡ Energy Technologies
-- 🌐 Intelligent Platforms
-
-> **The Future Is Not Coming. We Are Building It.**
-
-### — Yuvan Industries
+**Email:** [shakthiyuvan01@gmail.com](mailto:shakthiyuvan01@gmail.com)
 
 ---
 
-# ⭐ Support
-
-If you like this project, please consider giving it a ⭐ on GitHub.
-
-## Created with ❤️ by Yuvan Industries
+⭐ If you like this project, please consider giving it a star and supporting **Yuvan Industries** on its journey to build the future.
