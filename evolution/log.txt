@@ -3,3 +3,5 @@
 2026-06-13 11:06:19.277183 : [WinError 3] The system cannot find the path specified: 'evolution/backups/20260613_110619'
 2026-06-13 11:36:19.264372 : [WinError 3] The system cannot find the path specified: 'evolution/backups/20260613_113619'
 2026-06-13 12:18:44.903560 : [WinError 3] The system cannot find the path specified: 'evolution/backups/20260613_121844'
+2026-06-13 12:40:43.592563 : [WinError 183] Cannot create a file when that file already exists: 'evolution/patches'
+2026-06-13 12:41:58.519566 : [WinError 183] Cannot create a file when that file already exists: 'evolution/patches'

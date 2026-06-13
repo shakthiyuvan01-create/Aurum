@@ -1,12 +1,7 @@
 [
     {
         "priority": 10,
-        "idea": "Find weaknesses in Assist Neo",
-        "status": "done"
-    },
-    {
-        "priority": 8,
-        "idea": "smith_web.py is too large. Split into modules.",
-        "status": "done"
+        "idea": "Improve error handling",
+        "status": "pending"
     }
 ]
