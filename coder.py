@@ -27,13 +27,27 @@ def generate_code(idea):
     - Do NOT create example programs.
     - Do NOT create tutorials.
     - Make small improvements.
-    Return ONLY the code changes needed.
+    Return patches in this exact format:
 
-Do NOT rewrite the entire file.
+FILE: ai_brain.py
 
-Show only the modified functions.
+FUNCTION: ask_gemini
 
-Keep unchanged code out of the response.
+REPLACE WITH:
+
+def ask_gemini():
+    ...
+
+Rules:
+
+- Modify existing functions only.
+- One function at a time.
+- Do NOT rewrite complete files.
+- Do NOT create tutorials.
+- Do NOT create example programs.
+- Keep unchanged code out.
+- No markdown.
+- No ```python.
 
     """
     response = ask_ai(prompt)
