@@ -27,7 +27,13 @@ def generate_code(idea):
     - Do NOT create example programs.
     - Do NOT create tutorials.
     - Make small improvements.
-    - Return ONLY Python code.
+    Return ONLY the code changes needed.
+
+Do NOT rewrite the entire file.
+
+Show only the modified functions.
+
+Keep unchanged code out of the response.
 
     """
     response = ask_ai(prompt)
