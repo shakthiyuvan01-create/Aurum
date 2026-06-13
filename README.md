@@ -1,91 +1,304 @@
-# Smith — your personal assistant (one file)
+# 🚀 Assist Neo
 
-Everything in a single program, `assistant.py`. Runs on your own computer.
-The only thing that uses the internet is the natural voice, image creation,
-and weather — all free and key-free.
+A powerful multi-brain AI assistant with voice, memory, web search, file analysis, and self-improving capabilities.
 
-## Install
+---
 
-1. Install Python (https://www.python.org/downloads/) — tick *Add to PATH*.
-2. In this folder:  `pip install -r requirements.txt`
-3. (For real answers & image recognition) install Ollama from
-   https://ollama.com then run:  `ollama pull llama3.2`  and  `ollama pull llava`
+# 👨‍💻 Created By
 
-## Run it
+# Yuvan Industries
+
+**Yuvan Industries** is an upcoming future technology company dedicated to building advanced AI systems, robotics, automation platforms, and intelligent software.
+
+> **"Building the Future, One Innovation at a Time."**
+
+---
+
+# ✨ Features
+
+- 🧠 Multi-AI Brain System
+- 🌐 Web Interface
+- 🎤 Voice Assistant
+- 🔊 Natural Text-to-Speech
+- 📁 File Analysis
+- 🖼 Image Generation
+- 🔍 Web Search
+- 📧 Email Monitoring
+- 💾 Memory System
+- 🖥 System Monitoring
+- 🤖 Self-Evolution Engine
+- 🏠 Local and Private AI
+
+---
+
+# 📋 Requirements
+
+### Python 3.10+
+
+Download:
+
+https://www.python.org/downloads/
+
+---
+
+### Ollama
+
+Download:
+
+https://ollama.com/
+
+Install models:
+
+```bash
+ollama pull llama3.2
+ollama pull llava
+```
+
+---
+
+# ⚙️ Installation
+
+## Step 1: Clone Repository
+
+```bash
+git clone https://github.com/YOUR_USERNAME/Assist-Neo.git
+
+cd Assist-Neo
+```
+
+---
+
+## Step 2: Install Required Packages
+
+```bash
+pip install -r requirements.txt
+```
+
+Or:
+
+```bash
+pip install flask requests python-dotenv pyttsx3 pygame psutil plyer edge-tts
+```
+
+---
+
+## Step 3: Create Environment File
+
+Create a file called:
+
+```text
+.env
+```
+
+Add:
+
+```env
+GEMINI_API_KEY=your_gemini_api_key
+
+GITHUB_TOKEN=your_github_token
+
+WEB_SEARCH_KEY=your_tavily_api_key
+```
+
+---
+
+## Step 4: Start Ollama
+
+Open terminal and run:
+
+```bash
+ollama serve
+```
+
+Verify:
+
+```bash
+ollama list
+```
+
+You should see:
 
 ```
-python assistant.py            background mode (watches & alerts you)
-python assistant.py --tray      run with a little system-tray icon
-python assistant.py --chat      type to it
-python assistant.py --voice     talk to it (say "Hey Smith, ...")
-python assistant.py --install   start automatically with Windows
-python assistant.py --uninstall stop starting automatically
+llama3.2
+llava
 ```
 
-It calls you **Yuvan**, is named **Smith**, and wakes to **"Hey Smith"**.
-Change these at the top of the file (ASSISTANT_NAME, USER_NAME, WAKE_WORD).
+---
 
-## Things you can say or type
+# 🚀 Running Assist Neo
 
-**Open & ask**
-- "Open youtube" / "open notepad"
-- "What is the capital of France?"  (answered by the local AI)
-- "What's the latest news?"  (searches the web)
+## Background Assistant
 
-**Reminders** — "Remind me to call mom at 6 pm" / "...in 10 minutes"
+```bash
+python assistant.py
+```
 
-**Controls** — "Volume up", "mute", "play music", "pause", "next song",
-"brightness up", "lock my computer"
+---
 
-**Type for you** — "Type Dear team, thanks for your help" (click the target
-window within 3 seconds)
+## Chat Mode
 
-**Images** — "Create an image of a sunset", "draw a robot";
-"What is in this image?", "describe image C:/path/pic.jpg"
+```bash
+python assistant.py --chat
+```
 
-**Screen & text** — "Take a screenshot", "what do you see on my screen",
-"read the text on my screen"
+---
 
-**Translate** — "How do I say good morning in Japanese?"
+## Voice Mode
 
-**Personal** — "My name is Yuvan", "remember that I like cricket",
-"what do you know about me", "I'm tired", "how are you"
+```bash
+python assistant.py --voice
+```
 
-**Briefing** — "Daily briefing" (also runs automatically each morning).
+---
 
-## Natural human voice
+## Install Startup Service
 
-By default Smith uses **edge-tts** — free, no key, much warmer than the
-robotic built-in voice (needs internet). Pick a voice with `EDGE_VOICE`
-(e.g. `en-US-JennyNeural`, `en-GB-SoniaNeural`). Set `USE_EDGE_TTS = False`
-to use the fully-offline voice.
+```bash
+python assistant.py --install
+```
 
-## Email alerts (optional)
+---
 
-Use an **app password** (Gmail: https://myaccount.google.com/apppasswords).
-Set `EMAIL_ENABLED = True`, `EMAIL_ADDRESS`, `EMAIL_APP_PASSWORD`,
-`IMAP_SERVER`. It only reads unread counts and the latest sender/subject —
-never sends, deletes, or marks mail read. Keep this file private.
+## Web Interface
 
-## Reading text needs Tesseract (one-time)
+Run:
 
-For "read the text…", install Tesseract:
-https://github.com/UB-Mannheim/tesseract/wiki — then check `TESSERACT_PATH`
-in the settings points to `tesseract.exe`.
+```bash
+python smith_web.py
+```
 
-## Voice setup
+Open:
 
-Download `vosk-model-small-en-us-0.15` from
-https://alphacephei.com/vosk/models , unzip it, rename the folder to
-`model`, and put it next to `assistant.py`. Then `python assistant.py --voice`.
+```
+http://localhost:5000
+```
 
-## Auto-start
+---
 
-`python assistant.py --install` adds a quiet launcher to your Startup folder.
-Remove with `--uninstall`.
+# 🧠 AI Brain Priority
 
-Your name and notes are saved locally in `memory.json`.
+Assist Neo automatically uses:
 
+```
+Gemini
+   ↓
+GitHub Models
+   ↓
+Ollama
+```
 
-#created by#
-YUVAN
+If one AI fails, the next AI automatically takes over.
+
+---
+
+# 📁 Project Structure
+
+```
+Assist-Neo
+│
+├── assistant.py
+├── ai_brain.py
+├── smith_web.py
+├── evolution_worker.py
+│
+├── uploads/
+├── chats/
+├── memory.json
+├── users.json
+├── .env
+│
+├── backup_manager.py
+├── ceo_agent.py
+├── learning_agent.py
+├── auto_programmer.py
+├── tester.py
+├── github_agent.py
+└── logger_agent.py
+```
+
+---
+
+# 💬 Example Commands
+
+### Open Applications
+
+```
+open chrome
+open youtube
+open notepad
+```
+
+### Ask Questions
+
+```
+What is the latest AI news?
+
+Explain Python lists.
+
+Summarize this file.
+
+Create an image of a futuristic city.
+```
+
+---
+
+# 🤖 Self-Evolution System
+
+Assist Neo can:
+
+```
+Think
+ ↓
+Learn
+ ↓
+Write Code
+ ↓
+Run Tests
+ ↓
+Push Updates
+```
+
+Making it a continuously improving AI assistant.
+
+---
+
+# 🔮 Future Roadmap
+
+- [ ] Multi-Agent System
+- [ ] Vector Memory (FAISS)
+- [ ] RAG Knowledge Base
+- [ ] Planner Agent
+- [ ] Vision Agent
+- [ ] Coding Agent
+- [ ] Android App
+- [ ] Desktop GUI
+- [ ] Autonomous Programming
+- [ ] Robotics Integration
+- [ ] AI Operating System
+
+---
+
+# 🌟 About Yuvan Industries
+
+**Yuvan Industries** is a future technology company currently under development.
+
+Our vision is to create:
+
+- 🤖 AI Systems
+- 🧠 Autonomous Agents
+- 🏠 Smart Devices
+- 🚗 Robotics
+- ⚡ Energy Technologies
+- 🌐 Intelligent Platforms
+
+> **The Future Is Not Coming. We Are Building It.**
+
+### — Yuvan Industries
+
+---
+
+# ⭐ Support
+
+If you like this project, please consider giving it a ⭐ on GitHub.
+
+## Created with ❤️ by Yuvan Industries
