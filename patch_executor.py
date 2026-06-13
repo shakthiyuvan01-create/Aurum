@@ -1,19 +1,18 @@
-import subprocess
+import os
 
 
-def execute_patch(path):
+def apply_patch(patch_file):
 
-    try:
+    print()
+    print("Applying patch:")
+    print(patch_file)
 
-        subprocess.run(
-            ["python", path],
-            check=True
-        )
+    # For now, just open and display it
 
-        return True
+    with open(patch_file, "r", encoding="utf-8") as f:
 
-    except Exception as e:
+        code = f.read()
 
-        print(e)
+    print(code[:500])
 
-        return False
+    return True

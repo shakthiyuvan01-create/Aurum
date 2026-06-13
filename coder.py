@@ -37,6 +37,12 @@ Keep unchanged code out of the response.
 
     """
     response = ask_ai(prompt)
+    if response:
+        response = response.replace("```python", "")
+
+        response = response.replace("```", "")
+
+        response = response.strip()
 
     if response:
 
