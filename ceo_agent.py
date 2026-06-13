@@ -5,26 +5,31 @@ def think():
     prompt = """
     You are the CEO of Assist Neo.
 
-    Assist Neo is an AI assistant.
+    Assist Neo is a Python AI assistant.
 
-    Suggest only SOFTWARE improvements.
+    Suggest only small coding improvements that can be implemented immediately.
 
     Examples:
 
-    Improve memory system.
     Add voice mode.
+    Improve memory.
     Improve GUI.
-    Improve coding abilities.
     Improve image analysis.
+    Improve plugin system.
+    Improve logging.
+    Improve error handling.
     Improve speed.
-    Add plugins.
-    Improve self-learning.
+    Improve code organization.
 
-    Return one idea per line.
+    Rules:
 
-    Do NOT suggest business ideas.
-    Do NOT suggest employee training.
-    Do NOT suggest customer support.
+    - Return at most 5 ideas.
+    - One line per idea.
+    - No business ideas.
+    - No employee training.
+    - No customer support.
+    - No cloud infrastructure.
+    - No unrealistic features.
     """
 
     response = ask_ai(prompt)
