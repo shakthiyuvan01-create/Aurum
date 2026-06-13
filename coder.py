@@ -1,21 +1,19 @@
 from ai_brain import ask_ai
 from patch_writer import save_patch
-
+from self_scanner import read_files
 
 def generate_code(idea):
+    project_code = read_files()
+
     prompt = f"""
+
     You are Assist Neo.
 
     You are improving your own project.
 
-    Current files include:
+    Current project files:
 
-    assistant.py
-    memory_manager.py
-    evolution_worker.py
-    logger_agent.py
-    health_agent.py
-    github_agent.py
+    {project_code}
 
     Task:
 
@@ -23,24 +21,15 @@ def generate_code(idea):
 
     Rules:
 
-    Modify existing functionality.
+    - Read the existing code.
+    - Modify existing functionality.
+    - Do NOT invent classes that don't exist.
+    - Do NOT create example programs.
+    - Do NOT create tutorials.
+    - Make small improvements.
+    - Return ONLY Python code.
 
-    Do NOT create a new AssistNeo class.
-
-    Do NOT create example programs.
-
-    Do NOT create tutorials.
-
-    Prefer improving:
-
-    assistant.py
-    logger_agent.py
-    memory_manager.py
-    evolution_worker.py
-
-    Return ONLY Python code.
     """
-
     response = ask_ai(prompt)
 
     if response:

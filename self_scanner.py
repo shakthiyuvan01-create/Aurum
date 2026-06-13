@@ -24,14 +24,35 @@ def scan():
     return python_files
 
 
-if __name__ == "__main__":
+def read_files(max_chars=3000):
+
+    content = ""
 
     files = scan()
 
-    print()
-
-    print("Python files found:")
-
     for file in files:
 
-        print(file)
+        try:
+
+            with open(file, "r", encoding="utf-8") as f:
+
+                text = f.read()
+
+                content += f"\n===== {file} =====\n"
+
+                content += text
+
+                if len(content) > max_chars:
+
+                    break
+
+        except:
+
+            pass
+
+    return content
+
+
+if __name__ == "__main__":
+
+    print(read_files())
