@@ -1,274 +1,91 @@
-# 🚀 AssistNeo
+# Smith — your personal assistant (one file)
 
-<div align="center">
+Everything in a single program, `assistant.py`. Runs on your own computer.
+The only thing that uses the internet is the natural voice, image creation,
+and weather — all free and key-free.
 
-### Futuristic AI Assistant
+## Install
 
-<img src="https://raw.githubusercontent.com/shakthiyuvan01-create/AssistNeo/main/logo.png" width="180">
+1. Install Python (https://www.python.org/downloads/) — tick *Add to PATH*.
+2. In this folder:  `pip install -r requirements.txt`
+3. (For real answers & image recognition) install Ollama from
+   https://ollama.com then run:  `ollama pull llama3.2`  and  `ollama pull llava`
 
-<br><br>
+## Run it
 
-![Python](https://img.shields.io/badge/Python-3.11-blue?style=for-the-badge\&logo=python)
-![Flask](https://img.shields.io/badge/Flask-Web_App-black?style=for-the-badge\&logo=flask)
-![AI](https://img.shields.io/badge/AI-Powered-green?style=for-the-badge)
-![Status](https://img.shields.io/badge/Status-Active-success?style=for-the-badge)
-
-<br>
-
-## Developed by K. Shakthi Yuvan
-
-### Future Scientist 🚀
-
-</div>
-
----
-
-# 🌌 About AssistNeo
-
-AssistNeo is a futuristic AI-powered assistant built using Python and Flask.
-
-It combines:
-
-* AI chat
-* Voice interaction
-* Image generation
-* Web search
-* Modern cyberpunk UI
-* Markdown rendering
-* Syntax-highlighted code blocks
-
-into one powerful assistant.
-
-AssistNeo works on:
-
-* 💻 Laptop
-* 📱 Mobile
-* 🌐 Browser
-
----
-
-# ✨ Features
-
-✅ AI Chat Assistant
-✅ AI Image Generation
-✅ Voice Interaction
-✅ Cyberpunk Neon UI
-✅ Syntax Highlighted Code
-✅ Markdown Support
-✅ Smart Web Search
-✅ Chat History Saving
-✅ Mobile Friendly Design
-✅ File Analysis
-✅ Fast Flask Backend
-✅ Secure API Key System
-✅ Interactive Interface
-✅ Real-Time Responses
-
----
-
-# 🎨 Interactive Modern UI
-
-AssistNeo includes:
-
-* Neon glowing effects
-* Modern cyberpunk design
-* Animated chat interface
-* Smooth scrolling
-* Beautiful message bubbles
-* Mobile responsive layout
-* Interactive buttons
-* Smart markdown rendering
-
----
-
-# 🛠️ Technologies Used
-
-* Python 3.11
-* Flask
-* HTML5
-* CSS3
-* JavaScript
-* Highlight.js
-* Marked.js
-* MathJax
-* GitHub Models API
-* Tavily Search API
-
----
-
-# ⚙️ Step-by-Step Installation
-
-## 1️⃣ Install Python
-
-Download Python:
-
-https://www.python.org/downloads/
-
-IMPORTANT:
-During installation enable:
-
-```text
-✅ Add Python to PATH
+```
+python assistant.py            background mode (watches & alerts you)
+python assistant.py --tray      run with a little system-tray icon
+python assistant.py --chat      type to it
+python assistant.py --voice     talk to it (say "Hey Smith, ...")
+python assistant.py --install   start automatically with Windows
+python assistant.py --uninstall stop starting automatically
 ```
 
----
+It calls you **Yuvan**, is named **Smith**, and wakes to **"Hey Smith"**.
+Change these at the top of the file (ASSISTANT_NAME, USER_NAME, WAKE_WORD).
 
-## 2️⃣ Clone Repository
+## Things you can say or type
 
-```bash
-git clone https://github.com/shakthiyuvan01-create/AssistNeo.git
-```
+**Open & ask**
+- "Open youtube" / "open notepad"
+- "What is the capital of France?"  (answered by the local AI)
+- "What's the latest news?"  (searches the web)
 
----
+**Reminders** — "Remind me to call mom at 6 pm" / "...in 10 minutes"
 
-## 3️⃣ Open Project Folder
+**Controls** — "Volume up", "mute", "play music", "pause", "next song",
+"brightness up", "lock my computer"
 
-```bash
-cd AssistNeo
-```
+**Type for you** — "Type Dear team, thanks for your help" (click the target
+window within 3 seconds)
 
----
+**Images** — "Create an image of a sunset", "draw a robot";
+"What is in this image?", "describe image C:/path/pic.jpg"
 
-## 4️⃣ Install Requirements
+**Screen & text** — "Take a screenshot", "what do you see on my screen",
+"read the text on my screen"
 
-```bash
-pip install -r requirements.txt
-```
+**Translate** — "How do I say good morning in Japanese?"
 
----
+**Personal** — "My name is Yuvan", "remember that I like cricket",
+"what do you know about me", "I'm tired", "how are you"
 
-## 5️⃣ Create `.env` File
+**Briefing** — "Daily briefing" (also runs automatically each morning).
 
-Create a file named:
+## Natural human voice
 
-```text
-.env
-```
+By default Smith uses **edge-tts** — free, no key, much warmer than the
+robotic built-in voice (needs internet). Pick a voice with `EDGE_VOICE`
+(e.g. `en-US-JennyNeural`, `en-GB-SoniaNeural`). Set `USE_EDGE_TTS = False`
+to use the fully-offline voice.
 
-Add:
+## Email alerts (optional)
 
-```env
-GEMINI_API_KEY=your_api_key
+Use an **app password** (Gmail: https://myaccount.google.com/apppasswords).
+Set `EMAIL_ENABLED = True`, `EMAIL_ADDRESS`, `EMAIL_APP_PASSWORD`,
+`IMAP_SERVER`. It only reads unread counts and the latest sender/subject —
+never sends, deletes, or marks mail read. Keep this file private.
 
-GITHUB_TOKEN=your_github_token
+## Reading text needs Tesseract (one-time)
 
-WEB_SEARCH_KEY=your_web_search_key
-```
+For "read the text…", install Tesseract:
+https://github.com/UB-Mannheim/tesseract/wiki — then check `TESSERACT_PATH`
+in the settings points to `tesseract.exe`.
 
----
+## Voice setup
 
-# ▶️ Run AssistNeo
+Download `vosk-model-small-en-us-0.15` from
+https://alphacephei.com/vosk/models , unzip it, rename the folder to
+`model`, and put it next to `assistant.py`. Then `python assistant.py --voice`.
 
-```bash
-python smith_web.py
-```
+## Auto-start
 
----
+`python assistant.py --install` adds a quiet launcher to your Startup folder.
+Remove with `--uninstall`.
 
-# 📱 Open on Mobile
+Your name and notes are saved locally in `memory.json`.
 
-Connect:
 
-* Laptop
-* Mobile
-
-to the SAME WiFi.
-
-Open browser on phone:
-
-```text
-http://YOUR_IP_ADDRESS:5000
-```
-
-Example:
-
-```text
-http://192.168.1.3:5000
-```
-
----
-
-# 🎤 Voice Mode
-
-```bash
-python assistant.py --voice
-```
-
----
-
-# 📂 Project Structure
-
-```text
-AssistNeo/
-│
-├── assistant.py
-├── smith_web.py
-├── README.md
-├── requirements.txt
-├── .env
-├── uploads/
-├── chats/
-├── static/
-└── templates/
-```
-
----
-
-# 🌌 Future Plans
-
-* Android App
-* Desktop App
-* AI Memory System
-* Live Voice Conversation
-* Smart Screen Understanding
-* Automation System
-* Cloud Deployment
-* Multi-Agent AI
-
----
-
-# 🔐 Security
-
-AssistNeo uses:
-
-* Secure `.env` API storage
-* GitHub Push Protection
-* Safe token handling
-
----
-
-# 🤝 Contributing
-
-Contributions are welcome.
-
-Fork the repository and improve AssistNeo 🚀
-
----
-
-# ⭐ Support
-
-If you like this project:
-
-⭐ Star the repository
-🍴 Fork the project
-📢 Share with friends
-
----
-
-# 📜 License
-
-This project is for educational and personal use.
-
----
-
-<div align="center">
-
-# 🚀 AssistNeo
-
-### Created with passion by
-
-# K. Shakthi Yuvan
-
-### Future Scientist 🌌
-
-</div>
+#created by#
+YUVAN

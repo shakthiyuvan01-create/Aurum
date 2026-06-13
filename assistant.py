@@ -652,9 +652,14 @@ Just give the best final answer directly.
 
 
 def ask_ai_brain(question: str, with_context: bool = False) -> str:
-    """Ask both AIs at the same time and return the best answer."""
+    """Ask Hermes first, then GitHub+Gemini."""
+
     import threading
 
+
+
+
+    # ===== FALLBACK =====
     results = {"gpt": "", "gemini": ""}
 
     def get_gpt():
@@ -663,15 +668,16 @@ def ask_ai_brain(question: str, with_context: bool = False) -> str:
     def get_gemini():
         results["gemini"] = ask_gemini(question)
 
-    # Run both at the SAME TIME (faster!)
+    # Run both simultaneously
     t1 = threading.Thread(target=get_gpt)
     t2 = threading.Thread(target=get_gemini)
+
     t1.start()
     t2.start()
+
     t1.join()
     t2.join()
 
-    # Analyze and return best answer
     final = analyze_and_pick(
         question,
         results["gpt"],
@@ -757,16 +763,18 @@ def _extract_image_path(text: str) -> str:
 
 
 def create_image(prompt: str) -> str:
+    import os
     import time
-    import urllib.request
+    import requests
+    import urllib.parse
 
     try:
         os.makedirs(IMAGE_SAVE_FOLDER, exist_ok=True)
 
         url = (
-            f"https://image.pollinations.ai/prompt/"
-            f"{urllib.parse.quote(prompt)}"
-            f"?width=1024&height=1024&nologo=true"
+            "https://image.pollinations.ai/prompt/"
+            + urllib.parse.quote(prompt)
+            + "?model=flux&width=1024&height=1024&nologo=true"
         )
 
         out = os.path.join(
@@ -774,23 +782,32 @@ def create_image(prompt: str) -> str:
             f"image_{int(time.time())}.png"
         )
 
-        req = urllib.request.Request(
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 Chrome/137.0 Safari/537.36"
+            )
+        }
+
+        response = requests.get(
             url,
-            headers={
-                "User-Agent": "Mozilla/5.0"
-            }
+            headers=headers,
+            timeout=180
         )
 
-        with urllib.request.urlopen(req, timeout=120) as response:
-            data = response.read()
+        print("Status:", response.status_code)
+
+        if response.status_code != 200:
+            print(response.text)
+            return None
 
         with open(out, "wb") as f:
-            f.write(data)
+            f.write(response.content)
 
         return out
 
     except Exception as e:
-        print("IMAGE ERROR:", e)
+        print("IMAGE ERROR:", repr(e))
         return None
 
 def describe_image(path: str) -> None:
