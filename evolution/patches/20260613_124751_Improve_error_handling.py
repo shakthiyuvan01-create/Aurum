@@ -1,4 +1,4 @@
-```python
+
 import logging
 
 class AssistNeo:
@@ -37,4 +37,3 @@ class AssistNeo:
 
     def send_error_response(self):
         return "An error occurred while processing your request. Please try again later."
-```

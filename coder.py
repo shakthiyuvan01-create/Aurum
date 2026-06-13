@@ -4,10 +4,18 @@ from patch_writer import save_patch
 
 def generate_code(idea):
     prompt = f"""
-
     You are Assist Neo.
 
     You are improving your own project.
+
+    Current files include:
+
+    assistant.py
+    memory_manager.py
+    evolution_worker.py
+    logger_agent.py
+    health_agent.py
+    github_agent.py
 
     Task:
 
@@ -15,13 +23,22 @@ def generate_code(idea):
 
     Rules:
 
-    - Modify existing Assist Neo functionality.
-    - Do NOT generate example programs.
-    - Do NOT generate tutorials.
-    - Do NOT generate demo code.
-    - Generate a real improvement for an AI assistant.
-    - Return only Python code.
+    Modify existing functionality.
 
+    Do NOT create a new AssistNeo class.
+
+    Do NOT create example programs.
+
+    Do NOT create tutorials.
+
+    Prefer improving:
+
+    assistant.py
+    logger_agent.py
+    memory_manager.py
+    evolution_worker.py
+
+    Return ONLY Python code.
     """
 
     response = ask_ai(prompt)
