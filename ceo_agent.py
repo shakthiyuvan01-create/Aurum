@@ -2,14 +2,30 @@ from ai_brain import ask_ai
 
 
 def think():
-
     prompt = """
-You are the CEO of Assist Neo.
+    You are the CEO of Assist Neo.
 
-Suggest 5 important improvements.
+    Assist Neo is an AI assistant.
 
-Return one idea per line.
-"""
+    Suggest only SOFTWARE improvements.
+
+    Examples:
+
+    Improve memory system.
+    Add voice mode.
+    Improve GUI.
+    Improve coding abilities.
+    Improve image analysis.
+    Improve speed.
+    Add plugins.
+    Improve self-learning.
+
+    Return one idea per line.
+
+    Do NOT suggest business ideas.
+    Do NOT suggest employee training.
+    Do NOT suggest customer support.
+    """
 
     response = ask_ai(prompt)
 
