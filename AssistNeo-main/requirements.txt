@@ -1,0 +1,15 @@
+psutil
+watchdog
+plyer
+pyttsx3
+vosk
+sounddevice
+pillow
+edge-tts
+pygame-ce
+pyautogui
+screen-brightness-control
+pytesseract
+pystray
+flask
+python-dotenv

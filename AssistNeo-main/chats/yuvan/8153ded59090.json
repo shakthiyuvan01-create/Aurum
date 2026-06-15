@@ -1,0 +1,31 @@
+{
+  "id": "8153ded59090",
+  "title": "hello",
+  "ts": 1780391289,
+  "messages": [
+    {
+      "role": "user",
+      "text": "hello"
+    },
+    {
+      "role": "smith",
+      "text": "Good afternoon, Yuvan. It's lovely to hear from you."
+    },
+    {
+      "role": "user",
+      "text": "who won ipl 2026"
+    },
+    {
+      "role": "smith",
+      "text": "Let me search the web for that.\n\n[IPL 2026 winner: Who won the Indian Premier League this season?]\n\n**Royal Challengers Bengaluru** won the IPL 2026 title, successfully defending their championship by defeating the **Gujarat Titans** by five wickets in the final held at the Narendra Modi Stadium in Ahmedabad."
+    },
+    {
+      "role": "user",
+      "text": "when is the next IPL"
+    },
+    {
+      "role": "smith",
+      "text": "Both AIs failed to answer."
+    }
+  ]
+}

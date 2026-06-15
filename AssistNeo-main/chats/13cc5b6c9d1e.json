@@ -1,0 +1,31 @@
+{
+  "id": "13cc5b6c9d1e",
+  "title": "ipl",
+  "ts": 1779554591,
+  "messages": [
+    {
+      "role": "user",
+      "text": "ipl"
+    },
+    {
+      "role": "smith",
+      "text": "The Indian Premier League (IPL) is a professional Twenty20 cricket league in India, usually held annually. It features franchises representing different cities and has attracted top players from around the world. Are you looking for specific information about the IPL, like its history, teams, or current season details?"
+    },
+    {
+      "role": "user",
+      "text": "who created you"
+    },
+    {
+      "role": "smith",
+      "text": "I was created by Yuvan."
+    },
+    {
+      "role": "user",
+      "text": "today weather"
+    },
+    {
+      "role": "smith",
+      "text": "Let me search the web for that.\n\nIn Harbour Island, Bahamas, the weather is currently sunny with a temperature of 26.3°C (79.4°F) and a wind speed of 17.2 mph. In Memphis, TN, expect daily high temperatures between 77°F and 86°F and overnight lows between 62°F and 71°F."
+    }
+  ]
+}

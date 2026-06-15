@@ -1,0 +1,23 @@
+{
+  "id": "96d38d86c55c",
+  "title": "hi",
+  "ts": 1779684409,
+  "messages": [
+    {
+      "role": "user",
+      "text": "hi"
+    },
+    {
+      "role": "smith",
+      "text": "Good morning, Yuvan! I'm here and ready. How's your day going?"
+    },
+    {
+      "role": "user",
+      "text": "ipl"
+    },
+    {
+      "role": "smith",
+      "text": "Let me search the web for that.\n\nThe term \"IPL\" can refer to two different contexts:\n\n1. **Indian Premier League (Cricket)**: The Indian Premier League (IPL) is a professional Twenty20 cricket league in India, organized by the Board of Control for Cricket in India (BCCI). It is one of the premier T20 leagues globally and garners significant attention and viewership.\n\n2. **Intense Pulsed Light (Therapy)**: Intense pulsed light (IPL) therapy is also known as a photo facial. It is a non-surgical treatment aimed at improving the color and texture of the skin. IPL may be used to address skin issues such as redness, brown spots, or uneven skin tone. It is generally considered gentler than laser treatments but may require more sessions for similar results.\n\nIf you meant a specific aspect of IPL, please clarify!"
+    }
+  ]
+}
