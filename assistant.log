@@ -7395,3 +7395,277 @@ TypeError: The view function for 'ask' did not return a valid response. The func
 2026-06-15 15:04:33,079 | INFO | 127.0.0.1 - - [15/Jun/2026 15:04:33] "POST /research HTTP/1.1" 200 -
 2026-06-15 15:05:04,781 | INFO | 127.0.0.1 - - [15/Jun/2026 15:05:04] "POST /stop_speech HTTP/1.1" 200 -
 2026-06-15 15:05:04,786 | INFO | 127.0.0.1 - - [15/Jun/2026 15:05:04] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 15:22:22,055 | INFO | [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.4:5000
+2026-06-15 15:22:22,055 | INFO | [33mPress CTRL+C to quit[0m
+2026-06-15 15:22:24,429 | INFO | 127.0.0.1 - - [15/Jun/2026 15:22:24] "GET / HTTP/1.1" 200 -
+2026-06-15 15:22:24,527 | INFO | 127.0.0.1 - - [15/Jun/2026 15:22:24] "GET /logo HTTP/1.1" 200 -
+2026-06-15 15:22:24,638 | INFO | 127.0.0.1 - - [15/Jun/2026 15:22:24] "GET /greet HTTP/1.1" 200 -
+2026-06-15 15:22:24,775 | INFO | 127.0.0.1 - - [15/Jun/2026 15:22:24] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 15:22:24,787 | INFO | 127.0.0.1 - - [15/Jun/2026 15:22:24] "GET /chats HTTP/1.1" 200 -
+2026-06-15 15:22:27,366 | INFO | 127.0.0.1 - - [15/Jun/2026 15:22:27] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-06-15 15:22:40,626 | ERROR | Exception on /analyze [POST]
+Traceback (most recent call last):
+  File "D:\kond\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "D:\kond\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "D:\kond\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "D:\kond\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\shakt\Downloads\AssistNeo-main (1)\smith_web.py", line 1477, in analyze_route
+    if not _pd:
+           ^^^
+NameError: name '_pd' is not defined
+2026-06-15 15:22:40,636 | INFO | 127.0.0.1 - - [15/Jun/2026 15:22:40] "[35m[1mPOST /analyze HTTP/1.1[0m" 500 -
+2026-06-15 15:23:03,454 | INFO | 127.0.0.1 - - [15/Jun/2026 15:23:03] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 15:24:50,668 | INFO | [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.4:5000
+2026-06-15 15:24:50,669 | INFO | [33mPress CTRL+C to quit[0m
+2026-06-15 15:24:52,481 | INFO | 127.0.0.1 - - [15/Jun/2026 15:24:52] "GET / HTTP/1.1" 200 -
+2026-06-15 15:24:52,587 | INFO | 127.0.0.1 - - [15/Jun/2026 15:24:52] "GET /logo HTTP/1.1" 200 -
+2026-06-15 15:24:52,984 | INFO | 127.0.0.1 - - [15/Jun/2026 15:24:52] "GET /greet HTTP/1.1" 200 -
+2026-06-15 15:24:53,178 | INFO | 127.0.0.1 - - [15/Jun/2026 15:24:53] "GET /chats HTTP/1.1" 200 -
+2026-06-15 15:24:59,925 | ERROR | Exception on /analyze [POST]
+Traceback (most recent call last):
+  File "D:\kond\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "D:\kond\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "D:\kond\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "D:\kond\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\shakt\Downloads\AssistNeo-main (1)\smith_web.py", line 1477, in analyze_route
+    if not _pd:
+           ^^^
+NameError: name '_pd' is not defined
+2026-06-15 15:24:59,935 | INFO | 127.0.0.1 - - [15/Jun/2026 15:24:59] "[35m[1mPOST /analyze HTTP/1.1[0m" 500 -
+2026-06-15 15:25:03,017 | INFO | 127.0.0.1 - - [15/Jun/2026 15:25:03] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 15:25:03,024 | INFO | 127.0.0.1 - - [15/Jun/2026 15:25:03] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 15:25:03,030 | INFO | 127.0.0.1 - - [15/Jun/2026 15:25:03] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 15:26:18,368 | INFO | [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.4:5000
+2026-06-15 15:26:18,369 | INFO | [33mPress CTRL+C to quit[0m
+2026-06-15 15:26:20,903 | INFO | 127.0.0.1 - - [15/Jun/2026 15:26:20] "GET / HTTP/1.1" 200 -
+2026-06-15 15:26:21,030 | INFO | 127.0.0.1 - - [15/Jun/2026 15:26:21] "GET /logo HTTP/1.1" 200 -
+2026-06-15 15:26:21,422 | INFO | 127.0.0.1 - - [15/Jun/2026 15:26:21] "GET /greet HTTP/1.1" 200 -
+2026-06-15 15:26:21,612 | INFO | 127.0.0.1 - - [15/Jun/2026 15:26:21] "GET /chats HTTP/1.1" 200 -
+2026-06-15 15:26:21,861 | INFO | 127.0.0.1 - - [15/Jun/2026 15:26:21] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-06-15 15:26:42,025 | INFO | 127.0.0.1 - - [15/Jun/2026 15:26:42] "POST /analyze HTTP/1.1" 200 -
+2026-06-15 15:27:03,407 | INFO | 127.0.0.1 - - [15/Jun/2026 15:27:03] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 15:27:03,410 | INFO | 127.0.0.1 - - [15/Jun/2026 15:27:03] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 19:02:41,403 | INFO | [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.4:5000
+2026-06-15 19:02:41,403 | INFO | [33mPress CTRL+C to quit[0m
+2026-06-15 19:02:44,893 | INFO | 127.0.0.1 - - [15/Jun/2026 19:02:44] "GET / HTTP/1.1" 200 -
+2026-06-15 19:02:44,989 | INFO | 127.0.0.1 - - [15/Jun/2026 19:02:44] "GET /logo HTTP/1.1" 200 -
+2026-06-15 19:02:45,089 | INFO | 127.0.0.1 - - [15/Jun/2026 19:02:45] "GET /greet HTTP/1.1" 200 -
+2026-06-15 19:02:45,278 | INFO | 127.0.0.1 - - [15/Jun/2026 19:02:45] "GET /chats HTTP/1.1" 200 -
+2026-06-15 19:02:45,600 | INFO | 127.0.0.1 - - [15/Jun/2026 19:02:45] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-06-15 19:02:52,082 | INFO | 127.0.0.1 - - [15/Jun/2026 19:02:52] "GET /memory HTTP/1.1" 200 -
+2026-06-15 19:03:05,661 | INFO | 127.0.0.1 - - [15/Jun/2026 19:03:05] "POST /memory HTTP/1.1" 200 -
+2026-06-15 19:03:11,343 | INFO | 127.0.0.1 - - [15/Jun/2026 19:03:11] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 19:05:20,968 | INFO | 127.0.0.1 - - [15/Jun/2026 19:05:20] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 19:21:15,486 | INFO | [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.4:5000
+2026-06-15 19:21:15,487 | INFO | [33mPress CTRL+C to quit[0m
+2026-06-15 19:21:17,285 | INFO | 127.0.0.1 - - [15/Jun/2026 19:21:17] "GET / HTTP/1.1" 200 -
+2026-06-15 19:21:17,384 | INFO | 127.0.0.1 - - [15/Jun/2026 19:21:17] "GET /logo HTTP/1.1" 200 -
+2026-06-15 19:21:17,763 | INFO | 127.0.0.1 - - [15/Jun/2026 19:21:17] "GET /greet HTTP/1.1" 200 -
+2026-06-15 19:21:18,004 | INFO | 127.0.0.1 - - [15/Jun/2026 19:21:18] "GET /chats HTTP/1.1" 200 -
+2026-06-15 19:21:18,299 | INFO | 127.0.0.1 - - [15/Jun/2026 19:21:18] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-06-15 19:21:42,538 | INFO | 127.0.0.1 - - [15/Jun/2026 19:21:42] "POST /ask HTTP/1.1" 200 -
+2026-06-15 19:21:42,809 | INFO | 127.0.0.1 - - [15/Jun/2026 19:21:42] "GET /chats HTTP/1.1" 200 -
+2026-06-15 19:21:45,251 | INFO | 127.0.0.1 - - [15/Jun/2026 19:21:45] "POST /tts HTTP/1.1" 200 -
+2026-06-15 19:21:45,629 | INFO | 127.0.0.1 - - [15/Jun/2026 19:21:45] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-06-15 19:22:10,896 | INFO | 127.0.0.1 - - [15/Jun/2026 19:22:10] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 19:28:33,597 | INFO | [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.4:5000
+2026-06-15 19:28:33,598 | INFO | [33mPress CTRL+C to quit[0m
+2026-06-15 19:28:35,487 | INFO | 127.0.0.1 - - [15/Jun/2026 19:28:35] "GET / HTTP/1.1" 200 -
+2026-06-15 19:28:35,596 | INFO | 127.0.0.1 - - [15/Jun/2026 19:28:35] "GET /logo HTTP/1.1" 200 -
+2026-06-15 19:28:35,972 | INFO | 127.0.0.1 - - [15/Jun/2026 19:28:35] "GET /greet HTTP/1.1" 200 -
+2026-06-15 19:28:36,185 | INFO | 127.0.0.1 - - [15/Jun/2026 19:28:36] "GET /chats HTTP/1.1" 200 -
+2026-06-15 19:28:41,069 | INFO | 127.0.0.1 - - [15/Jun/2026 19:28:41] "POST /ask HTTP/1.1" 200 -
+2026-06-15 19:28:41,338 | INFO | 127.0.0.1 - - [15/Jun/2026 19:28:41] "GET /chats HTTP/1.1" 200 -
+2026-06-15 19:28:42,458 | INFO | 127.0.0.1 - - [15/Jun/2026 19:28:42] "POST /tts HTTP/1.1" 200 -
+2026-06-15 19:28:42,833 | INFO | 127.0.0.1 - - [15/Jun/2026 19:28:42] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-06-15 19:28:47,926 | INFO | 127.0.0.1 - - [15/Jun/2026 19:28:47] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 19:30:42,994 | INFO | [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.4:5000
+2026-06-15 19:30:42,995 | INFO | [33mPress CTRL+C to quit[0m
+2026-06-15 19:30:44,862 | INFO | 127.0.0.1 - - [15/Jun/2026 19:30:44] "GET / HTTP/1.1" 200 -
+2026-06-15 19:30:44,972 | INFO | 127.0.0.1 - - [15/Jun/2026 19:30:44] "GET /logo HTTP/1.1" 200 -
+2026-06-15 19:30:45,258 | INFO | 127.0.0.1 - - [15/Jun/2026 19:30:45] "GET /greet HTTP/1.1" 200 -
+2026-06-15 19:30:45,461 | INFO | 127.0.0.1 - - [15/Jun/2026 19:30:45] "GET /chats HTTP/1.1" 200 -
+2026-06-15 19:30:48,598 | INFO | 127.0.0.1 - - [15/Jun/2026 19:30:48] "POST /ask HTTP/1.1" 200 -
+2026-06-15 19:30:48,799 | INFO | 127.0.0.1 - - [15/Jun/2026 19:30:48] "GET /chats HTTP/1.1" 200 -
+2026-06-15 19:30:50,324 | INFO | 127.0.0.1 - - [15/Jun/2026 19:30:50] "POST /tts HTTP/1.1" 200 -
+2026-06-15 19:30:50,709 | INFO | 127.0.0.1 - - [15/Jun/2026 19:30:50] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-06-15 19:31:06,931 | WARNING | GitHub Models failed: {
+  "error": {
+    "message": "Missing required parameter: 'messages[0].role'.",
+    "type": "invalid_request_error",
+    "param": "messages[0].role",
+    "code": "missing_required_parameter"
+  }
+}
+2026-06-15 19:31:06,942 | INFO | 127.0.0.1 - - [15/Jun/2026 19:31:06] "POST /ask HTTP/1.1" 200 -
+2026-06-15 19:31:07,250 | INFO | 127.0.0.1 - - [15/Jun/2026 19:31:07] "GET /chats HTTP/1.1" 200 -
+2026-06-15 19:31:08,311 | INFO | 127.0.0.1 - - [15/Jun/2026 19:31:08] "POST /tts HTTP/1.1" 200 -
+2026-06-15 19:31:17,414 | INFO | 127.0.0.1 - - [15/Jun/2026 19:31:17] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 19:34:22,357 | INFO | [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.4:5000
+2026-06-15 19:34:22,357 | INFO | [33mPress CTRL+C to quit[0m
+2026-06-15 19:34:24,227 | INFO | 127.0.0.1 - - [15/Jun/2026 19:34:24] "GET / HTTP/1.1" 200 -
+2026-06-15 19:34:24,317 | INFO | 127.0.0.1 - - [15/Jun/2026 19:34:24] "GET /logo HTTP/1.1" 200 -
+2026-06-15 19:34:24,674 | INFO | 127.0.0.1 - - [15/Jun/2026 19:34:24] "GET /greet HTTP/1.1" 200 -
+2026-06-15 19:34:24,875 | INFO | 127.0.0.1 - - [15/Jun/2026 19:34:24] "GET /chats HTTP/1.1" 200 -
+2026-06-15 19:34:29,714 | INFO | 127.0.0.1 - - [15/Jun/2026 19:34:29] "POST /ask HTTP/1.1" 200 -
+2026-06-15 19:34:29,961 | INFO | 127.0.0.1 - - [15/Jun/2026 19:34:29] "GET /chats HTTP/1.1" 200 -
+2026-06-15 19:34:31,520 | INFO | 127.0.0.1 - - [15/Jun/2026 19:34:31] "POST /tts HTTP/1.1" 200 -
+2026-06-15 19:34:31,898 | INFO | 127.0.0.1 - - [15/Jun/2026 19:34:31] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-06-15 19:34:44,879 | WARNING | GitHub Models failed: {
+  "error": {
+    "message": "Missing required parameter: 'messages[0].role'.",
+    "type": "invalid_request_error",
+    "param": "messages[0].role",
+    "code": "missing_required_parameter"
+  }
+}
+2026-06-15 19:34:44,887 | INFO | 127.0.0.1 - - [15/Jun/2026 19:34:44] "POST /ask HTTP/1.1" 200 -
+2026-06-15 19:34:45,145 | INFO | 127.0.0.1 - - [15/Jun/2026 19:34:45] "GET /chats HTTP/1.1" 200 -
+2026-06-15 19:34:46,193 | INFO | 127.0.0.1 - - [15/Jun/2026 19:34:46] "POST /tts HTTP/1.1" 200 -
+2026-06-15 19:34:48,538 | INFO | 127.0.0.1 - - [15/Jun/2026 19:34:48] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 19:36:21,742 | INFO | [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.4:5000
+2026-06-15 19:36:21,743 | INFO | [33mPress CTRL+C to quit[0m
+2026-06-15 19:36:24,167 | INFO | 127.0.0.1 - - [15/Jun/2026 19:36:24] "GET / HTTP/1.1" 200 -
+2026-06-15 19:36:24,292 | INFO | 127.0.0.1 - - [15/Jun/2026 19:36:24] "GET /logo HTTP/1.1" 200 -
+2026-06-15 19:36:24,340 | INFO | 127.0.0.1 - - [15/Jun/2026 19:36:24] "GET /greet HTTP/1.1" 200 -
+2026-06-15 19:36:24,514 | INFO | 127.0.0.1 - - [15/Jun/2026 19:36:24] "GET /chats HTTP/1.1" 200 -
+2026-06-15 19:36:24,830 | INFO | 127.0.0.1 - - [15/Jun/2026 19:36:24] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-06-15 19:36:33,887 | WARNING | GitHub Models failed: {
+  "error": {
+    "message": "Missing required parameter: 'messages[0].role'.",
+    "type": "invalid_request_error",
+    "param": "messages[0].role",
+    "code": "missing_required_parameter"
+  }
+}
+2026-06-15 19:36:33,896 | INFO | 127.0.0.1 - - [15/Jun/2026 19:36:33] "POST /ask HTTP/1.1" 200 -
+2026-06-15 19:36:34,091 | INFO | 127.0.0.1 - - [15/Jun/2026 19:36:34] "GET /chats HTTP/1.1" 200 -
+2026-06-15 19:36:35,286 | INFO | 127.0.0.1 - - [15/Jun/2026 19:36:35] "POST /tts HTTP/1.1" 200 -
+2026-06-15 19:36:35,808 | INFO | 127.0.0.1 - - [15/Jun/2026 19:36:35] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-06-15 19:36:38,769 | INFO | 127.0.0.1 - - [15/Jun/2026 19:36:38] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 19:37:00,883 | INFO | 127.0.0.1 - - [15/Jun/2026 19:37:00] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 19:37:00,885 | INFO | 127.0.0.1 - - [15/Jun/2026 19:37:00] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 19:51:20,875 | INFO | [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.4:5000
+2026-06-15 19:51:20,875 | INFO | [33mPress CTRL+C to quit[0m
+2026-06-15 19:51:23,296 | INFO | 127.0.0.1 - - [15/Jun/2026 19:51:23] "GET / HTTP/1.1" 200 -
+2026-06-15 19:51:23,363 | INFO | 127.0.0.1 - - [15/Jun/2026 19:51:23] "GET /logo HTTP/1.1" 200 -
+2026-06-15 19:51:23,749 | INFO | 127.0.0.1 - - [15/Jun/2026 19:51:23] "GET /greet HTTP/1.1" 200 -
+2026-06-15 19:51:23,952 | INFO | 127.0.0.1 - - [15/Jun/2026 19:51:23] "GET /chats HTTP/1.1" 200 -
+2026-06-15 19:51:24,204 | INFO | 127.0.0.1 - - [15/Jun/2026 19:51:24] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-06-15 19:51:36,275 | INFO | 127.0.0.1 - - [15/Jun/2026 19:51:36] "POST /ask HTTP/1.1" 200 -
+2026-06-15 19:51:36,575 | INFO | 127.0.0.1 - - [15/Jun/2026 19:51:36] "GET /chats HTTP/1.1" 200 -
+2026-06-15 19:51:37,953 | INFO | 127.0.0.1 - - [15/Jun/2026 19:51:37] "POST /tts HTTP/1.1" 200 -
+2026-06-15 19:51:39,437 | INFO | 127.0.0.1 - - [15/Jun/2026 19:51:39] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-06-15 19:51:44,346 | INFO | 127.0.0.1 - - [15/Jun/2026 19:51:44] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 19:54:41,206 | INFO | [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.4:5000
+2026-06-15 19:54:41,206 | INFO | [33mPress CTRL+C to quit[0m
+2026-06-15 19:54:43,097 | INFO | 127.0.0.1 - - [15/Jun/2026 19:54:43] "GET / HTTP/1.1" 200 -
+2026-06-15 19:54:43,211 | INFO | 127.0.0.1 - - [15/Jun/2026 19:54:43] "GET /logo HTTP/1.1" 200 -
+2026-06-15 19:54:43,579 | INFO | 127.0.0.1 - - [15/Jun/2026 19:54:43] "GET /greet HTTP/1.1" 200 -
+2026-06-15 19:54:43,835 | INFO | 127.0.0.1 - - [15/Jun/2026 19:54:43] "GET /chats HTTP/1.1" 200 -
+2026-06-15 19:54:58,273 | INFO | 127.0.0.1 - - [15/Jun/2026 19:54:58] "POST /ask HTTP/1.1" 200 -
+2026-06-15 19:54:58,473 | INFO | 127.0.0.1 - - [15/Jun/2026 19:54:58] "GET /chats HTTP/1.1" 200 -
+2026-06-15 19:55:06,072 | INFO | 127.0.0.1 - - [15/Jun/2026 19:55:06] "POST /tts HTTP/1.1" 200 -
+2026-06-15 19:55:06,476 | INFO | 127.0.0.1 - - [15/Jun/2026 19:55:06] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-06-15 19:55:11,692 | INFO | 127.0.0.1 - - [15/Jun/2026 19:55:11] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 19:55:38,631 | INFO | 127.0.0.1 - - [15/Jun/2026 19:55:38] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 19:55:38,637 | INFO | 127.0.0.1 - - [15/Jun/2026 19:55:38] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 19:55:38,644 | INFO | 127.0.0.1 - - [15/Jun/2026 19:55:38] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 20:03:23,134 | INFO | [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.4:5000
+2026-06-15 20:03:23,134 | INFO | [33mPress CTRL+C to quit[0m
+2026-06-15 20:03:25,551 | INFO | 127.0.0.1 - - [15/Jun/2026 20:03:25] "GET / HTTP/1.1" 200 -
+2026-06-15 20:03:25,658 | INFO | 127.0.0.1 - - [15/Jun/2026 20:03:25] "GET /logo HTTP/1.1" 200 -
+2026-06-15 20:03:25,731 | INFO | 127.0.0.1 - - [15/Jun/2026 20:03:25] "GET /greet HTTP/1.1" 200 -
+2026-06-15 20:03:25,932 | INFO | 127.0.0.1 - - [15/Jun/2026 20:03:25] "GET /chats HTTP/1.1" 200 -
+2026-06-15 20:03:26,257 | INFO | 127.0.0.1 - - [15/Jun/2026 20:03:26] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-06-15 20:03:29,348 | INFO | 127.0.0.1 - - [15/Jun/2026 20:03:29] "POST /ask HTTP/1.1" 200 -
+2026-06-15 20:03:29,543 | INFO | 127.0.0.1 - - [15/Jun/2026 20:03:29] "GET /chats HTTP/1.1" 200 -
+2026-06-15 20:03:30,936 | INFO | 127.0.0.1 - - [15/Jun/2026 20:03:30] "POST /tts HTTP/1.1" 200 -
+2026-06-15 20:03:31,458 | INFO | 127.0.0.1 - - [15/Jun/2026 20:03:31] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-06-15 20:03:43,890 | INFO | 127.0.0.1 - - [15/Jun/2026 20:03:43] "POST /ask HTTP/1.1" 200 -
+2026-06-15 20:03:44,179 | INFO | 127.0.0.1 - - [15/Jun/2026 20:03:44] "GET /chats HTTP/1.1" 200 -
+2026-06-15 20:03:51,901 | INFO | 127.0.0.1 - - [15/Jun/2026 20:03:51] "POST /tts HTTP/1.1" 200 -
+2026-06-15 20:03:55,787 | INFO | 127.0.0.1 - - [15/Jun/2026 20:03:55] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 20:05:43,244 | INFO | [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.4:5000
+2026-06-15 20:05:43,244 | INFO | [33mPress CTRL+C to quit[0m
+2026-06-15 20:05:45,137 | INFO | 127.0.0.1 - - [15/Jun/2026 20:05:45] "GET / HTTP/1.1" 200 -
+2026-06-15 20:05:45,253 | INFO | 127.0.0.1 - - [15/Jun/2026 20:05:45] "GET /logo HTTP/1.1" 200 -
+2026-06-15 20:05:45,602 | INFO | 127.0.0.1 - - [15/Jun/2026 20:05:45] "GET /greet HTTP/1.1" 200 -
+2026-06-15 20:05:45,859 | INFO | 127.0.0.1 - - [15/Jun/2026 20:05:45] "GET /chats HTTP/1.1" 200 -
+2026-06-15 20:06:00,466 | INFO | 127.0.0.1 - - [15/Jun/2026 20:06:00] "POST /ask HTTP/1.1" 200 -
+2026-06-15 20:06:00,688 | INFO | 127.0.0.1 - - [15/Jun/2026 20:06:00] "GET /chats HTTP/1.1" 200 -
+2026-06-15 20:06:04,069 | INFO | 127.0.0.1 - - [15/Jun/2026 20:06:04] "POST /tts HTTP/1.1" 200 -
+2026-06-15 20:06:04,454 | INFO | 127.0.0.1 - - [15/Jun/2026 20:06:04] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-06-15 20:06:30,185 | INFO | 127.0.0.1 - - [15/Jun/2026 20:06:30] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 20:26:18,599 | INFO | [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.4:5000
+2026-06-15 20:26:18,599 | INFO | [33mPress CTRL+C to quit[0m
+2026-06-15 20:26:21,157 | INFO | 127.0.0.1 - - [15/Jun/2026 20:26:21] "GET / HTTP/1.1" 200 -
+2026-06-15 20:26:21,303 | INFO | 127.0.0.1 - - [15/Jun/2026 20:26:21] "GET /logo HTTP/1.1" 200 -
+2026-06-15 20:26:21,390 | INFO | 127.0.0.1 - - [15/Jun/2026 20:26:21] "GET /greet HTTP/1.1" 200 -
+2026-06-15 20:26:21,625 | INFO | 127.0.0.1 - - [15/Jun/2026 20:26:21] "GET /chats HTTP/1.1" 200 -
+2026-06-15 20:26:21,992 | INFO | 127.0.0.1 - - [15/Jun/2026 20:26:21] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-06-15 20:26:48,925 | INFO | 127.0.0.1 - - [15/Jun/2026 20:26:48] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 20:27:58,596 | INFO | [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.4:5000
+2026-06-15 20:27:58,596 | INFO | [33mPress CTRL+C to quit[0m
+2026-06-15 20:28:00,406 | INFO | 127.0.0.1 - - [15/Jun/2026 20:28:00] "GET / HTTP/1.1" 200 -
+2026-06-15 20:28:00,497 | INFO | 127.0.0.1 - - [15/Jun/2026 20:28:00] "[36mGET /logo HTTP/1.1[0m" 304 -
+2026-06-15 20:28:00,807 | INFO | 127.0.0.1 - - [15/Jun/2026 20:28:00] "GET /greet HTTP/1.1" 200 -
+2026-06-15 20:28:00,989 | INFO | 127.0.0.1 - - [15/Jun/2026 20:28:00] "GET /chats HTTP/1.1" 200 -
+2026-06-15 20:28:08,532 | INFO | 127.0.0.1 - - [15/Jun/2026 20:28:08] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 20:28:08,538 | INFO | 127.0.0.1 - - [15/Jun/2026 20:28:08] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-15 20:28:08,540 | INFO | 127.0.0.1 - - [15/Jun/2026 20:28:08] "POST /stop_speech HTTP/1.1" 200 -

@@ -20,12 +20,15 @@ def _md_to_html(text):
                 '<span class="code-lang">%s</span>%s</div>'
                 '<pre><code>%s</code></pre></div>') % (lang, btn, code)
     return _re.sub(r'```(\w*)\n([\s\S]*?)```', repl, text)
-
 try:
     import requests as _req
 except ImportError:
     _req = None
 
+try:
+    import pandas as _pd
+except ImportError:
+    _pd = None
 app = Flask(__name__)
 BASE = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.join(BASE, "uploads")
@@ -106,7 +109,7 @@ _tlocal = threading.local()
 
 def _cap(text):
     try:
-        assistant._remember_turn("smith", text)
+        assistant._remember_turn("assistant", text)
     except:
         pass
     buf = getattr(_tlocal, 'capture', None)
@@ -404,7 +407,7 @@ animation:spFI .6s .3s ease both;
 /* layout */
 .side{width:260px;background:var(--side);display:flex;flex-direction:column;
   padding:14px 10px;flex-shrink:0;border-right:1px solid var(--bdr);overflow-y:auto;}
-.side-logo{width:52px;height:52px;border-radius:50%;object-fit:cover;
+.side-logo{width:90px;height:90px;border-radius:50%;object-fit:cover;
   border:2px solid var(--bdr);display:block;margin:0 auto 6px;}
 .brand{font-size:20px;font-weight:700;padding:8px 10px 14px;color:var(--acc);}
 .item{display:flex;align-items:center;gap:10px;width:100%;cursor:pointer;
@@ -602,6 +605,20 @@ body{
       onmouseleave="this.style.background='transparent'">
       &#128300; Deep Research mode
     </button>
+    <button onclick="document.getElementById('da').click();togglePlusMenu();"
+      style="display:flex;align-items:center;gap:10px;width:100%;background:transparent;
+      border:0;color:var(--txt);cursor:pointer;padding:10px 14px;border-radius:8px;font-size:14px;"
+      onmouseenter="this.style.background='var(--act)'"
+      onmouseleave="this.style.background='transparent'">
+      &#128202; Analyze Data
+    </button>
+    <button onclick="toggleMemory();togglePlusMenu();"
+      style="display:flex;align-items:center;gap:10px;width:100%;background:transparent;
+      border:0;color:var(--txt);cursor:pointer;padding:10px 14px;border-radius:8px;font-size:14px;"
+      onmouseenter="this.style.background='var(--act)'"
+      onmouseleave="this.style.background='transparent'">
+      &#129504; Memory
+    </button>
   </div>
   <div class="pill">
     <button class="ib" id="plusBtn" onclick="togglePlusMenu()">
@@ -615,19 +632,36 @@ body{
       <span onclick="toggleResearch()" style="cursor:pointer;opacity:0.7;font-size:11px;">&#10005; turn off</span>
     </div>
     <textarea id="bx" rows="1" placeholder="Message ANAME..."
-      oninput="grow(this)" onkeydown="key(event)"></textarea>
-    <button class="ib" id="mc" onclick="mic()">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-        stroke-width="2" stroke-linecap="round">
+      oninput="grow(this);updateSendBtn()" onkeydown="key(event)"></textarea>
+    <button class="sb" id="sendMicBtn" onclick="sendOrMic()">
+      <svg id="micSvg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-        <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4"/></svg></button>
-    <button class="sb" onclick="send()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-        stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4"/></svg>
+      <svg id="sendSvg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+        <path d="M12 19V5M5 12l7-7 7 7"/></svg>
+    </button>
   </div>
-  <input type="file" id="fi" hidden onchange="upload()">
+  <input type="file" id="fi" hidden onchange="upload()" accept="image/*,video/*,.pdf,.csv,.xlsx,.xls,.txt,.py,.js,.html,.md">
+  <input type="file" id="da" hidden accept=".csv,.xlsx,.xls" onchange="analyzeData()">
   <div class="hint">ANAME &middot; Enter to send</div>
+</div>
+<div id="memPanel" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:#1e1e24;border:1px solid var(--bdr);border-radius:16px;padding:24px;
+  z-index:9999;width:380px;max-width:90vw;box-shadow:0 16px 48px rgba(0,0,0,.6);">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <span style="font-size:16px;font-weight:600;">&#129504; Neo's Memory</span>
+    <button onclick="document.getElementById('memPanel').style.display='none'"
+      style="background:transparent;border:0;color:var(--txt);cursor:pointer;font-size:18px;">&#10005;</button>
+  </div>
+  <div id="memList" style="max-height:200px;overflow-y:auto;margin-bottom:14px;font-size:13px;color:#aaa;"></div>
+  <div style="display:flex;gap:8px;margin-bottom:10px;">
+    <input id="memInput" placeholder="Add a memory..." style="flex:1;background:#2a2a30;border:1px solid var(--bdr);
+      border-radius:8px;padding:8px 12px;color:var(--txt);font-size:13px;outline:none;">
+    <button onclick="addMemory()" style="background:var(--grn);border:0;border-radius:8px;
+      padding:8px 14px;color:#000;font-weight:600;cursor:pointer;font-size:13px;">Save</button>
+  </div>
+  <button onclick="clearMemory()" style="width:100%;background:transparent;border:1px solid #c0392b;
+    border-radius:8px;padding:8px;color:#c0392b;cursor:pointer;font-size:13px;">Clear all memories</button>
 </div>
 </main>
 <script>
@@ -861,6 +895,50 @@ function addActions(m,text,who){
 
 function grow(t){t.style.height='auto';t.style.height=Math.min(t.scrollHeight,160)+'px';}
 let plusMenuOpen=false;
+async function toggleMemory(){
+  const panel=document.getElementById('memPanel');
+  panel.style.display='flex';panel.style.flexDirection='column';
+  const r=await fetch('/memory');const d=await r.json();
+  renderMems(d.memories||[]);
+}
+function renderMems(mems){
+  const el=document.getElementById('memList');
+  if(!mems.length){el.innerHTML='<i>No memories yet.</i>';return;}
+  el.innerHTML=mems.map((m,i)=>'<div style="padding:6px 0;border-bottom:1px solid #333;">'+
+    escHtml(m)+'</div>').join('');
+}
+async function addMemory(){
+  const inp=document.getElementById('memInput');
+  const fact=inp.value.trim();if(!fact)return;
+  inp.value='';
+  const r=await fetch('/memory',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({action:'save',fact:fact})});
+  const d=await r.json();renderMems(d.memories||[]);
+}
+async function clearMemory(){
+  if(!confirm('Clear all memories?'))return;
+  const r=await fetch('/memory',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({action:'clear'})});
+  const d=await r.json();renderMems(d.memories||[]);
+}
+async function analyzeData(){
+  const da=document.getElementById('da');
+  if(!da.files.length)return;
+  const file=da.files[0];
+  const html='<span class="chip">&#128202; '+file.name+'</span>';
+  const{m:um}=addMsg(html,'user');
+  addActions(um,file.name,'user');
+  const t=typing();
+  const fd=new FormData();
+  fd.append('file',file);
+  try{
+    const r=await fetch('/analyze',{method:'POST',body:fd});
+    const d=await r.json();t.remove();
+    const{m:bm}=addMsg(d.reply||'(No result)','bot');
+    addActions(bm,d.reply||'','bot');
+  }catch(e){t.remove();addMsg('(Analysis failed)','bot');}
+  da.value='';
+}
 let researchMode=false;
 function toggleResearch(){
   researchMode=!researchMode;
@@ -904,7 +982,7 @@ async function send(){
   const q=isResearch?(text.toLowerCase().startsWith('research:')?text.slice(9).trim():text):null;
   if(isResearch){
     const{m:um}=addMsg(escHtml(text),'user');
-    addActions(um,text,'user');bx.value='';grow(bx);
+    addActions(um,text,'user');bx.value='';grow(bx);updateSendBtn();
     if(researchMode){toggleResearch();}
     const t=typing();
     try{const r=await fetch('/research',{method:'POST',headers:{'Content-Type':'application/json'},
@@ -932,6 +1010,7 @@ const t=typing(isImg);
       sb.style.cursor='pointer';
       bx.style.opacity='1';
     }else{
+      speakElevenLabs(d.reply||'...');
       stream(d.reply||'...','bot',(m,txt)=>{
         addActions(m,txt,'bot');
         isBusy=false;
@@ -1011,12 +1090,38 @@ function newChat(){
   greet();}
 
 let rec=null;
+let _ttsAudio=null;
+
+function updateSendBtn(){
+  const hasText=bx.value.trim().length>0;
+  const ms=document.getElementById('micSvg');
+  const ss=document.getElementById('sendSvg');
+  if(ms)ms.style.display=hasText?'none':'';
+  if(ss)ss.style.display=hasText?'':'none';
+}
+
+function sendOrMic(){
+  if(bx.value.trim().length>0){send();}else{mic();}
+}
+
+async function speakElevenLabs(text){
+  if(_ttsAudio){_ttsAudio.pause();_ttsAudio=null;}
+  try{
+    const r=await fetch('/tts',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text:text.slice(0,5000)})});
+    if(!r.ok)return;
+    const blob=await r.blob();
+    _ttsAudio=new Audio(URL.createObjectURL(blob));
+    _ttsAudio.play();
+  }catch(e){console.error('TTS error',e);}
+}
+
 function mic(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){addMsg('(Mic needs Chrome)','bot');return;}
-  const btn=document.getElementById('mc');if(rec){rec.stop();return;}
+  const btn=document.getElementById('sendMicBtn');if(rec){rec.stop();return;}
   rec=new SR();rec.lang='en-IN';rec.interimResults=false;btn.classList.add('live');
-  rec.onresult=e=>{bx.value=e.results[0][0].transcript;send();};
+  rec.onresult=e=>{bx.value=e.results[0][0].transcript;updateSendBtn();send();};
   rec.onend=()=>{btn.classList.remove('live');rec=null;};
   rec.onerror=()=>{btn.classList.remove('live');rec=null;};rec.start();}
 
@@ -1384,10 +1489,15 @@ Previous topic:
 Do NOT ask again what topic the user wants.
 """
 
+            try:
+                assistant._recent_turns.clear()
+            except:
+                pass
             assistant.answer(msg)
 
         except Exception as e:
-
+            import traceback;
+            traceback.print_exc()
             _capture.append("(Error: %s)" % e)
 
         reply = "\n\n".join(_capture) or "..."
@@ -1434,6 +1544,65 @@ def research_route():
     reply = _md_to_html(reply)
     cid = body.get("chat_id") or uuid.uuid4().hex[:12]
     return jsonify({"reply": reply, "chat_id": cid})
+
+@app.route("/analyze", methods=["POST"])
+def analyze_route():
+    if not _current_user():
+        return jsonify({"error": "login"}), 401
+    f = request.files.get("file")
+    if not f:
+        return jsonify({"reply": "No file received."})
+    fname = f.filename.lower()
+    if not _pd:
+        return jsonify({"reply": "pandas not installed. Run: pip install pandas openpyxl"})
+    try:
+        if fname.endswith(".csv"):
+            df = _pd.read_csv(f)
+        elif fname.endswith((".xlsx", ".xls")):
+            df = _pd.read_excel(f)
+        else:
+            return jsonify({"reply": "Only CSV and Excel files are supported."})
+        rows, cols = df.shape
+        col_list = ", ".join(df.columns.tolist()[:20])
+        sample = df.head(5).to_string(index=False)
+        stats = df.describe(include="all").to_string()
+        prompt = ("Analyze this dataset and give a clear, structured report.\n\n"
+                  "File: %s\nRows: %d | Columns: %d\nColumn names: %s\n\n"
+                  "Sample (first 5 rows):\n%s\n\nSummary stats:\n%s\n\n"
+                  "Include: what the data is about, key insights, patterns, anomalies, "
+                  "and 3 recommendations based on the data.") % (f.filename, rows, cols, col_list, sample, stats)
+        hdrs = {"Authorization": "Bearer %s" % assistant.GITHUB_TOKEN,
+                "Content-Type": "application/json"}
+        pl = {"model": assistant.GITHUB_MODEL, "max_tokens": 1500,
+              "messages": [
+                  {"role": "system", "content": "You are a data analyst. Give clear, insightful analysis."},
+                  {"role": "user", "content": prompt}]}
+        r = _req.post("https://models.inference.ai.azure.com/chat/completions",
+                      headers=hdrs, json=pl, timeout=60)
+        if r.status_code == 200:
+            reply = r.json()["choices"][0]["message"]["content"].strip()
+            reply = _md_to_html(reply)
+            return jsonify({"reply": reply})
+        return jsonify({"reply": "(Analysis failed: API error %d)" % r.status_code})
+    except Exception as e:
+        return jsonify({"reply": "(Analysis error: %s)" % e})
+@app.route("/memory", methods=["GET","POST"])
+def memory_route():
+    if not _current_user():
+        return jsonify({"error": "login"}), 401
+    if request.method == "GET":
+        return jsonify({"memories": assistant.get_memory()})
+    body = request.json or {}
+    action = body.get("action", "")
+    if action == "save":
+        fact = body.get("fact", "").strip()
+        if fact:
+            assistant.save_memory(fact)
+        return jsonify({"ok": True, "memories": assistant.get_memory()})
+    if action == "clear":
+        assistant.clear_memory()
+        return jsonify({"ok": True, "memories": []})
+    return jsonify({"error": "unknown action"})
 @app.route("/screenshot", methods=["POST"])
 def web_screenshot():
     import time
@@ -1455,7 +1624,27 @@ def speak_route():
     if text: web_speak(text)
     return jsonify({"done": True})
 
-
+@app.route("/tts", methods=["POST"])
+def tts_route():
+    text = (request.json or {}).get("text", "").strip()
+    if not text: return jsonify({"error": "no text"}), 400
+    key = os.getenv("ELEVENLABS_API_KEY", "")
+    voice_id = os.getenv("ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnSDxMaL")
+    if not key: return jsonify({"error": "no api key"}), 400
+    if not _req: return jsonify({"error": "no requests lib"}), 500
+    try:
+        from flask import Response
+        r = _req.post(
+            "https://api.elevenlabs.io/v1/text-to-speech/%s" % voice_id,
+            headers={"xi-api-key": key, "Content-Type": "application/json"},
+            json={"text": text, "model_id": "eleven_multilingual_v2",
+                  "voice_settings": {"stability": 0.5, "similarity_boost": 0.8}},
+            timeout=30)
+        if r.status_code == 200:
+            return Response(r.content, mimetype="audio/mpeg")
+        return jsonify({"error": "ElevenLabs %d" % r.status_code}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 @app.route("/stop_speech", methods=["POST", "GET"])
 def stop_speech_route():
     stop_speaking()
@@ -1539,7 +1728,13 @@ def main():
     print("  Phone/WiFi:  http://%s:5000" % ip)
     print("  Ctrl+C to stop")
     print("=" * 56 + "\n")
-    app.run(host="0.0.0.0", port=5000, threaded=True)
+    import ssl
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    try:
+        ctx.load_cert_chain("cert.pem", "key.pem")
+        app.run(host="0.0.0.0", port=5000, threaded=True, ssl_context=ctx)
+    except FileNotFoundError:
+        app.run(host="0.0.0.0", port=5000, threaded=True)
 
 
 if __name__ == "__main__":
