@@ -48,7 +48,36 @@ load_dotenv()
 ASSISTANT_NAME = "Assist Neo"     # what your assistant is called
 USER_NAME = "Yuvan"           # it will address you by this name
 MEMORY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "memory.json")
+_NEO_MEMORY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "neo_memory.json")
 
+def _load_memory():
+    try:
+        with open(_NEO_MEMORY_FILE, "r", encoding="utf-8") as f:
+            import json as _j; return _j.load(f)
+    except:
+        return []
+
+def save_memory(fact):
+    import json as _j
+    mems = _load_memory()
+    if fact.strip() and fact.strip() not in mems:
+        mems.append(fact.strip())
+        with open(_NEO_MEMORY_FILE, "w", encoding="utf-8") as f:
+            _j.dump(mems, f, indent=2)
+
+def get_memory():
+    return _load_memory()
+
+def clear_memory():
+    import json as _j
+    with open(_NEO_MEMORY_FILE, "w", encoding="utf-8") as f:
+        _j.dump([], f)
+
+def _memory_context():
+    mems = _load_memory()
+    if not mems:
+        return ""
+    return "\n\nThings you remember about the user:\n" + "\n".join("- " + m for m in mems)
 # ---- Soft, gentle voice -------------------------------------------
 SPEAK_REPLIES = True   # speak answers out loud
 SPEAK_ALERTS = True    # speak background alerts (email, activity, etc.)
@@ -338,7 +367,8 @@ def save_memory(mem: dict) -> None:
 
 
 def user_name() -> str:
-    return (load_memory().get("name") or USER_NAME or "").strip()
+    mem = load_memory()
+    return ((mem.get("name") if isinstance(mem, dict) else "") or USER_NAME or "").strip()
 
 
 def _after(text: str, prefixes) -> str:
@@ -479,25 +509,6 @@ def handle_personal(text: str) -> bool:
 
     return False
 
-
-# ====================================================================
-#  ASKING:  open / answer / search
-# ====================================================================
-def is_big_question(question: str) -> bool:
-    if len(question.split()) > BIG_QUESTION_WORDS:
-        return True
-    low = question.lower()
-    return any(t in low for t in SEARCH_TRIGGER_WORDS)
-
-
-def search_in_chrome(question: str) -> None:
-    url = SEARCH_ENGINE + urllib.parse.quote(question)
-    try:
-        webbrowser.get(CHROME_PATH).open(url)
-    except Exception:
-        webbrowser.open(url)
-
-
 def ask_gemini(question: str) -> str:
     """Ask Gemini and return its answer."""
     try:
@@ -544,6 +555,7 @@ def ask_github_models(question: str, with_context: bool = False) -> str:
                     "- use proper LaTeX\n"
                     "- use $$ equation $$ blocks\n"
                     "- do NOT escape backslashes\n"
+                    + _memory_context()
                 )
             }
         ]
@@ -598,7 +610,6 @@ def ask_github_models(question: str, with_context: bool = False) -> str:
     except Exception as e:
         log.warning("GitHub Models failed: %s", e)
         return ""
-
 def analyze_and_pick(question: str, ans1: str, ans2: str) -> str:
     """Send both answers to GPT and get the best combined answer."""
     if not ans1 and not ans2:
@@ -657,6 +668,25 @@ Just give the best final answer directly.
         return ans1
 
 
+def ask_ollama(question: str) -> str:
+    """Ask the local Ollama model as a fallback."""
+    if not USE_AI_BRAIN:
+        return ""
+    try:
+        import json, urllib.request
+        payload = json.dumps({
+            "model": AI_MODEL,
+            "prompt": question,
+            "stream": False
+        }).encode()
+        req = urllib.request.Request(
+            OLLAMA_URL, data=payload,
+            headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            return json.loads(r.read().decode()).get("response", "").strip()
+    except Exception as e:
+        log.warning("Ollama failed: %s", e)
+        return ""
 def ask_ai_brain(question: str, with_context: bool = False) -> str:
     """Ask Hermes first, then GitHub+Gemini."""
 
@@ -689,6 +719,9 @@ def ask_ai_brain(question: str, with_context: bool = False) -> str:
         results["gpt"],
         results["gemini"]
     )
+
+    if not final or final == "Both AIs failed to answer.":
+        final = ask_ollama(question)
 
     _remember_turn("you", question)
     _remember_turn("smith", final)

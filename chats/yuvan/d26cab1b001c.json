@@ -1,0 +1,15 @@
+{
+  "id": "d26cab1b001c",
+  "title": "hi",
+  "ts": 1781531921,
+  "messages": [
+    {
+      "role": "user",
+      "text": "hi"
+    },
+    {
+      "role": "smith",
+      "text": "(Error: 'str' object has no attribute 'get')"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "7fb4e2163978",
+  "title": "what is coding",
+  "ts": 1781533498,
+  "messages": [
+    {
+      "role": "user",
+      "text": "what is coding"
+    },
+    {
+      "role": "smith",
+      "text": "Coding, also known as programming, is the process of writing instructions for computers using a programming language. These instructions tell the computer what to do, enabling it to perform tasks such as calculations, data processing, and automation. Coding is essential for creating software, apps, and websites. Would you like to know more about a specific programming language or concept?"
+    }
+  ]
+}
