@@ -1,0 +1,15 @@
+{
+  "id": "2af1d060bebf",
+  "title": "give me the test code for esp32",
+  "ts": 1781511194,
+  "messages": [
+    {
+      "role": "user",
+      "text": "give me the test code for esp32"
+    },
+    {
+      "role": "smith",
+      "text": "Sure! Here’s a simple test code for the ESP32 that blinks an LED connected to GPIO 2:\n\n```cpp\nvoid setup() {\n  pinMode(2, OUTPUT); // Initialize GPIO 2 as an output\n}\n\nvoid loop() {\n  digitalWrite(2, HIGH); // Turn the LED on\n  delay(1000);           // Wait for a second\n  digitalWrite(2, LOW);  // Turn the LED off\n  delay(1000);           // Wait for a second\n}\n```\n\nYou can upload this code using the Arduino IDE. Let me know if you need more details or explanations!"
+    }
+  ]
+}

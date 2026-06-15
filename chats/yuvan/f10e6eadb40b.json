@@ -1,0 +1,23 @@
+{
+  "id": "f10e6eadb40b",
+  "title": "what is coding",
+  "ts": 1781511985,
+  "messages": [
+    {
+      "role": "user",
+      "text": "what is coding"
+    },
+    {
+      "role": "smith",
+      "text": "Coding, also known as programming, is the process of creating instructions for computers to execute. These instructions are written in programming languages, which have their own syntax and rules. Coding allows us to build software, applications, and websites, enabling various functionalities and interactions in the digital world. Would you like to know more about a specific aspect of coding?"
+    },
+    {
+      "role": "user",
+      "text": "give me a maths proble"
+    },
+    {
+      "role": "smith",
+      "text": "Sure! Here's a math problem for you:\n\nSolve for \\( x \\) in the equation:\n\n$$ 2x + 3 = 11 $$\n\nWhat do you think the value of \\( x \\) is? Let me know if you need help solving it!"
+    }
+  ]
+}
