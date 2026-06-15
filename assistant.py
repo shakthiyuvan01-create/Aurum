@@ -294,7 +294,7 @@ _recent_turns: list = []
 
 def _remember_turn(role: str, text: str) -> None:
     _recent_turns.append((role, text))
-    del _recent_turns[:-8]  # keep only the last 8 turns
+    del _recent_turns[:-20]  # keep last 20 turns
 
 
 def say(text: str) -> None:
@@ -504,7 +504,13 @@ def ask_gemini(question: str) -> str:
         headers = {"Content-Type": "application/json"}
         payload = {
             "contents": [{
-                "parts": [{"text": question}]
+                "parts": [{"text": (
+                    "\n".join(
+                        ("User: " if r == "you" else "Assistant: ") + t
+                        for r, t in _recent_turns[-10:]
+                    ) + "\nUser: " + question
+                    if _recent_turns else question
+                )}]
             }]
         }
         url = f"{GEMINI_URL}?key={GEMINI_API_KEY}"
@@ -543,7 +549,7 @@ def ask_github_models(question: str, with_context: bool = False) -> str:
         ]
         if with_context and _recent_turns:
             conversation = ""
-            for role, txt in _recent_turns[-6:]:
+            for role, txt in _recent_turns[-14:]:
                 if role == "you":
                     conversation += f"User: {txt}\n"
                 else:
@@ -573,7 +579,7 @@ def ask_github_models(question: str, with_context: bool = False) -> str:
             "messages": messages,
             "model": GITHUB_MODEL,
             "temperature": 0.7,
-            "max_tokens": 300
+            "max_tokens": 1500,
         }
         response = requests.post(
             "https://models.inference.ai.azure.com/chat/completions",
@@ -636,7 +642,7 @@ Just give the best final answer directly.
                 }
             ],
             "model": GITHUB_MODEL,
-            "max_tokens": 500
+            "max_tokens": 1500
         }
         r = requests.post(
             "https://models.inference.ai.azure.com/chat/completions",
@@ -763,52 +769,32 @@ def _extract_image_path(text: str) -> str:
 
 
 def create_image(prompt: str) -> str:
-    import os
-    import time
-    import requests
-    import urllib.parse
+    import os, time, requests, urllib.parse
 
-    try:
-        os.makedirs(IMAGE_SAVE_FOLDER, exist_ok=True)
+    os.makedirs(IMAGE_SAVE_FOLDER, exist_ok=True)
+    out = os.path.join(IMAGE_SAVE_FOLDER, f"image_{int(time.time())}.png")
 
-        url = (
-            "https://image.pollinations.ai/prompt/"
-            + urllib.parse.quote(prompt)
-            + "?model=flux&width=1024&height=1024&nologo=true"
-        )
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/137.0 Safari/537.36"}
 
-        out = os.path.join(
-            IMAGE_SAVE_FOLDER,
-            f"image_{int(time.time())}.png"
-        )
+    urls = [
+        "https://image.pollinations.ai/prompt/" + urllib.parse.quote(prompt) + "?width=1024&height=1024&nologo=true&seed=" + str(int(time.time())),
+        "https://image.pollinations.ai/prompt/" + urllib.parse.quote(prompt) + "?model=flux&width=1024&height=1024&nologo=true",
+        "https://image.pollinations.ai/prompt/" + urllib.parse.quote(prompt),
+    ]
 
-        headers = {
-            "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 Chrome/137.0 Safari/537.36"
-            )
-        }
+    for url in urls:
+        try:
+            r = requests.get(url, headers=headers, timeout=120)
+            print("Image status:", r.status_code)
+            if r.status_code == 200 and len(r.content) > 1000:
+                with open(out, "wb") as f:
+                    f.write(r.content)
+                return out
+        except Exception as e:
+            print("IMAGE ERROR:", repr(e))
+            continue
 
-        response = requests.get(
-            url,
-            headers=headers,
-            timeout=180
-        )
-
-        print("Status:", response.status_code)
-
-        if response.status_code != 200:
-            print(response.text)
-            return None
-
-        with open(out, "wb") as f:
-            f.write(response.content)
-
-        return out
-
-    except Exception as e:
-        print("IMAGE ERROR:", repr(e))
-        return None
+    return None
 
 def describe_image(path: str) -> None:
     """Describe what's in an image using the local vision model."""

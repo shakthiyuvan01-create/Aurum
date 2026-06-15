@@ -1,0 +1,15 @@
+{
+  "id": "8c639a5dfa21",
+  "title": "give me the test code of esp 32]",
+  "ts": 1781510636,
+  "messages": [
+    {
+      "role": "user",
+      "text": "give me the test code of esp 32]"
+    },
+    {
+      "role": "smith",
+      "text": "Sure! Here’s a simple test code for the ESP32 that connects to a Wi-Fi network and prints the IP address:\n\n```cpp\n#include <WiFi.h>\n\nconst char* ssid = \"your_SSID\"; // Replace with your network SSID\nconst char* password = \"your_PASSWORD\"; // Replace with your network password\n\nvoid setup() {\n  Serial.begin(115200);\n  WiFi.begin(ssid, password);\n  \n  while (WiFi.status() != WL_CONNECTED) {\n    delay(1000);\n    Serial.println(\"Connecting to WiFi...\");\n  }\n\n  Serial.println(\"Connected to WiFi!\");\n  Serial.print(\"IP Address: \");\n  Serial.println(WiFi.localIP());\n}\n\nvoid loop() {\n  // Your code here\n}\n```\n\nMake sure to replace `\"your_SSID\"` and `\"your_PASSWORD\"` with your actual Wi-Fi credentials. Would you like a step-by-step explanation of how to upload this code to your ESP32?"
+    }
+  ]
+}

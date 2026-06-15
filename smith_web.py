@@ -6,6 +6,20 @@ import os, base64, threading, webbrowser, urllib.parse, uuid, json, subprocess, 
 
 from flask import Flask, request, jsonify, send_from_directory, session, redirect
 import assistant
+import re as _re
+
+def _md_to_html(text):
+    def repl(m):
+        lang = (m.group(1) or 'code').upper()
+        code = (m.group(2).strip()
+                .replace('&', '&amp;')
+                .replace('<', '&lt;')
+                .replace('>', '&gt;'))
+        btn = ('<button class="code-copy-btn" onclick="copyCode(this)">Copy</button>')
+        return ('<div class="code-block"><div class="code-header">'
+                '<span class="code-lang">%s</span>%s</div>'
+                '<pre><code>%s</code></pre></div>') % (lang, btn, code)
+    return _re.sub(r'```(\w*)\n([\s\S]*?)```', repl, text)
 
 try:
     import requests as _req
@@ -87,6 +101,7 @@ assistant.speak = web_speak
 # ── capture ──────────────────────────────────────────────────────
 _capture = []
 _lock = threading.Lock()
+_tlocal = threading.local()
 
 
 def _cap(text):
@@ -94,7 +109,11 @@ def _cap(text):
         assistant._remember_turn("smith", text)
     except:
         pass
-    _capture.append(text)
+    buf = getattr(_tlocal, 'capture', None)
+    if buf is not None:
+        buf.append(text)
+    else:
+        _capture.append(text)
 
 
 assistant.say = _cap
@@ -177,7 +196,72 @@ _IMG_MIME = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg",
 _TXT_EXTS = ("txt", "py", "c", "cpp", "h", "ino", "md", "csv", "json", "log",
              "js", "html", "css", "java", "xml", "yaml", "yml", "ts")
 
+def _deep_research(query):
+    if not _req:
+        return "Install requests: pip install requests"
+    hdrs = {"Authorization": "Bearer %s" % assistant.GITHUB_TOKEN,
+            "Content-Type": "application/json"}
 
+    # Step 1: generate sub-queries
+    sub_queries = [query]
+    try:
+        pl = {"model": assistant.GITHUB_MODEL, "max_tokens": 150,
+              "messages": [{"role": "user",
+                "content": ("Give 3 different search queries to research this topic.\n"
+                            "Topic: %s\nReply with ONLY the 3 queries, one per line.") % query}]}
+        r = _req.post("https://models.inference.ai.azure.com/chat/completions",
+                      headers=hdrs, json=pl, timeout=20)
+        if r.status_code == 200:
+            lines = r.json()["choices"][0]["message"]["content"].strip().split("\n")
+            sub_queries += [l.strip() for l in lines if l.strip()][:3]
+    except:
+        pass
+
+    # Step 2: search each sub-query
+    all_results = []
+    if WEB_SEARCH_KEY:
+        seen = set()
+        for sq in sub_queries[:4]:
+            for res in _do_search(sq):
+                url = res.get("url", "")
+                if url not in seen:
+                    seen.add(url)
+                    all_results.append(res)
+
+    # Step 3: synthesize
+    if all_results:
+        ctx = ""
+        sources = []
+        for i, res in enumerate(all_results[:8], 1):
+            ctx += "[%d] %s\n%s\n\n" % (i, res.get("title",""), res.get("content","")[:600])
+            sources.append((i, res.get("title",""), res.get("url","")))
+        prompt = ("Write a detailed research report on: %s\n\n"
+                  "Sources:\n%s\n\n"
+                  "Use clear sections and headers. Cite sources as [1],[2] etc.") % (query, ctx)
+    else:
+        prompt = ("Write a detailed research report on: %s\n\n"
+                  "Include overview, key facts, important details, and a conclusion. "
+                  "Use clear section headers.") % query
+
+    try:
+        pl = {"model": assistant.GITHUB_MODEL, "max_tokens": 1500,
+              "messages": [
+                  {"role": "system", "content": "You are a research analyst. Write well-structured, accurate reports."},
+                  {"role": "user", "content": prompt}]}
+        r = _req.post("https://models.inference.ai.azure.com/chat/completions",
+                      headers=hdrs, json=pl, timeout=60)
+        if r.status_code == 200:
+            report = r.json()["choices"][0]["message"]["content"].strip()
+            if sources:
+                report += "\n\n---\n**Sources:**"
+                for i, title, url in sources:
+                    if url:
+                        report += "\n[%d] [%s](%s)" % (i, title, url)
+            return report
+    except Exception as e:
+        return "(Research failed: %s)" % e
+
+    return "Research failed. Please try again."
 def _img_analyze(path, question):
     ext = path.rsplit(".", 1)[-1].lower()
     mime = _IMG_MIME.get(ext, "image/png")
@@ -360,6 +444,13 @@ box-shadow:0 0 12px rgba(0,255,136,0.15);
   animation:bl 1.2s infinite both;}
 .typ i:nth-child(2){animation-delay:.2s;}.typ i:nth-child(3){animation-delay:.4s;}
 @keyframes bl{0%,80%,100%{opacity:.2;}40%{opacity:1;}}
+.code-block{background:#0d1117;border:1px solid #30363d;border-radius:10px;margin:10px 0;overflow:hidden;font-family:monospace;}
+.code-header{display:flex;justify-content:space-between;align-items:center;background:#161b22;padding:7px 14px;border-bottom:1px solid #30363d;}
+.code-lang{font-size:12px;color:#8b949e;font-weight:600;letter-spacing:.5px;}
+.code-copy-btn{background:transparent;border:1px solid #30363d;color:#8b949e;border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:.15s;}
+.code-copy-btn:hover{background:#21262d;color:#e6edf3;}
+.code-block pre{margin:0;padding:14px 16px;overflow-x:auto;font-size:13px;line-height:1.6;}
+.code-block code{color:#e6edf3;background:none;padding:0;font-family:inherit;}
 .actions{display:flex;gap:2px;margin-top:5px;padding-left:2px;}
 .ab{display:flex;align-items:center;gap:5px;background:transparent;border:0;
   color:var(--muted);cursor:pointer;padding:5px 9px;border-radius:8px;
@@ -504,11 +595,25 @@ body{
       onmouseleave="this.style.background='transparent'">
       &#128247; Take screenshot
     </button>
+    <button onclick="toggleResearch();togglePlusMenu();"
+      style="display:flex;align-items:center;gap:10px;width:100%;background:transparent;
+      border:0;color:var(--txt);cursor:pointer;padding:10px 14px;border-radius:8px;font-size:14px;"
+      onmouseenter="this.style.background='var(--act)'"
+      onmouseleave="this.style.background='transparent'">
+      &#128300; Deep Research mode
+    </button>
   </div>
   <div class="pill">
     <button class="ib" id="plusBtn" onclick="togglePlusMenu()">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
         stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+        <div id="researchBadge" style="display:none;position:absolute;top:-36px;left:0;right:0;
+      background:linear-gradient(90deg,#1a3a2a,#0d2a1a);border:1px solid #2d6a4f;
+      border-radius:8px;padding:5px 12px;font-size:12px;color:#52d68a;
+      align-items:center;gap:8px;">
+      &#128300; Deep Research mode ON &nbsp;
+      <span onclick="toggleResearch()" style="cursor:pointer;opacity:0.7;font-size:11px;">&#10005; turn off</span>
+    </div>
     <textarea id="bx" rows="1" placeholder="Message ANAME..."
       oninput="grow(this)" onkeydown="key(event)"></textarea>
     <button class="ib" id="mc" onclick="mic()">
@@ -572,7 +677,7 @@ async function openChat(id){
 
 function addDirect(text,who){
   const m=document.createElement('div');m.className='msg '+who;
-  const b=document.createElement('div');b.className='bubble';b.textContent=text;
+const b=document.createElement('div');b.className='bubble';b.innerHTML=parseMarkdown(text);
   m.appendChild(b);th.appendChild(m);addActions(m,text,who);sc.scrollTop=sc.scrollHeight;}
 
 function addMsg(html,who){
@@ -581,7 +686,37 @@ function addMsg(html,who){
   m.appendChild(b);th.appendChild(m);sc.scrollTop=sc.scrollHeight;return{m,b};}
 
 function hideWelcome(){const w=document.getElementById('welcome');if(w)w.style.display='none';}
-
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function parseMarkdown(text){
+  const CP2='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+  const parts=text.split('```');
+  let result='';
+  for(let i=0;i<parts.length;i++){
+    if(i%2===0){
+      result+=fmtInline(escHtml(parts[i]));
+    }else{
+      const nl=parts[i].indexOf(String.fromCharCode(10));
+      const lang=nl>-1?parts[i].slice(0,nl).trim().toUpperCase()||'CODE':'CODE';
+      const code=nl>-1?escHtml(parts[i].slice(nl+1)):escHtml(parts[i]);
+      result+='<div class="code-block"><div class="code-header"><span class="code-lang">'+lang+'</span><button class="code-copy-btn" onclick="copyCode(this)">'+CP2+' Copy</button></div><pre><code>'+code+'</code></pre></div>';
+    }
+  }
+  return result;
+}
+function fmtInline(t){
+  t=t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+  t=t.replace(/\*(.*?)\*/g,'<em>$1</em>');
+  t=t.replace(/`([^`]+)`/g,'<code style="background:#1e1e2e;padding:2px 6px;border-radius:4px;font-family:monospace;font-size:.88em;color:#e6edf3;">$1</code>');
+ t=t.split(String.fromCharCode(10)).join('<br>');
+  return t;
+}
+function copyCode(btn){
+  const pre=btn.closest('.code-block').querySelector('pre');
+  navigator.clipboard.writeText(pre.textContent).then(()=>{
+    btn.textContent='Copied!';
+    setTimeout(()=>{btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy';},2000);
+  });
+}
 function stream(text,who,done){
 
   hideWelcome();
@@ -594,8 +729,10 @@ function stream(text,who,done){
 
   m.appendChild(b);
   th.appendChild(m);
-
+const hasCode2=text.includes('class="code-block"');
+const typeText=hasCode2?text.replace(/<[^>]*>/g,''):text;
   let i=0;
+  
 
   const hasMath =
       text.includes("$$") ||
@@ -604,7 +741,7 @@ function stream(text,who,done){
 
   const hasImage =
       text.includes("<img");
-
+const hasCode = text.includes("code-block");
   // INSTANT render for math/images
   if(hasMath || hasImage){
 
@@ -634,15 +771,17 @@ function stream(text,who,done){
   // NORMAL typing effect
   const iv=setInterval(()=>{
 
-    if(i<text.length){
-
-      b.textContent+=text[i++];
-
+    if(i<typeText.length){
+  b.textContent+=typeText[i++];
+  
       sc.scrollTop=sc.scrollHeight;
 
     }else{
 
       clearInterval(iv);
+
+     
+     b.innerHTML=hasCode2?text:parseMarkdown(text);
 
       if(done)done(m,text);
 
@@ -722,6 +861,14 @@ function addActions(m,text,who){
 
 function grow(t){t.style.height='auto';t.style.height=Math.min(t.scrollHeight,160)+'px';}
 let plusMenuOpen=false;
+let researchMode=false;
+function toggleResearch(){
+  researchMode=!researchMode;
+  const badge=document.getElementById('researchBadge');
+  badge.style.display=researchMode?'flex':'none';
+  bx.placeholder=researchMode?'What do you want me to research...':'Message ANAME...';
+  if(researchMode) bx.focus();
+}
 
 function togglePlusMenu(){
   const menu=document.getElementById('plusMenu');
@@ -753,6 +900,22 @@ async function send(){
   sb.style.cursor='not-allowed';
   bx.style.opacity='0.6';
   const text=bx.value.trim();if(!text){isBusy=false;sb.style.opacity='1';sb.style.cursor='pointer';bx.style.opacity='1';return;}
+  const isResearch=researchMode||text.toLowerCase().startsWith('research:');
+  const q=isResearch?(text.toLowerCase().startsWith('research:')?text.slice(9).trim():text):null;
+  if(isResearch){
+    const{m:um}=addMsg(escHtml(text),'user');
+    addActions(um,text,'user');bx.value='';grow(bx);
+    if(researchMode){toggleResearch();}
+    const t=typing();
+    try{const r=await fetch('/research',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({query:q,chat_id:chatId})});
+      const d=await r.json();t.remove();chatId=d.chat_id||chatId;
+      const{m:bm}=addMsg(d.reply||'...','bot');
+      addActions(bm,d.reply||'...','bot');
+      isBusy=false;sb.style.opacity='1';sb.style.cursor='pointer';bx.style.opacity='1';
+    }catch(e){t.remove();addMsg('(Research failed)','bot');isBusy=false;sb.style.opacity='1';sb.style.cursor='pointer';bx.style.opacity='1';}
+    return;
+  }
   const{m:um}=addMsg(text.replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])),'user');
   addActions(um,text,'user');bx.value='';grow(bx);
   const isImg=text.toLowerCase().includes('create')||text.toLowerCase().includes('generate')||text.toLowerCase().includes('draw');
@@ -1259,7 +1422,18 @@ Do NOT ask again what topic the user wants.
         "reply": reply,
         "chat_id": cid
     })
-
+@app.route("/research", methods=["POST"])
+def research_route():
+    if not _current_user():
+        return jsonify({"error": "login"}), 401
+    body = request.json or {}
+    query = body.get("query", "").strip()
+    if not query:
+        return jsonify({"reply": "..."})
+    reply = _deep_research(query)
+    reply = _md_to_html(reply)
+    cid = body.get("chat_id") or uuid.uuid4().hex[:12]
+    return jsonify({"reply": reply, "chat_id": cid})
 @app.route("/screenshot", methods=["POST"])
 def web_screenshot():
     import time
@@ -1336,6 +1510,7 @@ def upload():
     chat["messages"].append({"role": "user", "text": "[File: %s] %s" % (safe, msg)})
     chat["messages"].append({"role": "smith", "text": reply})
     save_chat(cid, title, chat["messages"])
+    reply = _md_to_html(reply)
     return jsonify({"reply": reply, "chat_id": cid})
 
 
