@@ -46,6 +46,9 @@ from dotenv import load_dotenv
 load_dotenv()
 # ---- Personality & memory ----------------------------------------
 ASSISTANT_NAME = "Assist Neo"     # what your assistant is called
+BLUESMINDS_KEY = os.getenv("BLUESMINDS_KEY", "")
+BLUESMINDS_URL = "https://api.bluesminds.com/v1/chat/completions"
+BLUESMINDS_MODEL = "gpt-5-chat"
 USER_NAME = "Yuvan"           # it will address you by this name
 MEMORY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "memory.json")
 _NEO_MEMORY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "neo_memory.json")
@@ -549,9 +552,13 @@ def ask_github_models(question: str, with_context: bool = False) -> str:
             {
                 "role": "system",
                 "content": (
-                    f"You are {ASSISTANT_NAME}, a warm, smart, helpful AI assistant. "
-                    f"Reply naturally and briefly.\n\n"
-                    "For mathematics:\n"
+                        f"You are {ASSISTANT_NAME}, a warm, smart, helpful AI assistant. "
+                        f"Reply naturally and briefly.\n\n"
+                        "IMPORTANT RULES:\n"
+                        "- The user may have spelling mistakes. ALWAYS understand their intent and answer correctly, never point out the spelling error.\n"
+                        "- If the user says 'it', 'that', 'this', 'change it', 'make it', 'the same', refer to what was discussed just before.\n"
+                        "- Use the conversation history to understand follow-up questions.\n\n"
+                        "For mathematics:\n"
                     "- use proper LaTeX\n"
                     "- use $$ equation $$ blocks\n"
                     "- do NOT escape backslashes\n"
@@ -666,7 +673,52 @@ Just give the best final answer directly.
         return ans1
     except Exception:
         return ans1
-
+def ask_bluesminds(question: str, with_context: bool = False) -> str:
+    """Bluesminds coding AI (gpt-5-chat)."""
+    try:
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are an elite coding AI like Cursor or GitHub Copilot.\n"
+                    "- Write complete, working code always — no placeholders.\n"
+                    "- Use markdown code blocks with language tags (```python, ```js etc).\n"
+                    "- When debugging: explain the bug, then show the full fixed code.\n"
+                    "- After code, give a short plain-English explanation.\n"
+                    "- If user says 'fix it', 'improve it', 'add to it' — refer to the previous code.\n"
+                    "- Auto-detect the programming language from context.\n"
+                )
+            }
+        ]
+        if with_context and _recent_turns:
+            conversation = ""
+            for role, txt in _recent_turns[-14:]:
+                conversation += f"{'User' if role == 'you' else 'Assistant'}: {txt}\n"
+            conversation += f"User: {question}"
+            messages.append({"role": "user", "content": conversation})
+        else:
+            messages.append({"role": "user", "content": question})
+        headers = {
+            "Authorization": f"Bearer {BLUESMINDS_KEY}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": BLUESMINDS_MODEL,
+            "messages": messages,
+            "temperature": 0.3,
+            "max_tokens": 4000
+        }
+        r = requests.post(BLUESMINDS_URL, headers=headers, json=payload, timeout=60)
+        if r.status_code != 200:
+            log.warning("Bluesminds failed: %s", r.text)
+            return ""
+        answer = r.json()["choices"][0]["message"]["content"].strip()
+        _remember_turn("you", question)
+        _remember_turn("assistant", answer)
+        return answer
+    except Exception as e:
+        log.warning("Bluesminds failed: %s", e)
+        return ""
 
 def ask_ollama(question: str) -> str:
     """Ask the local Ollama model as a fallback."""
@@ -875,28 +927,67 @@ def describe_screen() -> None:
         say("I couldn't capture your screen right now.")
 
 
-def handle_images(text: str) -> bool:
+def _fuzzy_fix(text: str) -> str:
+    """Auto-correct common misspellings using difflib."""
+    import difflib
+    corrections = {
+        "creat": "create", "crate": "create", "ceate": "create",
+        "generat": "generate", "generete": "generate", "gnerate": "generate",
+        "imge": "image", "iamge": "image", "imgae": "image", "imag": "image",
+        "pictur": "picture", "pictue": "picture", "picter": "picture",
+        "mak": "make", "maek": "make",
+        "drwa": "draw", "drow": "draw",
+        "an": "an", "a": "a", "of": "of",
+    }
+    words = text.split()
+    fixed = []
+    for w in words:
+        if w in corrections:
+            fixed.append(corrections[w])
+        else:
+            fixed.append(w)
+    return " ".join(fixed)
 
+_last_image_prompt = ""
+def handle_images(text: str) -> bool:
+    global _last_image_prompt
     low = text.lower().strip()
+    low = _fuzzy_fix(low)
 
     triggers = [
         "create an image of",
         "create image of",
+        "create a image of",
         "generate an image of",
+        "generate image of",
+        "generate a image of",
         "draw",
+        "draw me",
         "make an image of",
-        "can you create an image of"
+        "make a image of",
+        "make image of",
+        "can you create an image of",
+        "can you draw",
+        "can you generate",
+        "show me an image of",
+        "show me a image of",
+        "create picture of",
+        "make a picture of",
+        "generate a picture of",
+        "image of",
+        "picture of",
     ]
 
     for t in triggers:
 
         if t in low:
 
-            prompt = low.split(t,1)[1].strip()
+            prompt = low.split(t, 1)[1].strip()
 
             if not prompt:
                 prompt = "robot"
 
+            _last_image_prompt = prompt
             img = create_image(prompt)
 
             if img:
@@ -905,6 +996,23 @@ def handle_images(text: str) -> bool:
                 say("Image creation failed.")
 
             return True
+
+        # Check if user is editing the last image
+    edit_triggers = [
+        "make it", "change it", "change the", "put the", "make the",
+        "add", "remove", "set the", "color it", "colour it",
+        "now make", "now change", "now add", "but", "instead",
+    ]
+    if _last_image_prompt and any(low.startswith(t) or t in low for t in edit_triggers):
+        new_prompt = _last_image_prompt + ", " + low
+
+        _last_image_prompt = new_prompt
+        img = create_image(new_prompt)
+        if img:
+            say(f"[IMAGE]{img}")
+        else:
+            say("Image creation failed.")
+        return True
 
     return False
 

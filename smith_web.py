@@ -124,7 +124,18 @@ assistant.say = _cap
 # ── projects ─────────────────────────────────────────────────────
 PROJECTS = {
     "General": "",
-    "Coding": "You are an expert software engineer. Help with code and debugging.",
+"Coding": (
+        "You are an elite coding AI assistant like Cursor or GitHub Copilot. "
+        "Rules:\n"
+        "- Always write complete, working code — never leave placeholders like '# TODO'.\n"
+        "- Use proper syntax highlighting markdown: ```python, ```js, ```html etc.\n"
+        "- When debugging, explain what was wrong AND show the fixed code.\n"
+        "- When asked to build something, give the full file — not just a snippet.\n"
+        "- After code, briefly explain what it does in plain English.\n"
+        "- If the user says 'fix it', 'improve it', 'optimize it' — refer to the previous code.\n"
+        "- Detect the programming language automatically from context.\n"
+        "- Support Python, JavaScript, HTML, CSS, C++, Java, Arduino, and more.\n"
+    ),
     "Robotics": "You are a robotics expert (Arduino, ESP32). Give safe, practical guidance.",
     "Image Creation": "Help create images. Say 'create an image of ...' to generate one.  create a image of ...   can create an image of....."
 }
@@ -150,6 +161,9 @@ Rules:
 """
 
     ctx = PROJECTS.get(CURRENT_PROJECT, "")
+
+    if CURRENT_PROJECT == "Coding":
+        return assistant.ask_bluesminds(q, with_context=with_context)
 
     q = personality + "\n\n" + ctx + "\n\nUser: " + q
 
@@ -876,7 +890,7 @@ function addActions(m,text,who){
   const isImage=text==='[Generated Image]';
   if(who==='bot'&&!isImage){
     const p=document.createElement('button');p.className='ab';
-    p.innerHTML=PL+' Play';p.onclick=()=>speakOnDevice(text,p);bar.appendChild(p);}
+   p.innerHTML=PL+' Play';p.onclick=()=>speakElevenLabs(text);bar.appendChild(p);}
   if(who==='bot'&&isImage){
     const imgEl=m.querySelector('img');
     if(imgEl){
@@ -1010,7 +1024,7 @@ const t=typing(isImg);
       sb.style.cursor='pointer';
       bx.style.opacity='1';
     }else{
-      speakElevenLabs(d.reply||'...');
+      
       stream(d.reply||'...','bot',(m,txt)=>{
         addActions(m,txt,'bot');
         isBusy=false;
@@ -1449,7 +1463,17 @@ def ask():
         "messages": []
     }
 
-    title = chat["title"] or msg[:40]
+    if not chat["title"]:
+        try:
+            short_title = assistant.ask_ai_brain(
+                f"Give a 3-word max title for this chat topic: '{msg}'. Reply with ONLY the short title, no quotes, no explanation.",
+                with_context=False
+            )
+            title = (short_title.strip()[:40] if short_title else msg[:40])
+        except Exception:
+            title = msg[:40]
+    else:
+        title = chat["title"]
 
     chat["messages"].append({
         "role": "user",
@@ -1493,7 +1517,13 @@ Do NOT ask again what topic the user wants.
                 assistant._recent_turns.clear()
             except:
                 pass
-            assistant.answer(msg)
+                # Load chat history into context
+                assistant._recent_turns.clear()
+                for m in chat["messages"][-14:]:
+                    role = "you" if m["role"] == "user" else "assistant"
+                    assistant._recent_turns.append((role, m["text"]))
+
+                assistant.answer(msg)
 
         except Exception as e:
             import traceback;
