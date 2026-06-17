@@ -1,5 +1,35 @@
+# Environment & secrets
 .env
+.secret_key
 
+# User data
+users.json
+memory.json
+neo_memory.json
+uploads/
+chats/
+
+# Python
 __pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
 
-*.pyc
+# Logs
+*.log
+assistant.log
+
+# SSL certs
+cert.pem
+key.pem
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db

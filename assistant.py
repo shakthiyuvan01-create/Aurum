@@ -106,35 +106,69 @@ except ImportError:
 
 
 # ====================================================================
-#  MEMORY
+#  MEMORY  (SQLite-backed via db.py; JSON files kept as fallback)
 # ====================================================================
 
-def _load_memory():
+def _db():
+    """Lazy import db to avoid circular imports at module load."""
+    import db as _db_mod
+    return _db_mod
+
+_DEFAULT_USER = "default"
+
+def save_neo_memory(fact: str, username: str = _DEFAULT_USER) -> None:
+    """Persist a fact to SQLite neo_memories table."""
+    fact = fact.strip()
+    if not fact:
+        return
     try:
-        with open(_NEO_MEMORY_FILE, "r", encoding="utf-8") as f:
+        _db().add_memory(username, fact)
+    except Exception as e:
+        log.warning("save_neo_memory DB failed: %s", e)
+        # Fallback: JSON file
+        try:
             import json as _j
-            return _j.load(f)
-    except Exception:
-        return []
+            mems: list = []
+            try:
+                with open(_NEO_MEMORY_FILE, "r", encoding="utf-8") as fh:
+                    mems = _j.load(fh)
+            except Exception:
+                pass
+            if fact not in mems:
+                mems.append(fact)
+                with open(_NEO_MEMORY_FILE, "w", encoding="utf-8") as fh:
+                    _j.dump(mems, fh, indent=2)
+        except Exception:
+            pass
 
-def save_memory(fact):
-    import json as _j
-    mems = _load_memory()
-    if fact.strip() and fact.strip() not in mems:
-        mems.append(fact.strip())
-        with open(_NEO_MEMORY_FILE, "w", encoding="utf-8") as f:
-            _j.dump(mems, f, indent=2)
+def get_memory(username: str = _DEFAULT_USER) -> list:
+    """Return list of memory facts from SQLite (falls back to JSON)."""
+    try:
+        return _db().get_memories(username)
+    except Exception as e:
+        log.warning("get_memory DB failed: %s", e)
+        try:
+            import json as _j
+            with open(_NEO_MEMORY_FILE, "r", encoding="utf-8") as fh:
+                return _j.load(fh)
+        except Exception:
+            return []
 
-def get_memory():
-    return _load_memory()
+def clear_memory(username: str = _DEFAULT_USER) -> None:
+    """Clear all memory facts for a user."""
+    try:
+        _db().clear_memories(username)
+    except Exception as e:
+        log.warning("clear_memory DB failed: %s", e)
+        try:
+            import json as _j
+            with open(_NEO_MEMORY_FILE, "w", encoding="utf-8") as fh:
+                _j.dump([], fh)
+        except Exception:
+            pass
 
-def clear_memory():
-    import json as _j
-    with open(_NEO_MEMORY_FILE, "w", encoding="utf-8") as f:
-        _j.dump([], f)
-
-def _memory_context():
-    mems = _load_memory()
+def _memory_context(username: str = _DEFAULT_USER) -> str:
+    mems = get_memory(username)
     if not mems:
         return ""
     return "\n\nThings you remember about the user:\n" + "\n".join("- " + m for m in mems)
@@ -194,21 +228,42 @@ def alert(title: str, message: str, speak_it: bool = True) -> None:
 #  PERSONALITY & MEMORY
 # ====================================================================
 
-def load_memory() -> dict:
+def load_memory(username: str = _DEFAULT_USER) -> dict:
+    """Load dict-style memory (name + notes).  SQLite-first, JSON fallback."""
     try:
-        import json
-        with open(MEMORY_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+        facts = _db().get_memories(username)
+        name  = USER_NAME
+        notes = []
+        for f in facts:
+            if f.startswith("name:"):
+                name = f[5:].strip()
+            else:
+                notes.append(f)
+        return {"name": name, "notes": notes}
     except Exception:
-        return {"name": USER_NAME, "notes": []}
+        try:
+            import json
+            with open(MEMORY_FILE, "r", encoding="utf-8") as fh:
+                return json.load(fh)
+        except Exception:
+            return {"name": USER_NAME, "notes": []}
 
-def save_memory(mem: dict) -> None:
+def save_memory(mem: dict, username: str = _DEFAULT_USER) -> None:
+    """Persist dict-style memory.  Writes individual facts to SQLite."""
     try:
-        import json
-        with open(MEMORY_FILE, "w", encoding="utf-8") as f:
-            json.dump(mem, f, indent=2, ensure_ascii=False)
-    except Exception:
-        pass
+        db = _db()
+        if "name" in mem:
+            db.add_memory(username, f"name:{mem['name']}")
+        for note in mem.get("notes", []):
+            db.add_memory(username, note)
+    except Exception as e:
+        log.warning("save_memory DB failed: %s", e)
+        try:
+            import json
+            with open(MEMORY_FILE, "w", encoding="utf-8") as fh:
+                json.dump(mem, fh, indent=2, ensure_ascii=False)
+        except Exception:
+            pass
 
 def user_name() -> str:
     mem = load_memory()
