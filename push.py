@@ -24,7 +24,7 @@ if code != 0:
     print("Nothing to commit or error. Trying to push anyway...")
 
 print("[3] Pushing to GitHub...")
-code = run("git push origin main")
+code = run("git push origin master")
 
 if code == 0:
     print("\n✅ Done! Successfully pushed to GitHub.")
