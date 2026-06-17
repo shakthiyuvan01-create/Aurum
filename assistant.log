@@ -8267,3 +8267,28 @@ NameError: name '_pd' is not defined
 2026-06-17 16:35:39,672 | INFO | 127.0.0.1 - - [17/Jun/2026 16:35:39] "GET /chats HTTP/1.1" 200 -
 2026-06-17 16:35:40,435 | INFO | 127.0.0.1 - - [17/Jun/2026 16:35:40] "POST /stop_speech HTTP/1.1" 200 -
 2026-06-17 16:36:04,519 | INFO | 127.0.0.1 - - [17/Jun/2026 16:36:04] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-17 17:39:55,684 | INFO | [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.4:5000
+2026-06-17 17:39:55,685 | INFO | [33mPress CTRL+C to quit[0m
+2026-06-17 17:39:57,774 | INFO | 127.0.0.1 - - [17/Jun/2026 17:39:57] "GET / HTTP/1.1" 200 -
+2026-06-17 17:39:57,863 | INFO | 127.0.0.1 - - [17/Jun/2026 17:39:57] "GET /logo HTTP/1.1" 200 -
+2026-06-17 17:39:59,235 | INFO | 127.0.0.1 - - [17/Jun/2026 17:39:59] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-06-17 17:49:41,549 | INFO | [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.4:5000
+2026-06-17 17:49:41,550 | INFO | [33mPress CTRL+C to quit[0m
+2026-06-17 17:49:44,128 | INFO | 127.0.0.1 - - [17/Jun/2026 17:49:44] "GET / HTTP/1.1" 200 -
+2026-06-17 17:49:44,216 | INFO | 127.0.0.1 - - [17/Jun/2026 17:49:44] "[36mGET /logo HTTP/1.1[0m" 304 -
+2026-06-17 17:49:44,760 | INFO | 127.0.0.1 - - [17/Jun/2026 17:49:44] "GET /greet HTTP/1.1" 200 -
+2026-06-17 17:49:44,762 | INFO | 127.0.0.1 - - [17/Jun/2026 17:49:44] "[36mGET /logo HTTP/1.1[0m" 304 -
+2026-06-17 17:49:45,091 | INFO | 127.0.0.1 - - [17/Jun/2026 17:49:45] "GET /chats HTTP/1.1" 200 -
+2026-06-17 17:49:45,201 | INFO | 127.0.0.1 - - [17/Jun/2026 17:49:45] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-06-17 17:49:55,161 | INFO | 127.0.0.1 - - [17/Jun/2026 17:49:55] "POST /ask HTTP/1.1" 200 -
+2026-06-17 17:49:55,410 | INFO | 127.0.0.1 - - [17/Jun/2026 17:49:55] "GET /chats HTTP/1.1" 200 -
+2026-06-17 17:50:05,094 | INFO | 127.0.0.1 - - [17/Jun/2026 17:50:05] "POST /ask HTTP/1.1" 200 -
+2026-06-17 17:50:05,412 | INFO | 127.0.0.1 - - [17/Jun/2026 17:50:05] "GET /chats HTTP/1.1" 200 -
+2026-06-17 17:50:24,794 | INFO | 127.0.0.1 - - [17/Jun/2026 17:50:24] "POST /stop_speech HTTP/1.1" 200 -
+2026-06-17 17:50:24,834 | INFO | 127.0.0.1 - - [17/Jun/2026 17:50:24] "POST /stop_speech HTTP/1.1" 200 -
