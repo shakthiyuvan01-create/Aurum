@@ -23,16 +23,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ====================================================================
-#  CONFIG  --  change these to suit you
+#  CONFIG
 # ====================================================================
 
-# ---- Identity & memory -------------------------------------------
 ASSISTANT_NAME = "Assist Neo"
 USER_NAME      = "Yuvan"
 MEMORY_FILE     = os.path.join(os.path.dirname(os.path.abspath(__file__)), "memory.json")
 _NEO_MEMORY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "neo_memory.json")
 
-# ---- AI models ---------------------------------------------------
 BLUESMINDS_KEY   = os.getenv("BLUESMINDS_KEY", "")
 BLUESMINDS_URL   = "https://api.bluesminds.com/v1/chat/completions"
 BLUESMINDS_MODEL = "gpt-5-chat"
@@ -44,21 +42,17 @@ GITHUB_MODEL      = "gpt-4o-mini"
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_URL     = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 
-USE_AI_BRAIN = True          # Ollama fallback
+USE_AI_BRAIN = True
 AI_MODEL     = "llama3.2"
 OLLAMA_URL   = "http://localhost:11434/api/generate"
 
-# ---- Images ------------------------------------------------------
 IMAGE_SAVE_FOLDER = os.path.join(os.path.expanduser("~"), "Pictures", "SmithAI")
 
-# ---- Voice -------------------------------------------------------
 SPEAK_REPLIES = True
 
-# ---- Notifications -----------------------------------------------
 SHOW_NOTIFICATIONS = True
 SPEAK_ALERTS       = True
 
-# ---- Search / open -----------------------------------------------
 SEARCH_ENGINE = "https://www.google.com/search?q="
 CHROME_PATH   = r'C:/Program Files/Google/Chrome/Application/chrome.exe %s'
 
@@ -93,12 +87,7 @@ APPS = {
     "powerpoint": "powerpnt", "spotify": "spotify",
 }
 
-# ---- Logging -----------------------------------------------------
 LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assistant.log")
-
-# ====================================================================
-#  --- You normally do NOT need to edit below this line ---
-# ====================================================================
 
 logging.basicConfig(
     level=logging.INFO,
@@ -156,7 +145,6 @@ def _memory_context():
 # ====================================================================
 
 def _powershell_speak(text: str) -> bool:
-    """Speak using Windows' built-in voice. Needs NO extra packages."""
     if os.name != "nt":
         return False
     try:
@@ -187,13 +175,11 @@ def _remember_turn(role: str, text: str) -> None:
     del _recent_turns[:-20]
 
 def say(text: str) -> None:
-    """Print, speak, and record a reply."""
     print(text)
     _remember_turn("smith", text)
     speak(text)
 
 def alert(title: str, message: str, speak_it: bool = True) -> None:
-    """Log, show a desktop pop-up, and optionally speak an alert."""
     log.info("%s -- %s", title, message)
     if SHOW_NOTIFICATIONS and _notifier is not None:
         try:
@@ -216,7 +202,7 @@ def load_memory() -> dict:
     except Exception:
         return {"name": USER_NAME, "notes": []}
 
-def save_memory(mem: dict) -> None:  # noqa: F811 (overloads the fact-save version above)
+def save_memory(mem: dict) -> None:
     try:
         import json
         with open(MEMORY_FILE, "w", encoding="utf-8") as f:
@@ -253,10 +239,8 @@ def greet() -> None:
             f"I'd love to know your name. You can say, my name is, and then your name.")
 
 def handle_personal(text: str) -> bool:
-    """Greetings, feelings, and memory. Returns True if handled."""
     low = text.lower().strip()
 
-    # Remember something
     note = _after(low, ("remember that ", "remember ", "note that ",
                         "don't forget that ", "dont forget that "))
     if note:
@@ -267,7 +251,6 @@ def handle_personal(text: str) -> bool:
         say(f"Of course{', ' + name if name else ''}. I'll remember that for you.")
         return True
 
-    # Name
     not_names = {"tired", "sad", "happy", "good", "fine", "okay", "ok", "great",
                  "excited", "lonely", "stressed", "upset", "busy", "hungry",
                  "sleepy", "angry", "bored", "sick", "down", "low", "nervous",
@@ -284,7 +267,6 @@ def handle_personal(text: str) -> bool:
         say(f"It's wonderful to meet you, {new_name}. I'll remember you.")
         return True
 
-    # Recall
     if any(p in low for p in ("what do you know about me", "what do you remember",
                               "what have i told you", "tell me about myself")):
         mem   = load_memory()
@@ -297,7 +279,6 @@ def handle_personal(text: str) -> bool:
             else "You haven't shared much with me yet, but I'd love to learn about you.")
         return True
 
-    # Greetings
     if low in ("hello", "hi", "hey", "greetings", "yo") or any(
             low.startswith(g) for g in ("good morning", "good afternoon",
                                         "good evening", "hello", "hi ", "hey ")):
@@ -338,7 +319,6 @@ def handle_personal(text: str) -> bool:
         say(f"Take care{', ' + name if name else ''}. I'll be right here when you need me.")
         return True
 
-    # Feelings
     sad = ("i'm sad", "im sad", "i am sad", "i feel sad", "i'm tired", "im tired",
            "i am tired", "i'm lonely", "im lonely", "i'm stressed", "im stressed",
            "i feel down", "i'm upset", "im upset", "i feel low", "feeling sad",
@@ -383,10 +363,11 @@ def ask_gemini(question: str) -> str:
             timeout=30,
         )
         if r.status_code != 200:
+            print("GEMINI FAIL:", r.status_code, r.text)
             return ""
         return r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
     except Exception as e:
-        log.warning("Gemini failed: %s", e)
+        print("GEMINI EXCEPTION:", e)
         return ""
 
 
@@ -442,21 +423,20 @@ def ask_github_models(question: str, with_context: bool = False) -> str:
             timeout=60,
         )
         if response.status_code != 200:
-            log.warning("GitHub Models failed: %s", response.text)
+            print("GITHUB FAIL:", response.status_code, response.text)
             return ""
         answer = response.json()["choices"][0]["message"]["content"].strip()
         _remember_turn("you", question)
         _remember_turn("smith", answer)
         return answer
     except Exception as e:
-        log.warning("GitHub Models failed: %s", e)
+        print("GITHUB EXCEPTION:", e)
         return ""
 
 
 def analyze_and_pick(question: str, ans1: str, ans2: str) -> str:
-    """Combine the best parts of two AI answers into one final answer."""
     if not ans1 and not ans2:
-        return "Both AIs failed to answer."
+        return ""
     if not ans1:
         return ans2
     if not ans2:
@@ -472,8 +452,7 @@ def analyze_and_pick(question: str, ans1: str, ans2: str) -> str:
         "3. Combine the best parts of both\n"
         "4. Give ONE perfect final answer\n"
         "5. Do NOT mention which AI said what\n"
-        "6. ONLY include content directly relevant to the question — remove any unrelated tips, "
-        "Excel suggestions, social media links, YouTube references, or off-topic content\n"
+        "6. ONLY include content directly relevant to the question\n"
         "7. NEVER end with follow-up questions\n"
         "Just give the best final answer directly."
     )
@@ -499,7 +478,6 @@ def analyze_and_pick(question: str, ans1: str, ans2: str) -> str:
 
 
 def ask_bluesminds(question: str, with_context: bool = False) -> str:
-    """Bluesminds coding AI (gpt-5-chat)."""
     try:
         messages = [{
             "role": "system",
@@ -541,7 +519,6 @@ def ask_bluesminds(question: str, with_context: bool = False) -> str:
 
 
 def ask_ollama(question: str) -> str:
-    """Ask the local Ollama model as a last-resort fallback."""
     if not USE_AI_BRAIN:
         return ""
     try:
@@ -558,7 +535,6 @@ def ask_ollama(question: str) -> str:
 
 
 def ask_ai_brain(question: str, with_context: bool = False) -> str:
-    """Run GPT-4o-mini and Gemini in parallel, then combine the best answer."""
     import threading
 
     results = {"gpt": "", "gemini": ""}
@@ -573,8 +549,11 @@ def ask_ai_brain(question: str, with_context: bool = False) -> str:
 
     final = analyze_and_pick(question, results["gpt"], results["gemini"])
 
-    if not final or final == "Both AIs failed to answer.":
+    if not final:
         final = ask_ollama(question)
+
+    if not final:
+        final = "I'm sorry, I couldn't connect to my AI services right now. Please try again in a moment."
 
     _remember_turn("you", question)
     _remember_turn("smith", final)
@@ -726,7 +705,7 @@ def handle_images(text: str) -> bool:
 
 
 # ====================================================================
-#  COMMANDS (reminders, translation, basics)
+#  COMMANDS
 # ====================================================================
 
 def translate(text: str) -> None:
@@ -742,7 +721,6 @@ def _clean_what(s: str) -> str:
     return s or "your reminder"
 
 def _parse_when(text: str):
-    """Return (due_epoch, what_text) or (None, text)."""
     import re, datetime
     import time as _t
     low = text.lower()
@@ -804,7 +782,6 @@ def start_reminder_watcher() -> None:
     threading.Thread(target=_reminder_watcher, daemon=True).start()
 
 def handle_commands(text: str) -> bool:
-    """Handle reminders and translation. Returns True if handled."""
     low = text.lower().strip()
 
     r = _after(low, ("remind me to ", "remind me ", "set a reminder to ",
@@ -820,7 +797,6 @@ def handle_commands(text: str) -> bool:
     return False
 
 def handle_basics(text: str) -> bool:
-    """Answer time, date, and simple math locally."""
     import datetime, re
     low = text.lower().strip()
 
@@ -868,7 +844,6 @@ def answer(question: str) -> None:
         do_open(target)
         return
     if needs_web(question):
-        say("Let me search the web for that.")
         web_results = fetch_web_search(question)
         if web_results:
             enriched = (
@@ -877,12 +852,8 @@ def answer(question: str) -> None:
                 f"Search results:\n{web_results}\n\n"
                 "Give a clear, direct answer based on these results."
             )
-            say(ask_ai_brain(enriched, with_context=False) or "I could not find a clear answer.")
+            say(ask_ai_brain(enriched, with_context=False))
         else:
-            open_url(SEARCH_ENGINE + urllib.parse.quote(question))
+            say(ask_ai_brain(question, with_context=True))
     else:
-        reply = ask_ai_brain(question, with_context=True)
-        if reply:
-            say(reply)
-        else:
-            open_url(SEARCH_ENGINE + urllib.parse.quote(question))
+        say(ask_ai_brain(question, with_context=True))

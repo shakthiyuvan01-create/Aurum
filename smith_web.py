@@ -37,7 +37,7 @@ USERS_FILE = os.path.join(BASE, "users.json")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(CHATS_DIR, exist_ok=True)
 
-app.secret_key = hashlib.sha256(b"assistneo_2026_secret").hexdigest()
+app.secret_key = os.getenv("SECRET_KEY", hashlib.sha256(b"assistneo_2026_secret").hexdigest())
 
 
 # ── users ────────────────────────────────────────────────────────
@@ -144,22 +144,32 @@ _orig_brain = assistant.ask_ai_brain
 
 
 def _brain(q, with_context=False):
-
     personality = """
-You are a natural conversational AI assistant.
+    You are a natural conversational AI assistant.
 
-Rules:
-- Speak naturally like a human.
-- Avoid robotic repetition.
-- Do NOT repeatedly ask:
-  "Would you like to know more?"
-- Continue explanations intelligently.
-- If user says:
-  yes / ok / continue
-  then continue previous topic naturally.
-- Be friendly and conversational.
-"""
-
+    Rules:
+    - Speak naturally like a human.
+    - Avoid robotic repetition.
+    - Do NOT repeatedly ask:
+      "Would you like to know more?"
+    - Continue explanations intelligently.
+    - If user says:
+      yes / ok / continue
+      then continue previous topic naturally.
+    - Be friendly and conversational.
+    - Use relevant emojis naturally based on the situation:
+      - Greetings/positive news: 😊 👋 🎉
+      - Tech/coding topics: 💻 🔧 ⚡
+      - Movies/entertainment: 🎬 🍿 🎭
+      - Weather: ☀️ 🌧️ ❄️
+      - Food: 🍕 🍔 😋
+      - Sad/sympathy: 😔 💙
+      - Excitement: 🚀 🔥 ✨
+      - Warnings/errors: ⚠️ ❌
+      - Success/done: ✅ 🎯
+      - Questions/thinking: 🤔 💡
+      - Don't overuse — 1 to 3 emojis per response, placed naturally.
+    """
     ctx = PROJECTS.get(CURRENT_PROJECT, "")
 
     if CURRENT_PROJECT == "Coding":
@@ -322,12 +332,14 @@ def _chat_path(cid):
 def save_chat(cid, title, messages):
     import time
     try:
-        with open(_chat_path(cid), "w", encoding="utf-8") as f:
+        path = _chat_path(cid)
+        print(f"[SAVE] Saving chat to: {path}")
+        with open(path, "w", encoding="utf-8") as f:
             json.dump({"id": cid, "title": title, "ts": int(time.time()), "messages": messages},
                       f, indent=2, ensure_ascii=False)
-    except:
-        pass
-
+        print(f"[SAVE] Saved OK: {title}")
+    except Exception as e:
+        print(f"[SAVE ERROR] {e}")
 
 def load_chat(cid):
     try:
@@ -343,7 +355,8 @@ def list_chats():
         for fn in os.listdir(_user_dir()):
             if fn.endswith(".json"):
                 try:
-                    d = json.load(open(os.path.join(_user_dir(), fn), encoding="utf-8"))
+                    with open(os.path.join(_user_dir(), fn), encoding="utf-8") as jf:
+                        d = json.load(jf)
                     out.append({"id": d["id"], "title": d.get("title", "Chat"), "ts": d.get("ts", 0)})
                 except:
                     pass
@@ -372,6 +385,8 @@ MathJax = {
 };
 </script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:false,theme:'dark'});</script>
 <style>
 :root{
 --bg:#050505;
@@ -726,8 +741,8 @@ async function openChat(id){
 function addDirect(text,who){
   const m=document.createElement('div');m.className='msg '+who;
 const b=document.createElement('div');b.className='bubble';b.innerHTML=parseMarkdown(text);
+  if(b.querySelector('.mermaid')) mermaid.run({nodes:b.querySelectorAll('.mermaid')});
   m.appendChild(b);th.appendChild(m);addActions(m,text,who);sc.scrollTop=sc.scrollHeight;}
-
 function addMsg(html,who){
   const m=document.createElement('div');m.className='msg '+who;
   const b=document.createElement('div');b.className='bubble';b.innerHTML=html;
@@ -746,16 +761,22 @@ function parseMarkdown(text){
       const nl=parts[i].indexOf(String.fromCharCode(10));
       const lang=nl>-1?parts[i].slice(0,nl).trim().toUpperCase()||'CODE':'CODE';
       const code=nl>-1?escHtml(parts[i].slice(nl+1)):escHtml(parts[i]);
-      result+='<div class="code-block"><div class="code-header"><span class="code-lang">'+lang+'</span><button class="code-copy-btn" onclick="copyCode(this)">'+CP2+' Copy</button></div><pre><code>'+code+'</code></pre></div>';
+     if(lang==='MERMAID'){
+        const id='mmd_'+Math.random().toString(36).slice(2);
+        result+='<div class="mermaid-wrap"><div class="mermaid" id="'+id+'">'+parts[i].slice(nl+1)+'</div></div>';
+      }else{
+        result+='<div class="code-block"><div class="code-header"><span class="code-lang">'+lang+'</span><button class="code-copy-btn" onclick="copyCode(this)">'+CP2+' Copy</button></div><pre><code>'+code+'</code></pre></div>';
+      }
     }
   }
   return result;
 }
 function fmtInline(t){
-  t=t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
-  t=t.replace(/\*(.*?)\*/g,'<em>$1</em>');
+  t=t.replace(/\\*\\*(.*?)\\*\\*/g,'<strong>$1</strong>');
+  t=t.replace(/\\*(.*?)\\*/g,'<em>$1</em>');
   t=t.replace(/`([^`]+)`/g,'<code style="background:#1e1e2e;padding:2px 6px;border-radius:4px;font-family:monospace;font-size:.88em;color:#e6edf3;">$1</code>');
- t=t.split(String.fromCharCode(10)).join('<br>');
+  t=t.replace(/\\[([^\\]]+)\\]\\(([^)]+)\\)/g,'<a href="$2" target="_blank" style="color:#58a6ff;text-decoration:underline;">$1</a>');
+  t=t.split(String.fromCharCode(10)).join('<br>');
   return t;
 }
 function copyCode(btn){
@@ -830,6 +851,8 @@ const hasCode = text.includes("code-block");
 
      
      b.innerHTML=hasCode2?text:parseMarkdown(text);
+     if(b.querySelector('.mermaid')) mermaid.run({nodes:b.querySelectorAll('.mermaid')});
+     
 
       if(done)done(m,text);
 
@@ -1422,46 +1445,16 @@ def project():
         pass
     return jsonify({"ok": True})
 
-
-@app.route("/new", methods=["POST"])
-def new():
-    try:
-        assistant._recent_turns.clear()
-    except:
-        pass
-    return jsonify({"ok": True})
-
-
-@app.route("/chats")
-def chats(): return jsonify(list_chats())
-
-
-@app.route("/chat/<cid>")
-def get_chat(cid):
-    d = load_chat(cid)
-    return jsonify(d) if d else (jsonify({"error": "not found"}), 404)
-
-
-@app.route("/uploads/<path:fn>")
-def serve_upload(fn): return send_from_directory(UPLOAD_DIR, fn)
-
-
 @app.route("/ask", methods=["POST"])
 def ask():
-
     body = request.json or {}
     msg = body.get("message", "").strip()
-
     cid = (body.get("chat_id") or "").strip() or uuid.uuid4().hex[:12]
 
     if not msg:
         return jsonify({"reply": ""})
 
-    chat = load_chat(cid) or {
-        "id": cid,
-        "title": "",
-        "messages": []
-    }
+    chat = load_chat(cid) or {"id": cid, "title": "", "messages": []}
 
     if not chat["title"]:
         try:
@@ -1475,93 +1468,96 @@ def ask():
     else:
         title = chat["title"]
 
-    chat["messages"].append({
-        "role": "user",
-        "text": msg
-    })
+    chat["messages"].append({"role": "user", "text": msg})
 
     with _lock:
-
         _capture.clear()
-
         try:
-
-            short_replies = [
-                "yes", "ok", "okay", "yeah",
-                "sure", "continue", "go on"
-            ]
-
+            short_replies = ["yes", "ok", "okay", "yeah", "sure", "continue", "go on"]
             if msg.lower() in short_replies and chat["messages"]:
-
                 previous = ""
-
                 for m in reversed(chat["messages"][:-1]):
-
                     if m["role"] == "user":
-
                         previous = m["text"]
                         break
-
                 msg = f"""
 The user replied with: '{msg}'
-
 Continue the previous discussion naturally.
-
 Previous topic:
 {previous}
-
 Do NOT ask again what topic the user wants.
 """
 
-            try:
-                assistant._recent_turns.clear()
-            except:
-                pass
-                # Load chat history into context
-                assistant._recent_turns.clear()
-                for m in chat["messages"][-14:]:
-                    role = "you" if m["role"] == "user" else "assistant"
-                    assistant._recent_turns.append((role, m["text"]))
+            # Load chat history into context
+            assistant._recent_turns.clear()
+            for m in chat["messages"][-14:]:
+                role = "you" if m["role"] == "user" else "assistant"
+                assistant._recent_turns.append((role, m["text"]))
 
-                assistant.answer(msg)
+            # Web search detection
+            search_words = [
+                "latest", "news", "today", "current", "price", "weather",
+                "stock", "release", "who won", "near me",
+                "look up", "what happened", "how much", "recent", "update", "live", "2026",
+            ]
+            needs_search = any(w in msg.lower() for w in search_words)
+            if CURRENT_PROJECT == "Coding":
+                needs_search = False
+            if needs_search:
+                try:
+                    from ddgs import DDGS
+                    with DDGS() as ddgs:
+                        results = list(ddgs.text(msg, max_results=4))
+                    if results:
+                        web_context = "\n".join(f"- {r['title']}: {r['body']}" for r in results)
+                        enriched = (
+                            f"Answer this using the web search results below.\n"
+                            f"Question: {msg}\n\n"
+                            f"Search results:\n{web_context}\n\n"
+                            f"Give a clear, direct answer."
+                        )
+                        reply = _brain(enriched, with_context=False)
+                        if reply:
+                            import re
+                            reply = re.sub(r'^(let me search.*?\.)\s*', '', reply, flags=re.IGNORECASE).strip()
+                        _capture.append(reply or "Could not find a clear answer.")
+                    else:
+                        assistant.answer(msg)
+                except Exception as e:
+                    print("Web search error:", e)
+                    assistant.answer(msg)
+            else:
+                reply = _brain(msg, with_context=True)
+                if reply:
+                    import re
+                    reply = re.sub(r'^(let me search.*?\.)\s*', '', reply, flags=re.IGNORECASE).strip()
+                _capture.append(reply or "I couldn't answer that.")
 
         except Exception as e:
-            import traceback;
-            traceback.print_exc()
+            import traceback; traceback.print_exc()
             _capture.append("(Error: %s)" % e)
 
+        import re
         reply = "\n\n".join(_capture) or "..."
+        reply = re.sub(r'^(let me search.*?\.)\s*', '', reply, flags=re.IGNORECASE).strip() or "..."
 
         if reply.startswith("[IMAGE]"):
-
             img_path = reply.replace("[IMAGE]", "").strip()
             img_path = img_path.replace("\\", "/")
-
             fname = os.path.basename(img_path)
-
             import shutil
-
             dest = os.path.join(UPLOAD_DIR, fname)
-
             try:
                 if not os.path.exists(dest):
                     shutil.copy2(img_path, dest)
             except:
                 pass
-
             reply = "[IMAGE]/uploads/" + fname
 
-    chat["messages"].append({
-        "role": "smith",
-        "text": reply
-    })
-
+    chat["messages"].append({"role": "smith", "text": reply})
     save_chat(cid, title, chat["messages"])
+    return jsonify({"reply": reply, "chat_id": cid})
 
-    return jsonify({
-        "reply": reply,
-        "chat_id": cid
-    })
 @app.route("/research", methods=["POST"])
 def research_route():
     if not _current_user():
@@ -1675,6 +1671,28 @@ def tts_route():
         return jsonify({"error": "ElevenLabs %d" % r.status_code}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route("/chats")
+def chats():
+    return jsonify(list_chats())
+
+
+@app.route("/chat/<cid>")
+def get_chat(cid):
+    chat = load_chat(cid)
+    if not chat:
+        return jsonify({"error": "not found"}), 404
+    return jsonify(chat)
+
+
+@app.route("/new", methods=["POST"])
+def new_chat():
+    try:
+        assistant._recent_turns.clear()
+    except:
+        pass
+    return jsonify({"ok": True})
+
 @app.route("/stop_speech", methods=["POST", "GET"])
 def stop_speech_route():
     stop_speaking()
