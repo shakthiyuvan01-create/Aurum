@@ -1,0 +1,15 @@
+{
+  "id": "84ca08c23f61",
+  "title": "Coding Basics",
+  "ts": 1781604461,
+  "messages": [
+    {
+      "role": "user",
+      "text": "what is coding"
+    },
+    {
+      "role": "smith",
+      "text": "Coding, also known as computer programming, is the process of creating sequences of instructions that a computer can follow to perform specific tasks. It involves writing code in various programming languages, which translates algorithms—step-by-step procedures or formulas—into a format that computers can understand. Essentially, coding enables the development of software, applications, and scripts to solve problems or perform tasks efficiently. 💻✨"
+    }
+  ]
+}

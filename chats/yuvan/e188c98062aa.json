@@ -1,0 +1,15 @@
+{
+  "id": "e188c98062aa",
+  "title": "Coding Basics",
+  "ts": 1781694339,
+  "messages": [
+    {
+      "role": "user",
+      "text": "what is coding"
+    },
+    {
+      "role": "smith",
+      "text": "Coding is the process of writing instructions for computers to execute. It involves translating human ideas into a language that computers can understand, allowing them to perform tasks, solve problems, or create applications. Essentially, coding is how we communicate with machines to harness their power for various purposes, from software development to automating everyday tasks. 💻✨"
+    }
+  ]
+}
