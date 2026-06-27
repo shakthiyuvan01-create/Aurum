@@ -653,8 +653,16 @@ def open_url(url: str) -> None:
         webbrowser.open(url)
 
 def launch_app(command: str) -> bool:
+    """Launch a whitelisted app path/command.
+    Uses os.startfile on Windows to avoid shell=True injection risk.
+    command must always come from the APPS whitelist, never raw user input.
+    """
     try:
-        subprocess.Popen(f'start "" {command}', shell=True)
+        import sys as _sys
+        if _sys.platform == "win32":
+            os.startfile(command)
+        else:
+            subprocess.Popen([command])
         return True
     except Exception:
         return False
@@ -677,12 +685,11 @@ def do_open(target: str) -> None:
     app = name if name in APPS else (nospace if nospace in APPS else None)
     if app:
         say(f"Opening {app}")
-        launch_app(APPS[app])
+        launch_app(APPS[app])   # APPS[app] is from whitelist — safe
         return
-    say(f"Trying to open {name}")
-    if not launch_app(name):
-        say("I could not find that app, so I am searching the web instead")
-        open_url(SEARCH_ENGINE + urllib.parse.quote(target))
+    # Do NOT fall back to launch_app(name) — raw user input is unsafe
+    say("I could not find that app, so I am searching the web instead")
+    open_url(SEARCH_ENGINE + urllib.parse.quote(target))
 
 
 # ====================================================================

@@ -90,7 +90,16 @@ def run_stream(
             data = resp.json()
         except Exception as e:
             log.error("Agent plan call failed (round %d): %s", _round, e)
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            err_str = str(e)
+            if "401" in err_str:
+                err_msg = "⚠️ GitHub token expired or invalid. Update GITHUB_TOKEN in your .env and restart."
+            elif "429" in err_str:
+                err_msg = "⚠️ API rate limit hit. Please wait a moment and try again."
+            elif "timeout" in err_str.lower():
+                err_msg = "⚠️ Request timed out. Please try again."
+            else:
+                err_msg = f"⚠️ {err_str}"
+            yield f"data: {json.dumps({'error': err_msg})}\n\n"
             return
 
         choice  = data["choices"][0]
@@ -128,7 +137,16 @@ def run_stream(
         stream_resp.raise_for_status()
     except Exception as e:
         log.error("Agent stream call failed: %s", e)
-        yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        err_str = str(e)
+        if "401" in err_str:
+            err_msg = "⚠️ GitHub token expired or invalid. Update GITHUB_TOKEN in your .env and restart."
+        elif "429" in err_str:
+            err_msg = "⚠️ API rate limit hit. Please wait a moment and try again."
+        elif "timeout" in err_str.lower():
+            err_msg = "⚠️ Request timed out. Please try again."
+        else:
+            err_msg = f"⚠️ {err_str}"
+        yield f"data: {json.dumps({'error': err_msg})}\n\n"
         return
 
     full_reply: list[str] = []

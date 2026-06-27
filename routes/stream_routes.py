@@ -43,8 +43,19 @@ def _current_user() -> str:
 def _route_model(msg: str, settings: dict) -> str:
     return _deps["route_model"](msg, settings)
 
-def _save_chat(cid, title, messages):
-    return _deps["save_chat"](cid, title, messages)
+def _save_chat(cid, uname, title, messages):
+    """Pass uname explicitly — don't rely on session inside a generator."""
+    save_fn = _deps["save_chat"]
+    import inspect
+    # smith_web.save_chat(cid, title, messages) injects username via _current_user()
+    # If it accepts username as 4th arg, pass it; otherwise call as-is.
+    try:
+        sig = inspect.signature(save_fn)
+        if len(sig.parameters) >= 4:
+            return save_fn(cid, uname, title, messages)
+    except Exception:
+        pass
+    return save_fn(cid, title, messages)
 
 
 # ── /stream ───────────────────────────────────────────────────────────────────
@@ -154,7 +165,7 @@ def stream_ask():
         # ── persist after streaming + emit enriched done ─────────────
         if reply_text:
             chat["messages"].append({"role": "assistant", "text": reply_text})
-            _save_chat(cid, title, chat["messages"])
+            _save_chat(cid, uname, title, chat["messages"])
             try:
                 vmem.store_conversation(uname, msg, reply_text, cid)
             except Exception as ve:
