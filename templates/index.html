@@ -1,5 +1,12 @@
 <!DOCTYPE html><html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Assist Neo">
+<meta name="theme-color" content="#00ff5a">
+<link rel="manifest" href="/static/manifest.json">
 <title>{{ ANAME }}</title>
 <script>
 MathJax = {
@@ -169,13 +176,22 @@ box-shadow:0 0 15px #00ff88;
 .hbg{background:transparent;border:0;color:var(--txt);cursor:pointer;
   padding:4px;display:grid;place-items:center;}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:90;}
-@media(max-width:640px){
+@media(max-width:768px){
   .top-bar{display:flex;}
   .side{position:fixed;top:0;left:0;height:100%;z-index:100;
     transform:translateX(-100%);transition:transform .25s ease;}
   .side.open{transform:translateX(0);}
   .overlay.show{display:block;}
-  .bubble{max-width:88%;}
+  .bubble{max-width:92%;}
+  .msg{max-width:92%!important;}
+  /* coding panel takes full width on mobile */
+  #codePanel{position:fixed!important;top:0!important;right:0!important;
+    bottom:0!important;left:0!important;width:100%!important;z-index:200;}
+  /* input area */
+  #bx{font-size:15px;}
+  .comp{padding:8px!important;}
+  /* make buttons smaller */
+  .top-bar .hbg{padding:6px;}
 }
 /* HIDE SCROLLBAR */
 
@@ -203,6 +219,12 @@ body{
 .CodeMirror-scroll{height:100%!important;}
 #cp_editor .CodeMirror-wrap{height:100%;}
 
+
+/* ── Coding panel tabs compact ─────────────────────────── */
+#cpTabs button{white-space:nowrap;}
+@media(max-width:480px){
+  #cpTabs button{padding:4px 7px!important;font-size:10px!important;}
+}
 </style><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
@@ -499,6 +521,7 @@ body{
       <input id="gitCommitMsg" placeholder="Commit message..." style="background:#21262d;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:5px 10px;font-size:13px;width:200px;outline:none;">
       <input id="gitCustomCmd" placeholder="e.g. stash, checkout main" style="background:#21262d;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:5px 10px;font-size:13px;width:200px;outline:none;">
       <button onclick="gitRun()" style="background:#238636;border:0;border-radius:6px;padding:5px 14px;color:#fff;font-size:13px;cursor:pointer;font-weight:600;">Run</button>
+      <button onclick="gitPushDesktop()" style="background:#6e40c9;border:0;border-radius:6px;padding:5px 14px;color:#fff;font-size:13px;cursor:pointer;font-weight:600;">📤 Save &amp; Push</button>
     </div>
     <pre id="gitOutput" style="flex:1;margin:0;padding:16px;overflow-y:auto;font-size:13px;font-family:'Cascadia Code',Consolas,monospace;color:#e6edf3;white-space:pre-wrap;word-wrap:break-word;"></pre>
   </div>
@@ -706,11 +729,7 @@ function typing(isImage=false){
       <div class="typ" style="display:flex;gap:5px;justify-content:center;margin-top:12px;"><i></i><i></i><i></i></div>
     </div>`;
   }else{
-    t.innerHTML=`<div style=background:linear-gradient(
-180deg,
-rgba(0,255,90,.18),
-rgba(0,0,0,.95)
-);
+    t.innerHTML=`<div style="background:linear-gradient(180deg,rgba(0,255,90,.18),rgba(0,0,0,.95));
       border-radius:18px;border-bottom-left-radius:5px;
       padding:12px 18px;display:inline-flex;align-items:center;gap:10px;
       box-shadow:0 2px 12px rgba(0,0,0,.25);">
@@ -720,8 +739,19 @@ rgba(0,0,0,.95)
         <i style="width:6px;height:6px;border-radius:50%;background:#c96442;opacity:.7;animation:bl 1.2s .2s infinite both;display:block;"></i>
         <i style="width:6px;height:6px;border-radius:50%;background:#c96442;opacity:.7;animation:bl 1.2s .4s infinite both;display:block;"></i>
       </div>
+      <span class="think-secs" style="font-size:11px;color:var(--muted);opacity:.6;min-width:22px;"></span>
     </div>`;
   }
+  // ── Seconds counter ───────────────────────────────────────────────
+  let _secs = 0;
+  const _tick = setInterval(() => {
+    _secs++;
+    const el = t.querySelector('.think-secs');
+    if (el) el.textContent = _secs + 's';
+  }, 1000);
+  // Override remove() so the timer is always cleared
+  const _origRemove = t.remove.bind(t);
+  t.remove = () => { clearInterval(_tick); _origRemove(); };
   th.appendChild(t);sc.scrollTop=sc.scrollHeight;return t;}
 const PL='<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>';
 const SQ='<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>';
@@ -1243,6 +1273,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // settings routing toggle
   const cb=document.getElementById('settRouting');
   if(cb) cb.addEventListener('change',()=>_updateRoutingTrack(cb.checked));
+
+  // Register PWA service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/static/sw.js').catch(() => {});
+  }
 });
 async function saveSettings(){
   const payload={
@@ -1495,6 +1530,23 @@ async function gitRun(forceAction, silent){
     const result=d.result||d;
     if(result.error){out.textContent='❌ '+result.error;return;}
     out.textContent=result.output||(result.success?'✅ Done':'(no output)');
+  }catch(e){out.textContent='Request failed: '+e;}
+}
+
+async function gitPushDesktop(){
+  const msg=document.getElementById('gitCommitMsg').value.trim()||'Update from Assist Neo';
+  const out=document.getElementById('gitOutput');
+  out.textContent='📤 Staging, committing and pushing…';
+  try{
+    const r=await fetch('/git/push',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:msg})});
+    const d=await r.json();
+    if(d.ok){
+      out.textContent='✅ Pushed!\n\n'+d.output+'\n\n🖥️ Opening GitHub Desktop…';
+    }else{
+      out.textContent='❌ Push failed:\n'+d.output;
+    }
   }catch(e){out.textContent='Request failed: '+e;}
 }
 

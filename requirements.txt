@@ -13,3 +13,12 @@ pytesseract
 pystray
 flask
 python-dotenv
+requests
+chromadb
+duckduckgo-search
+beautifulsoup4
+reportlab
+python-docx
+python-pptx
+openpyxl
+pdfplumber

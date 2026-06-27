@@ -10,7 +10,8 @@ import re as _re
 import db as _db
 import vector_memory as _vmem
 import agent as _agent
-from routes.stream_routes import stream_bp, _init as _init_stream_bp
+from routes.stream_routes  import stream_bp,   _init as _init_stream_bp
+from routes.research_routes import research_bp, _init as _init_research_bp
 import tools as _tools
 
 try:
@@ -64,11 +65,15 @@ except ImportError:
     _pd = None
 app = Flask(__name__)
 BASE = os.path.dirname(os.path.abspath(__file__))
-UPLOAD_DIR = os.path.join(BASE, "uploads")
-CHATS_DIR = os.path.join(BASE, "chats")
-USERS_FILE = os.path.join(BASE, "users.json")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-os.makedirs(CHATS_DIR, exist_ok=True)
+UPLOAD_DIR  = os.path.join(BASE, "uploads")
+CHATS_DIR   = os.path.join(BASE, "chats")
+DOCS_DIR    = os.path.join(BASE, "generated_docs")
+STATIC_DIR  = os.path.join(BASE, "static")
+USERS_FILE  = os.path.join(BASE, "users.json")
+os.makedirs(UPLOAD_DIR,  exist_ok=True)
+os.makedirs(CHATS_DIR,   exist_ok=True)
+os.makedirs(DOCS_DIR,    exist_ok=True)
+os.makedirs(STATIC_DIR,  exist_ok=True)
 _db.init_db()
 _db.migrate_json(USERS_FILE, CHATS_DIR, os.path.join(BASE, "neo_memory.json"))
 _vmem.init()
@@ -495,7 +500,7 @@ def _require_login():
         return redirect("/login")
 
 
-# Register stream blueprint (after _route_model + save_chat are defined)
+# Register blueprints (after _route_model + save_chat are defined)
 _init_stream_bp({
     "db":          _db,
     "vmem":        _vmem,
@@ -505,6 +510,9 @@ _init_stream_bp({
     "save_chat":   save_chat,
 })
 app.register_blueprint(stream_bp)
+
+_init_research_bp({"assistant": assistant})
+app.register_blueprint(research_bp)
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -567,6 +575,10 @@ def register():
 def logout():
     session.clear()
     return redirect("/login")
+
+@app.route("/static/<path:filename>")
+def serve_static(filename):
+    return send_from_directory(STATIC_DIR, filename)
 
 
 # ====================================================================
@@ -838,8 +850,10 @@ def tools_run():
     args = body.get("args", {})
     if not name:
         return jsonify({"error": "tool name required"}), 400
-    # Inject username for tools that need it (calendar, reminders)
-    args.setdefault("username", _current_user())
+    # Only inject username for tools that explicitly accept it
+    tool_info = _tools.get_tool(name)
+    if tool_info and any(i["name"] == "username" for i in tool_info.get("inputs", [])):
+        args.setdefault("username", _current_user())
     result = _tools.call(name, **args)
     return jsonify(result)
 
@@ -849,6 +863,18 @@ def tools_reload():
         return jsonify({"error": "login"}), 401
     _tools.reload()
     return jsonify({"ok": True, "count": len(_tools.list_tools())})
+
+# ── Generated documents download ────────────────────────────────────────────
+@app.route("/docs/<path:filename>")
+def serve_doc(filename):
+    """Serve generated documents (PDF, DOCX, PPTX, XLSX)."""
+    if not _current_user():
+        return jsonify({"error": "login"}), 401
+    import re as _re2
+    # Safety: only allow safe filenames — no path traversal
+    if _re2.search(r"[/\\\.]{2,}|^\.", filename):
+        return jsonify({"error": "invalid filename"}), 400
+    return send_from_directory(DOCS_DIR, filename, as_attachment=True)
 
 @app.route("/tools/custom/save", methods=["POST"])
 def tools_custom_save():
@@ -1119,29 +1145,67 @@ def code_run():
         prompt  = (
             f"The following {language} code produced an error. "
             f"Explain the bug clearly and show the corrected code.\n\n"
-            f"```{language}\n{code}\n```\n\n"
-            f"Error output:\n```\n{stderr or stdout}\n```"
+            f"```{language}\n"
+            f"{code}\n"
+            f"```\n\n"
+            f"Error:\n{stderr}\n"
+            + (f"Output:\n{stdout}\n" if stdout else "")
         )
         try:
-            import assistant as _asst
-            analysis = _asst.ask_github_models(
-                msg=prompt,
-                history=[],
-                system_prompt="You are an expert debugger. Be concise and direct.",
-            )
-            result["ai_analysis"] = analysis
-        except Exception as exc:
-            result["ai_analysis"] = f"(AI debug unavailable: {exc})"
+            ai_resp = assistant.ask_ai_brain(prompt, with_context=False)
+            result["ai_debug"] = ai_resp or ""
+        except Exception as _ae:
+            result["ai_debug"] = f"AI debug unavailable: {_ae}"
 
     return jsonify(result)
 
 
+# ── Git Push + Open GitHub Desktop ───────────────────────────────────────────
+@app.route("/git/push", methods=["POST"])
+@login_required
+def git_push():
+    """Stage all, commit, push, then launch GitHub Desktop."""
+    data    = request.get_json(force=True) or {}
+    msg     = (data.get("message") or "Update from Assist Neo").strip()
+    workdir = BASE   # project root
+
+    output = []
+    try:
+        def _run(cmd):
+            r = subprocess.run(cmd, capture_output=True, text=True,
+                               cwd=workdir, timeout=30)
+            out = (r.stdout + r.stderr).strip()
+            output.append(out)
+            return r.returncode, out
+
+        _run(["git", "add", "-A"])
+        rc, out = _run(["git", "commit", "-m", msg])
+        if rc != 0 and "nothing to commit" not in out:
+            return jsonify({"ok": False, "output": "\n".join(output)})
+        _run(["git", "push"])
+
+        # Open GitHub Desktop
+        try:
+            gh_paths = [
+                os.path.expandvars(r"%LOCALAPPDATA%\GitHubDesktop\GitHubDesktop.exe"),
+                os.path.expandvars(r"%PROGRAMFILES%\GitHub Desktop\GitHubDesktop.exe"),
+            ]
+            opened = False
+            for p in gh_paths:
+                if os.path.exists(p):
+                    subprocess.Popen([p])
+                    opened = True
+                    break
+            if not opened:
+                os.startfile("github-windows://")
+        except Exception:
+            pass   # GitHub Desktop not installed — push still succeeded
+
+        return jsonify({"ok": True, "output": "\n".join(output)})
+
+    except Exception as e:
+        return jsonify({"ok": False, "output": str(e)})
+
+
 if __name__ == "__main__":
-    import ssl
-    ctx = None
-    cert, key = BASE + "/cert.pem", BASE + "/key.pem"
-    if os.path.exists(cert) and os.path.exists(key):
-        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        ctx.load_cert_chain(cert, key)
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)),
-            debug=False, ssl_context=ctx)
+    app.run(host="0.0.0.0", port=5000, debug=False)
