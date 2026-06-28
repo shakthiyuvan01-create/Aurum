@@ -21,8 +21,13 @@ def init_db():
                 username   TEXT PRIMARY KEY,
                 nick       TEXT NOT NULL DEFAULT '',
                 pw_hash    TEXT NOT NULL,
+                role       TEXT NOT NULL DEFAULT 'user',
                 created_at INTEGER DEFAULT (strftime('%s','now'))
             );
+            -- migrate: add role column if it doesn't exist yet
+            -- (SQLite ALTER TABLE cannot add a column with a NOT NULL
+            --  constraint if rows exist, so we use a default of 'user')
+
             CREATE TABLE IF NOT EXISTS chats (
                 id         TEXT PRIMARY KEY,
                 username   TEXT NOT NULL,
@@ -54,6 +59,13 @@ def init_db():
                 updated_at        INTEGER DEFAULT (strftime('%s','now'))
             );
         """)
+    # migration: add role column to existing DBs that predate it
+    try:
+        with _conn() as db:
+            db.execute("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'")
+            log.info("DB migration: added 'role' column to users")
+    except Exception:
+        pass   # column already exists
     log.info("DB ready: %s", DB_PATH)
 
 # ── Users ──────────────────────────────────────────────────────────
@@ -62,16 +74,34 @@ def get_user(username):
         row = db.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
         return dict(row) if row else None
 
-def create_user(username, nick, pw_hash):
+def create_user(username, nick, pw_hash, role: str = "user"):
     with _conn() as db:
-        db.execute("INSERT INTO users (username,nick,pw_hash) VALUES (?,?,?)",
-                   (username, nick, pw_hash))
+        db.execute("INSERT INTO users (username,nick,pw_hash,role) VALUES (?,?,?,?)",
+                   (username, nick, pw_hash, role))
 
 def get_all_users():
     """Returns dict matching old users.json shape for login compat."""
     with _conn() as db:
-        rows = db.execute("SELECT username,nick,pw_hash FROM users").fetchall()
-        return {r["username"]: {"pw": r["pw_hash"], "nick": r["nick"]} for r in rows}
+        rows = db.execute("SELECT username,nick,pw_hash,role FROM users").fetchall()
+        return {r["username"]: {"pw": r["pw_hash"], "nick": r["nick"], "role": r["role"]}
+                for r in rows}
+
+def get_user_role(username: str) -> str:
+    """Return the user's role string ('user', 'admin', etc.) or 'user' if not found."""
+    row = get_user(username)
+    return (row or {}).get("role", "user")
+
+def set_user_role(username: str, role: str) -> None:
+    with _conn() as db:
+        db.execute("UPDATE users SET role=? WHERE username=?", (role, username))
+
+def list_all_users() -> list[dict]:
+    """Admin helper — returns all users (without pw_hash)."""
+    with _conn() as db:
+        rows = db.execute(
+            "SELECT username,nick,role,created_at FROM users ORDER BY created_at"
+        ).fetchall()
+        return [dict(r) for r in rows]
 
 # ── Chats ──────────────────────────────────────────────────────────
 def get_chat(chat_id):
@@ -132,7 +162,7 @@ def add_memory(username, fact):
         try:
             db.execute("INSERT INTO neo_memories (username,fact) VALUES (?,?)", (username, fact))
         except sqlite3.IntegrityError:
-            pass  # already exists
+            log.debug("Memory fact already exists for user %s, skipping", username)
 
 def clear_memories(username):
     with _conn() as db:

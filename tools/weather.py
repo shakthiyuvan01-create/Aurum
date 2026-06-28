@@ -1,5 +1,7 @@
 """Weather tool — current conditions via wttr.in (no API key required)."""
-import urllib.parse, urllib.request, json
+import urllib.parse, urllib.request, json, logging
+
+log = logging.getLogger(__name__)
 
 NAME        = "weather"
 DESCRIPTION = "Get current weather and 3-day forecast for any city"
@@ -48,6 +50,7 @@ def run(location: str, units: str = "metric") -> dict:
         with urllib.request.urlopen(req, timeout=8) as r:
             data = json.loads(r.read().decode())
     except Exception as e:
+        log.error("weather fetch failed for %s: %s", location, e)
         return {"error": f"Could not fetch weather: {e}"}
 
     cur = data["current_condition"][0]

@@ -22,13 +22,33 @@ import tools as _tools
 
 log = logging.getLogger("agent")
 
-GITHUB_API = "https://models.inference.ai.azure.com/chat/completions"
+GITHUB_API   = "https://models.inference.ai.azure.com/chat/completions"
+OLLAMA_API   = os.environ.get("OLLAMA_URL", "http://localhost:11434") + "/v1/chat/completions"
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2")
 
 # Tools excluded from the auto-schema (too dangerous / not suited for chat)
 _EXCLUDE_FROM_AGENT = {"code_runner", "git"}
 
-# Max tool-call rounds per turn (prevents infinite loops)
-MAX_ROUNDS = 4
+# Max tool-call rounds per turn (2 is enough for 99% of queries)
+MAX_ROUNDS = 2
+
+_SSE_END = "\n\n"
+
+
+def _is_token_valid(token: str) -> bool:
+    """Return True if a non-empty, non-placeholder token exists."""
+    return bool(token and token.strip() and token != "your_github_token_here")
+
+
+def _is_ollama_up() -> bool:
+    """Quick 2-second ping — returns True if Ollama is reachable."""
+    try:
+        base = OLLAMA_API.replace("/v1/chat/completions", "/")
+        r = _rq.get(base, timeout=2)
+        return r.status_code < 500
+    except Exception as _e:
+        log.debug("Ollama health check failed: %s", _e)
+        return False
 
 
 def _headers(token: str) -> dict:
@@ -38,19 +58,36 @@ def _headers(token: str) -> dict:
 def _chat(messages: list, model: str, token: str,
           tools_schema: list | None = None,
           stream: bool = False, temperature: float = 0.7,
-          max_tokens: int = 1800) -> _rq.Response:
+          max_tokens: int = 1200,
+          use_ollama: bool = False,
+          ollama_model: str | None = None) -> _rq.Response:
     payload: dict = {
-        "model":       model,
+        "model":       (ollama_model or OLLAMA_MODEL) if use_ollama else model,
         "messages":    messages,
         "temperature": temperature,
         "max_tokens":  max_tokens,
         "stream":      stream,
     }
-    if tools_schema:
+    if tools_schema and not use_ollama:
+        # Ollama tool-calling support varies by model; skip tools to be safe
         payload["tools"]       = tools_schema
         payload["tool_choice"] = "auto"
+    if use_ollama:
+        return _rq.post(OLLAMA_API,
+                        headers={"Content-Type": "application/json"},
+                        json=payload, stream=stream, timeout=120)
     return _rq.post(GITHUB_API, headers=_headers(token),
                     json=payload, stream=stream, timeout=90)
+
+
+def _should_fallback(err: Exception) -> bool:
+    """Return True when the error looks like an auth failure."""
+    s = str(err)
+    return "401" in s or "403" in s or "invalid" in s.lower()
+
+
+def _sse(payload: dict) -> str:
+    return "data: " + json.dumps(payload) + "\n\n"
 
 
 # ── Public entry point ────────────────────────────────────────────────────────
@@ -63,6 +100,8 @@ def run_stream(
     token: str,
     username: str = "default",
     enable_tools: bool = True,
+    image_b64: str | None = None,    # base64 image for vision queries
+    image_mime: str = "image/jpeg",  # mime type of the image
 ) -> "Generator[str, None, None]":   # yields raw SSE strings
     """Main agent entry.
 
@@ -76,53 +115,104 @@ def run_stream(
     # Build initial message list
     messages: list = [{"role": "system", "content": system_prompt}]
     messages.extend(history_messages)
-    messages.append({"role": "user", "content": msg})
+
+    # ── Multimodal user message (image + text) ────────────────────────────────
+    if image_b64:
+        data_url   = f"data:{image_mime};base64,{image_b64}"
+        user_content = [
+            {"type": "text",      "text": msg or "What is in this image?"},
+            {"type": "image_url", "image_url": {"url": data_url}},
+        ]
+        messages.append({"role": "user", "content": user_content})
+    else:
+        messages.append({"role": "user", "content": msg})
 
     tools_used: list[str] = []
 
-    # ── Phase 1 & 2: Plan + Execute (non-streaming, repeating) ───────────────
+    # ── Decide upfront: GitHub Models or Ollama? ──────────────────────────────
+    use_ollama   = not _is_token_valid(token)
+    # When image is attached and using Ollama, switch to llava vision model
+    ollama_model = ("llava" if image_b64 else OLLAMA_MODEL)
+    if use_ollama:
+        if not _is_ollama_up():
+            yield _sse({"error": "⚠️ No GitHub token set and Ollama is not running. "
+                                  "Add GITHUB_TOKEN to .env or start Ollama."})
+            return
+        note = "*(using local Ollama — " + OLLAMA_MODEL + ")*\n\n"
+        yield _sse({"delta": note})
+
+    # ── Phase 1 & 2: Plan + Execute (non-streaming, up to MAX_ROUNDS) ─────────
     for _round in range(MAX_ROUNDS):
         try:
             resp = _chat(messages, model, token,
-                         tools_schema=all_tools if all_tools else None,
-                         stream=False)
+                         tools_schema=all_tools if (all_tools and not use_ollama) else None,
+                         stream=False, use_ollama=use_ollama, ollama_model=ollama_model)
             resp.raise_for_status()
             data = resp.json()
+
         except Exception as e:
             log.error("Agent plan call failed (round %d): %s", _round, e)
-            err_str = str(e)
-            if "401" in err_str:
-                err_msg = "⚠️ GitHub token expired or invalid. Update GITHUB_TOKEN in your .env and restart."
-            elif "429" in err_str:
-                err_msg = "⚠️ API rate limit hit. Please wait a moment and try again."
-            elif "timeout" in err_str.lower():
-                err_msg = "⚠️ Request timed out. Please try again."
+
+            # ── Auto-fallback to Ollama on auth error ─────────────────────
+            if _should_fallback(e) and not use_ollama:
+                if _is_ollama_up():
+                    log.info("GitHub token auth failed — falling back to Ollama")
+                    use_ollama = True
+                    note2 = "*(GitHub token expired — switching to local Ollama " + OLLAMA_MODEL + ")*\n\n"
+                    yield _sse({"delta": note2})
+                    try:
+                        resp = _chat(messages, model, token, stream=False, use_ollama=True, ollama_model=ollama_model)
+                        resp.raise_for_status()
+                        data = resp.json()
+                    except Exception as e2:
+                        log.error("Ollama plan fallback also failed: %s", e2)
+                        yield _sse({"error": "⚠️ Ollama also failed: " + str(e2)})
+                        return
+                else:
+                    yield _sse({"error": "⚠️ GitHub token expired and Ollama is not running. "
+                                          "Update GITHUB_TOKEN or start Ollama."})
+                    return
+
             else:
-                err_msg = f"⚠️ {err_str}"
-            yield f"data: {json.dumps({'error': err_msg})}\n\n"
-            return
+                err_str = str(e)
+                if "429" in err_str:
+                    err_msg = "⚠️ API rate limit hit. Please wait a moment and try again."
+                elif "timeout" in err_str.lower():
+                    err_msg = "⚠️ Request timed out. Please try again."
+                else:
+                    err_msg = "⚠️ " + err_str
+                yield _sse({"error": err_msg})
+                return
 
         choice  = data["choices"][0]
         message = choice["message"]
         finish  = choice.get("finish_reason", "stop")
 
-        # ── No tool calls → done planning, go stream ──────────────────────
+        # ── No tool calls → done planning, proceed to stream answer ───────
         if finish != "tool_calls" or not message.get("tool_calls"):
             break
 
-        # ── Execute each tool call ────────────────────────────────────────
-        messages.append(message)   # assistant message with tool_calls
+        # ── Ollama: no tool execution, treat response as final ────────────
+        if use_ollama:
+            break
 
-        for tc in message["tool_calls"]:
-            tname  = tc["function"]["name"]
-            tc_id  = tc.get("id", tname)
-            log.info("Agent executing tool: %s", tname)
-            result = _tools.call_from_openai(tc, username=username)
+        # ── Execute tool calls concurrently ─────────────────────────────
+        messages.append(message)
+        tool_calls_list = message["tool_calls"]
+
+        if len(tool_calls_list) > 1:
+            log.info("Agent running %d tools concurrently: %s",
+                     len(tool_calls_list),
+                     [tc["function"]["name"] for tc in tool_calls_list])
+            results = _tools.call_multiple_concurrent(tool_calls_list, username=username)
+        else:
+            results = [_tools.call_from_openai(tool_calls_list[0], username=username)]
+
+        for tc, result in zip(tool_calls_list, results):
+            tname = tc["function"]["name"]
+            tc_id = tc.get("id", tname)
             tools_used.append(tname)
-
-            # Notify UI so it can show a "🔧 Used weather" chip
-            yield f"data: {json.dumps({'tool_used': tname, 'result': result[:300]})}\n\n"
-
+            yield _sse({"tool_used": tname, "result": result[:300]})
             messages.append({
                 "role":         "tool",
                 "tool_call_id": tc_id,
@@ -132,24 +222,40 @@ def run_stream(
     # ── Phase 3: Stream final answer ─────────────────────────────────────────
     try:
         stream_resp = _chat(messages, model, token,
-                            tools_schema=None,   # no more tool calls in answer phase
-                            stream=True)
+                            tools_schema=None,
+                            stream=True, use_ollama=use_ollama, ollama_model=ollama_model)
         stream_resp.raise_for_status()
-    except Exception as e:
-        log.error("Agent stream call failed: %s", e)
-        err_str = str(e)
-        if "401" in err_str:
-            err_msg = "⚠️ GitHub token expired or invalid. Update GITHUB_TOKEN in your .env and restart."
-        elif "429" in err_str:
-            err_msg = "⚠️ API rate limit hit. Please wait a moment and try again."
-        elif "timeout" in err_str.lower():
-            err_msg = "⚠️ Request timed out. Please try again."
-        else:
-            err_msg = f"⚠️ {err_str}"
-        yield f"data: {json.dumps({'error': err_msg})}\n\n"
-        return
 
+    except Exception as e:
+        # One last fallback attempt at stream phase
+        if _should_fallback(e) and not use_ollama and _is_ollama_up():
+            log.info("GitHub token failed at stream phase — falling back to Ollama")
+            use_ollama = True
+            note3 = "*(switching to local Ollama " + OLLAMA_MODEL + ")*\n\n"
+            yield _sse({"delta": note3})
+            try:
+                stream_resp = _chat(messages, model, token, stream=True, use_ollama=True, ollama_model=ollama_model)
+                stream_resp.raise_for_status()
+            except Exception as e2:
+                log.error("Ollama stream fallback failed: %s", e2)
+                yield _sse({"error": "⚠️ Ollama also failed: " + str(e2)})
+                return
+        else:
+            err_str = str(e)
+            if "401" in err_str or "403" in err_str:
+                err_msg = "⚠️ GitHub token expired or invalid. Update GITHUB_TOKEN in your .env and restart."
+            elif "429" in err_str:
+                err_msg = "⚠️ API rate limit hit. Please wait a moment and try again."
+            elif "timeout" in err_str.lower():
+                err_msg = "⚠️ Request timed out. Please try again."
+            else:
+                err_msg = "⚠️ " + err_str
+            yield _sse({"error": err_msg})
+            return
+
+    active_model = ("ollama/" + OLLAMA_MODEL) if use_ollama else model
     full_reply: list[str] = []
+
     for line in stream_resp.iter_lines():
         if not line:
             continue
@@ -164,9 +270,10 @@ def run_stream(
             delta = chunk["choices"][0]["delta"].get("content", "")
             if delta:
                 full_reply.append(delta)
-                yield f"data: {json.dumps({'delta': delta})}\n\n"
-        except Exception:
-            pass
+                yield _sse({"delta": delta})
+        except Exception as _chunk_err:
+            log.debug("SSE chunk parse skip: %s", _chunk_err)
 
     reply_text = "".join(full_reply)
-    yield f"data: {json.dumps({'done': True, 'reply': reply_text, 'model': model, 'tools_used': tools_used})}\n\n"
+    yield _sse({"done": True, "reply": reply_text,
+                "model": active_model, "tools_used": tools_used})

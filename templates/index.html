@@ -346,8 +346,16 @@ body{
       &#128300; Deep Research mode ON &nbsp;
       <span onclick="toggleResearch()" style="cursor:pointer;opacity:0.7;font-size:11px;">&#10005; turn off</span>
     </div>
+    <!-- Image preview strip -->
+    <div id="imgPreview" style="display:none;padding:6px 12px 0;display:flex;gap:8px;flex-wrap:wrap;"></div>
+    <div style="display:flex;align-items:center;gap:4px;flex:1;">
+    <button title="Attach image" onclick="document.getElementById('imgInput').click()"
+      style="background:none;border:0;color:var(--muted);cursor:pointer;font-size:20px;padding:4px 6px;flex-shrink:0;">🖼️</button>
+    <button title="Camera" onclick="openCamera()"
+      style="background:none;border:0;color:var(--muted);cursor:pointer;font-size:20px;padding:4px 6px;flex-shrink:0;">📷</button>
     <textarea id="bx" rows="1" placeholder="Message {{ ANAME }}..."
-      oninput="grow(this);updateSendBtn()" onkeydown="key(event)"></textarea>
+      oninput="grow(this);updateSendBtn()" onkeydown="key(event)" style="flex:1;"></textarea>
+    </div>
     <button class="sb" id="sendMicBtn" onclick="sendOrMic()">
       <svg id="micSvg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
@@ -358,7 +366,27 @@ body{
   </div>
   <input type="file" id="fi" hidden onchange="upload()" accept="image/*,video/*,.pdf,.csv,.xlsx,.xls,.txt,.py,.js,.html,.md">
   <input type="file" id="da" hidden accept=".csv,.xlsx,.xls" onchange="analyzeData()">
-  <div class="hint">{{ ANAME }} &middot; Enter to send</div>
+  <input type="file" id="imgInput" hidden accept="image/*" onchange="attachImage(this)">
+  <div class="hint">{{ ANAME }} &middot; Enter to send &middot; 🖼️ attach image &middot; 📷 camera</div>
+
+  <!-- Camera Modal -->
+  <div id="cameraModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);
+    z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;">
+    <div style="background:#1e1e24;border-radius:16px;padding:20px;max-width:500px;width:90vw;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span style="font-weight:600;font-size:15px;">📷 Camera</span>
+        <button onclick="closeCamera()" style="background:none;border:0;color:var(--muted);font-size:20px;cursor:pointer;">✕</button>
+      </div>
+      <video id="camVideo" autoplay playsinline style="width:100%;border-radius:10px;background:#000;max-height:320px;object-fit:cover;"></video>
+      <canvas id="camCanvas" style="display:none;"></canvas>
+      <div style="display:flex;gap:10px;margin-top:12px;justify-content:center;">
+        <button onclick="capturePhoto()"
+          style="background:var(--acc);border:0;border-radius:8px;padding:8px 22px;color:#000;font-weight:700;cursor:pointer;font-size:14px;">📸 Capture</button>
+        <button onclick="closeCamera()"
+          style="background:#333;border:0;border-radius:8px;padding:8px 22px;color:#fff;cursor:pointer;font-size:14px;">Cancel</button>
+      </div>
+    </div>
+  </div>
 </div>
 <div id="memPanel" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
   background:#1e1e24;border:1px solid var(--bdr);border-radius:16px;padding:24px;
@@ -838,17 +866,102 @@ function toggleMic() {
   }).catch(() => {});
 }
 
+// ── Attached image state ─────────────────────────────────────────────────────
+let _attachedB64  = null;
+let _attachedMime = 'image/jpeg';
+
+function attachImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    const comma   = dataUrl.indexOf(',');
+    _attachedB64  = dataUrl.slice(comma + 1);
+    _attachedMime = file.type || 'image/jpeg';
+    _showImgPreview(dataUrl);
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function _showImgPreview(dataUrl) {
+  const strip = document.getElementById('imgPreview');
+  strip.innerHTML = '';
+  strip.style.display = 'flex';
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:relative;display:inline-block;';
+  const img = document.createElement('img');
+  img.src = dataUrl;
+  img.style.cssText = 'height:72px;border-radius:8px;border:1px solid var(--bdr);object-fit:cover;';
+  const x = document.createElement('button');
+  x.textContent = '✕';
+  x.style.cssText = 'position:absolute;top:-6px;right:-6px;background:#e74c3c;border:0;' +
+    'border-radius:50%;width:18px;height:18px;font-size:10px;color:#fff;cursor:pointer;line-height:1;';
+  x.onclick = clearAttachedImage;
+  wrap.appendChild(img); wrap.appendChild(x);
+  strip.appendChild(wrap);
+  document.getElementById('bx').focus();
+}
+
+function clearAttachedImage() {
+  _attachedB64 = null; _attachedMime = 'image/jpeg';
+  const strip = document.getElementById('imgPreview');
+  strip.innerHTML = ''; strip.style.display = 'none';
+}
+
+// ── Camera ───────────────────────────────────────────────────────────────────
+let _camStream = null;
+
+async function openCamera() {
+  const modal = document.getElementById('cameraModal');
+  modal.style.display = 'flex';
+  try {
+    _camStream = await navigator.mediaDevices.getUserMedia({video: {facingMode:'environment'}, audio: false});
+    document.getElementById('camVideo').srcObject = _camStream;
+  } catch(e) {
+    modal.style.display = 'none';
+    alert('Camera access denied or unavailable: ' + e.message);
+  }
+}
+
+function closeCamera() {
+  if (_camStream) { _camStream.getTracks().forEach(t => t.stop()); _camStream = null; }
+  document.getElementById('cameraModal').style.display = 'none';
+}
+
+function capturePhoto() {
+  const video  = document.getElementById('camVideo');
+  const canvas = document.getElementById('camCanvas');
+  canvas.width  = video.videoWidth  || 640;
+  canvas.height = video.videoHeight || 480;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+  const comma   = dataUrl.indexOf(',');
+  _attachedB64  = dataUrl.slice(comma + 1);
+  _attachedMime = 'image/jpeg';
+  _showImgPreview(dataUrl);
+  closeCamera();
+}
+
 async function send() {
   if (isBusy) return;
   const msg = bx.value.trim();
-  if (!msg) return;
+  if (!msg && !_attachedB64) return;
 
   isBusy = true;
   bx.value = ''; grow(bx); updateSendBtn();
   hideWelcome();
 
-  // User bubble
-  addMsg(escHtml(msg), 'user');
+  // User bubble — show image thumbnail if attached
+  let displayMsg = escHtml(msg || 'Analyze this image');
+  if (_attachedB64) {
+    displayMsg = `<img src="data:${_attachedMime};base64,${_attachedB64}"
+      style="max-width:220px;max-height:140px;border-radius:8px;display:block;margin-bottom:6px;">` +
+      (msg ? escHtml(msg) : '<em style="color:var(--muted)">Analyze this image</em>');
+  }
+  addMsg(displayMsg, 'user');
+  clearAttachedImage();
 
   try {
     // ── Research shortcut (/research or /r) ──────────────────────
@@ -908,10 +1021,12 @@ async function send() {
     const {m: msgEl, b: bubble} = addMsg('', 'bot');
     bubble.style.display = 'none';              // hidden until first token
 
+    const streamBody = {message: msg, chat_id: chatId};
+    if (_attachedB64) { streamBody.image_b64 = _attachedB64; streamBody.image_mime = _attachedMime; }
     const resp = await fetch('/stream', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({message: msg, chat_id: chatId})
+      body: JSON.stringify(streamBody)
     });
     typEl.remove();
     bubble.style.display = '';

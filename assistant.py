@@ -151,7 +151,8 @@ def get_memory(username: str = _DEFAULT_USER) -> list:
             import json as _j
             with open(_NEO_MEMORY_FILE, "r", encoding="utf-8") as fh:
                 return _j.load(fh)
-        except Exception:
+        except Exception as _e:
+            log.debug("load_memory failed: %s", _e)
             return []
 
 def clear_memory(username: str = _DEFAULT_USER) -> None:
@@ -190,7 +191,8 @@ def _powershell_speak(text: str) -> bool:
         )
         subprocess.run(["powershell", "-NoProfile", "-Command", cmd], check=False)
         return True
-    except Exception:
+    except Exception as _e:
+        log.debug("reminder check failed: %s", _e)
         return False
 
 def speak(text: str) -> None:
@@ -209,7 +211,7 @@ def _remember_turn(role: str, text: str) -> None:
     del _recent_turns[:-20]
 
 def say(text: str) -> None:
-    print(text)
+    log.debug("say: %s", text[:80])
     _remember_turn("smith", text)
     speak(text)
 
@@ -240,12 +242,14 @@ def load_memory(username: str = _DEFAULT_USER) -> dict:
             else:
                 notes.append(f)
         return {"name": name, "notes": notes}
-    except Exception:
+    except Exception as _e:
+        log.debug("DB memory load failed, trying JSON: %s", _e)
         try:
             import json
             with open(MEMORY_FILE, "r", encoding="utf-8") as fh:
                 return json.load(fh)
-        except Exception:
+        except Exception as _e:
+            log.debug("JSON memory load also failed: %s", _e)
             return {"name": USER_NAME, "notes": []}
 
 def save_memory(mem: dict, username: str = _DEFAULT_USER) -> None:
@@ -418,11 +422,11 @@ def ask_gemini(question: str) -> str:
             timeout=30,
         )
         if r.status_code != 200:
-            print("GEMINI FAIL:", r.status_code, r.text)
+            log.warning("Gemini API error %d: %s", r.status_code, r.text[:200])
             return ""
         return r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
     except Exception as e:
-        print("GEMINI EXCEPTION:", e)
+        log.error("Gemini exception: %s", e)
         return ""
 
 
@@ -484,14 +488,14 @@ def ask_github_models(question: str, with_context: bool = False) -> str:
             timeout=60,
         )
         if response.status_code != 200:
-            print("GITHUB FAIL:", response.status_code, response.text)
+            log.warning("GitHub Models error %d: %s", response.status_code, response.text[:200])
             return ""
         answer = response.json()["choices"][0]["message"]["content"].strip()
         _remember_turn("you", question)
         _remember_turn("smith", answer)
         return answer
     except Exception as e:
-        print("GITHUB EXCEPTION:", e)
+        log.error("GitHub Models exception: %s", e)
         return ""
 
 
@@ -534,7 +538,8 @@ def analyze_and_pick(question: str, ans1: str, ans2: str) -> str:
         if r.status_code == 200:
             return r.json()["choices"][0]["message"]["content"].strip()
         return ans1
-    except Exception:
+    except Exception as _e:
+        log.debug("analyze_and_pick failed: %s", _e)
         return ans1
 
 
@@ -649,7 +654,8 @@ def needs_web(question: str) -> bool:
 def open_url(url: str) -> None:
     try:
         webbrowser.get(CHROME_PATH).open(url)
-    except Exception:
+    except Exception as _e:
+        log.debug("Chrome open failed, using default browser: %s", _e)
         webbrowser.open(url)
 
 def launch_app(command: str) -> bool:
@@ -664,7 +670,8 @@ def launch_app(command: str) -> bool:
         else:
             subprocess.Popen([command])
         return True
-    except Exception:
+    except Exception as _e:
+        log.debug("launch_app failed: %s", _e)
         return False
 
 def get_open_target(question: str):
