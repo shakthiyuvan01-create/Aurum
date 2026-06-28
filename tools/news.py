@@ -16,8 +16,11 @@ INPUTS = [
 
 log = logging.getLogger("tools.news")
 
-def run(topic: str = "", count: str = "5") -> dict:
-    n = min(int(count), 15)
+def run(topic: str = "", count="5") -> dict:
+    try:
+        n = min(int(str(count).strip() or 5), 15)
+    except (ValueError, TypeError):
+        n = 5
     query = topic.strip() or "latest news today"
     try:
         from ddgs import DDGS

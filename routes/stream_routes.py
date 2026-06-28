@@ -65,13 +65,17 @@ def stream_ask():
     if not session.get("auth"):
         return jsonify({"error": "login"}), 401
 
-    body  = request.json or {}
-    msg   = body.get("message", "").strip()
-    cid   = (body.get("chat_id") or "").strip() or uuid.uuid4().hex[:12]
-    uname = _current_user()
+    body       = request.json or {}
+    msg        = body.get("message", "").strip()
+    cid        = (body.get("chat_id") or "").strip() or uuid.uuid4().hex[:12]
+    uname      = _current_user()
+    image_b64  = body.get("image_b64")    # base64 image string (optional)
+    image_mime = body.get("image_mime", "image/jpeg")
 
-    if not msg:
+    if not msg and not image_b64:
         return jsonify({"error": "empty"}), 400
+    if not msg and image_b64:
+        msg = "What is in this image? Describe it in detail."
 
     db   = _db()
     vmem = _vmem()
@@ -85,7 +89,8 @@ def stream_ask():
             title = (asst.ask_ai_brain(
                 "Give a 3-word max title for: '" + msg[:80] + "'. Reply ONLY the title.",
                 with_context=False) or msg[:40]).strip()[:40]
-        except Exception:
+        except Exception as _e:
+            log.debug("title gen failed: %s", _e)
             title = msg[:40]
     else:
         title = chat["title"]
@@ -104,12 +109,13 @@ def stream_ask():
     chat["messages"].append({"role": "user", "text": msg})
     history_messages = [
         {"role": "user" if m["role"] == "user" else "assistant", "content": m["text"]}
-        for m in chat["messages"][-14:-1]   # last N turns, excluding current
+        for m in chat["messages"][-8:-1]    # last N turns, excluding current
     ]
 
     # ── memory + persona ─────────────────────────────────────────────────
-    mem_facts   = db.get_memories(uname)
-    sem_mems    = vmem.retrieve_relevant(uname, msg, n=4)
+    mem_facts = db.get_memories(uname)
+    # Only do vector search for messages long enough to benefit (avoids ChromaDB lag on short msgs)
+    sem_mems  = vmem.retrieve_relevant(uname, msg, n=3) if len(msg) > 20 else []
     persona     = settings.get("persona_name", "").strip()
     custom_inst = settings.get("custom_instructions", "").strip()
     asst_name   = persona or asst.ASSISTANT_NAME
@@ -145,6 +151,8 @@ def stream_ask():
                 token           = asst.GITHUB_TOKEN or "",
                 username        = uname,
                 enable_tools    = bool(settings.get("model_routing", 1)),
+                image_b64       = image_b64,
+                image_mime      = image_mime,
             ):
                 # Accumulate delta; suppress agent's raw done (we emit enriched one)
                 try:
@@ -176,5 +184,6 @@ def stream_ask():
     return Response(
         stream_with_context(generate()),
         mimetype="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        headers={"X-Accel-Buffering": "no",
+                 "Cache-Control": "no-cache"}
     )

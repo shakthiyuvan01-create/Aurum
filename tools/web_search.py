@@ -1,4 +1,6 @@
 """Web search tool — DuckDuckGo live search."""
+import logging
+
 
 NAME        = "web_search"
 DESCRIPTION = "Search the web for current information, news, facts, or any topic"
@@ -10,12 +12,20 @@ INPUTS = [
 ]
 
 
-def run(query: str, max_results: int = 5) -> dict:
+log = logging.getLogger(__name__)
+
+
+def run(query: str, max_results=5) -> dict:
+    try:
+        _n = int(str(max_results).strip() or 5)
+    except (ValueError, TypeError):
+        _n = 5
+    _n = max(1, min(_n, 10))
     try:
         from duckduckgo_search import DDGS
         results = []
         with DDGS() as ddgs:
-            for r in ddgs.text(query, max_results=int(max_results)):
+            for r in ddgs.text(query, max_results=_n):
                 results.append({
                     "title":   r.get("title", ""),
                     "url":     r.get("href", ""),
@@ -31,4 +41,5 @@ def run(query: str, max_results: int = 5) -> dict:
     except ImportError:
         return {"error": "duckduckgo-search not installed. Run: pip install duckduckgo-search"}
     except Exception as e:
+        log.error("web_search failed: %s", e)
         return {"error": f"Search failed: {e}"}

@@ -46,7 +46,8 @@ def _ddg_search(query: str, n: int = 3) -> list[dict]:
         from duckduckgo_search import DDGS
         with DDGS() as d:
             return list(d.text(query, max_results=n))
-    except Exception:
+    except Exception as _e:
+        log.debug("DDG search failed: %s", _e)
         return []
 
 
@@ -60,7 +61,8 @@ def _fetch_page(url: str, max_chars: int = 2000) -> str:
             t.decompose()
         text = "\n".join(l for l in soup.get_text("\n", strip=True).splitlines() if l.strip())
         return text[:max_chars]
-    except Exception:
+    except Exception as _e:
+        log.debug("page fetch failed: %s", _e)
         return ""
 
 
@@ -142,6 +144,7 @@ def deep_research():
             ], token, model, stream=True, max_tokens=2000)
             stream_r.raise_for_status()
         except Exception as e:
+            log.error("research LLM stream call failed: %s", e)
             yield _sse({"error": f"LLM call failed: {e}"})
             return
 
@@ -171,3 +174,60 @@ def deep_research():
         mimetype="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@research_bp.route("/analyze", methods=["POST"])
+def analyze_route():
+    """Analyze CSV/Excel files using pandas + LLM."""
+    if not session.get("auth"):
+        return jsonify({"error": "login"}), 401
+    try:
+        import pandas as _pd
+    except ImportError:
+        return jsonify({"reply": "pandas not installed. Run: pip install pandas openpyxl"})
+
+    f = request.files.get("file")
+    if not f:
+        return jsonify({"reply": "No file received."})
+    fname = f.filename.lower()
+
+    try:
+        if fname.endswith(".csv"):
+            df = _pd.read_csv(f)
+        elif fname.endswith((".xlsx", ".xls")):
+            df = _pd.read_excel(f)
+        else:
+            return jsonify({"reply": "Only CSV and Excel files are supported."})
+
+        rows, cols = df.shape
+        col_list   = ", ".join(df.columns.tolist()[:20])
+        sample     = df.head(5).to_string(index=False)
+        stats      = df.describe(include="all").to_string()
+        prompt = (
+            "Analyze this dataset and give a clear, structured report.\n\n"
+            "File: %s\nRows: %d | Columns: %d\nColumn names: %s\n\n"
+            "Sample (first 5 rows):\n%s\n\nSummary stats:\n%s\n\n"
+            "Include: what the data is about, key insights, patterns, anomalies, "
+            "and 3 recommendations based on the data."
+        ) % (f.filename, rows, cols, col_list, sample, stats)
+
+        asst = _deps["assistant"]
+        r = _rq.post(
+            GITHUB_API,
+            headers=_HEADERS_TMPL(asst.GITHUB_TOKEN or ""),
+            json={
+                "model": os.getenv("MAIN_MODEL", asst.GITHUB_MODEL),
+                "max_tokens": 1500,
+                "messages": [
+                    {"role": "system", "content": "You are a data analyst. Give clear, insightful analysis."},
+                    {"role": "user",   "content": prompt},
+                ],
+            },
+            timeout=60,
+        )
+        if r.status_code == 200:
+            return jsonify({"reply": r.json()["choices"][0]["message"]["content"].strip()})
+        return jsonify({"reply": "(Analysis failed: API error %d)" % r.status_code})
+    except Exception as e:
+        log.exception("analyze_route")
+        return jsonify({"reply": "(Analysis error: %s)" % e})

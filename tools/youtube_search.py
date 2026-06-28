@@ -10,7 +10,11 @@ INPUTS = [
 ]
 
 
-def run(query: str, max_results: int = 5) -> dict:
+def run(query: str, max_results=5) -> dict:
+    try:
+        max_results = max(1, min(int(str(max_results).strip() or 5), 10))
+    except (ValueError, TypeError):
+        max_results = 5
     try:
         from duckduckgo_search import DDGS
         results = []

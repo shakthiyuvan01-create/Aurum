@@ -16,6 +16,14 @@ import logging
 
 log = logging.getLogger("vector_memory")
 
+# ── Retrieval tuning ─────────────────────────────────────────────────────────
+SIMILARITY_THRESHOLD = 0.30   # ChromaDB distance: 0 = identical, 2 = opposite (cosine)
+RECENCY_HALF_LIFE    = 7 * 24 * 3600   # 7 days — older memories get lower recency boost
+IMPORTANCE_KEYWORDS  = {
+    "remember", "important", "always", "never", "prefer", "hate", "love",
+    "name", "birthday", "address", "work", "goal", "project", "deadline",
+}
+
 BASE     = os.path.dirname(os.path.abspath(__file__))
 DB_PATH  = os.path.join(BASE, "assistneo.db")
 CHROMA_DIR = os.path.join(BASE, "chroma_db")
@@ -79,8 +87,7 @@ def _fts_store(username: str, query: str, reply: str, chat_id: str = ""):
         con.close()
 
 def _fts_retrieve(username: str, query: str, n: int = 4) -> list:
-    """Full-text search for relevant past conversations."""
-    # Escape FTS special chars
+    """Full-text search with recency+importance re-ranking."""
     safe_query = " OR ".join(
         f'"{w}"' for w in query.split()[:8] if len(w) > 2
     )
@@ -88,15 +95,28 @@ def _fts_retrieve(username: str, query: str, n: int = 4) -> list:
         return []
     con = sqlite3.connect(DB_PATH)
     try:
+        # Fetch extra candidates for re-ranking
         rows = con.execute("""
-            SELECT cm.query, cm.reply
+            SELECT cm.query, cm.reply, cm.ts
             FROM conv_memory cm
             JOIN conv_memory_fts fts ON cm.rowid = fts.rowid
             WHERE fts.content MATCH ? AND cm.username = ?
             ORDER BY rank
             LIMIT ?
-        """, (safe_query, username, n)).fetchall()
-        return [f"Q: {r[0]}\nA: {r[1]}" for r in rows]
+        """, (safe_query, username, n * 3)).fetchall()
+        if not rows:
+            return []
+        # Re-rank by importance + recency (FTS has no distance, use rank order)
+        scored = []
+        for i, (q, a, ts) in enumerate(rows):
+            doc       = f"Q: {q}\nA: {a}"
+            recency   = _recency_score(float(ts or 0))
+            importance = _importance_score(doc)
+            fts_score = 1.0 - (i / max(len(rows), 1)) * 0.5  # FTS rank → 0.5–1.0
+            score     = fts_score * 0.5 + recency * 0.3 + importance * 0.2
+            scored.append((score, doc))
+        scored.sort(key=lambda x: x[0], reverse=True)
+        return [doc for _, doc in scored[:n]]
     except Exception as e:
         log.warning("FTS search failed: %s", e)
         return []
@@ -110,6 +130,45 @@ def _fts_clear(username: str):
         con.commit()
     finally:
         con.close()
+
+
+
+# ── Retrieval scoring helpers ─────────────────────────────────────────────────
+
+def _recency_score(ts: float) -> float:
+    """Returns 0–1; 1 = just stored, decays with RECENCY_HALF_LIFE."""
+    if not ts:
+        return 0.5
+    age = time.time() - float(ts)
+    return max(0.0, 1.0 - age / (RECENCY_HALF_LIFE * 2))
+
+
+def _importance_score(text: str) -> float:
+    """Returns 0–1 based on length and presence of important keywords."""
+    base  = min(1.0, len(text) / 400)          # longer = more informative
+    kw    = sum(1 for k in IMPORTANCE_KEYWORDS if k in text.lower())
+    boost = min(0.5, kw * 0.1)
+    return min(1.0, base + boost)
+
+
+def _rank_results(docs: list[str], distances: list[float],
+                  timestamps: list[float]) -> list[str]:
+    """
+    Re-rank retrieved memories by a combined score:
+        score = (1 - norm_distance) * 0.5 + recency * 0.3 + importance * 0.2
+    Filter out anything below SIMILARITY_THRESHOLD.
+    """
+    scored = []
+    for doc, dist, ts in zip(docs, distances, timestamps):
+        if dist > (2 - SIMILARITY_THRESHOLD * 2):   # cosine: filter far results
+            continue
+        sim       = max(0.0, 1.0 - dist / 2.0)
+        recency   = _recency_score(ts)
+        importance = _importance_score(doc)
+        score     = sim * 0.5 + recency * 0.3 + importance * 0.2
+        scored.append((score, doc))
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return [doc for _, doc in scored]
 
 # ── ChromaDB backend ─────────────────────────────────────────────────────────
 
@@ -137,18 +196,32 @@ def _chroma_store(username: str, query: str, reply: str, chat_id: str = ""):
     col = _get_col(username)
     col.add(
         documents=[content],
-        metadatas=[{"username": username, "chat_id": chat_id, "ts": str(time.time())}],
+        metadatas=[{"username": username, "chat_id": chat_id, "ts": time.time()}],
         ids=[doc_id]
     )
 
 def _chroma_retrieve(username: str, query: str, n: int = 4) -> list:
     try:
-        col  = _get_col(username)
-        cnt  = col.count()
+        col = _get_col(username)
+        cnt = col.count()
         if cnt == 0:
             return []
-        res = col.query(query_texts=[query], n_results=min(n, cnt))
-        return res["documents"][0] if res["documents"] else []
+        # Fetch extra candidates so we can re-rank and filter
+        fetch_n = min(cnt, max(n * 3, 12))
+        res = col.query(
+            query_texts=[query],
+            n_results=fetch_n,
+            include=["documents", "distances", "metadatas"],
+        )
+        if not res["documents"] or not res["documents"][0]:
+            return []
+        docs      = res["documents"][0]
+        distances = res["distances"][0]
+        timestamps = [float(m.get("ts", 0)) for m in res["metadatas"][0]]
+        ranked = _rank_results(docs, distances, timestamps)
+        log.debug("chroma_retrieve: user=%s candidates=%d ranked=%d returned=%d",
+                  username, len(docs), len(ranked), min(n, len(ranked)))
+        return ranked[:n]
     except Exception as e:
         log.warning("ChromaDB retrieve failed: %s", e)
         return []
@@ -211,5 +284,6 @@ def memory_count(username: str) -> int:
             n = con.execute("SELECT COUNT(*) FROM conv_memory WHERE username=?", (username,)).fetchone()[0]
             con.close()
             return n
-    except Exception:
+    except Exception as _e:
+        log.debug("memory_count failed: %s", _e)
         return 0
