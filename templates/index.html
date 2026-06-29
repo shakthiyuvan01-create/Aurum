@@ -226,26 +226,23 @@ body{
   #cpTabs button{padding:4px 7px!important;font-size:10px!important;}
 }
 
-/* ── Guest banner ─────────────────────────────────────────── */
-#guest-banner{display:none;align-items:center;justify-content:space-between;
-  padding:9px 18px;background:linear-gradient(90deg,#1a1200,#1e1800);
-  border-bottom:1px solid #4a3800;font-size:13px;color:#d4a800;gap:12px;
-  position:sticky;top:0;z-index:900;}
-#guest-banner.show{display:flex;}
-#guest-banner svg{flex-shrink:0;}
-#guest-banner .gb-text{flex:1;}
-#guest-banner .gb-text b{color:#ffc200;}
-#guest-banner .gb-btns{display:flex;gap:8px;flex-shrink:0;}
-.gb-btn{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;
+/* ── Guest toast warning ──────────────────────────────────── */
+#guest-banner{display:none;}
+#guest-toast{display:none;position:fixed;bottom:80px;left:50%;
+  transform:translateX(-50%);z-index:9000;
+  background:#1e1800;border:1px solid #f0c000;border-radius:10px;
+  padding:12px 18px;font-size:13px;color:#f0c000;
+  box-shadow:0 4px 24px rgba(0,0,0,.6);
+  align-items:center;gap:12px;max-width:480px;width:90%;}
+#guest-toast.show{display:flex;}
+#guest-toast b{color:#ffd000;}
+.gt-btns{display:flex;gap:8px;margin-left:auto;flex-shrink:0;}
+.gt-btn{padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;
   cursor:pointer;border:0;transition:.15s;}
-.gb-btn.primary{background:#f0c000;color:#000;}
-.gb-btn.primary:hover{background:#ffd000;}
-.gb-btn.secondary{background:transparent;border:1px solid #4a3800;color:#d4a800;}
-.gb-btn.secondary:hover{border-color:#f0c000;color:#f0c000;}
-/* Guest-blocked items get a lock icon overlay */
-.guest-lock{position:relative;}
-.guest-lock::after{content:'🔒';position:absolute;right:4px;top:4px;
-  font-size:10px;opacity:.7;pointer-events:none;}
+.gt-btn.primary{background:#f0c000;color:#000;}
+.gt-btn.primary:hover{background:#ffd000;}
+.gt-btn.close{background:transparent;border:1px solid #555;color:#aaa;font-size:15px;padding:2px 8px;}
+.gt-btn.close:hover{border-color:#f0c000;color:#f0c000;}
 /* Upgrade modal */
 #upgrade-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
   z-index:9999;align-items:center;justify-content:center;}
@@ -272,15 +269,12 @@ body{
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
 </head><body>
 
-<!-- Guest banner — only visible when IS_GUEST is true -->
-<div id="guest-banner">
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-  </svg>
-  <div class="gb-text">You're browsing as a <b>Guest</b>. Chat works, but files, settings, memory &amp; uploads are locked.</div>
-  <div class="gb-btns">
-    <button class="gb-btn primary" onclick="location.href='/register'">Create Free Account</button>
-    <button class="gb-btn secondary" onclick="location.href='/login'">Sign In</button>
+<!-- Guest toast — shown briefly on load for guest users -->
+<div id="guest-toast">
+  <span>⚠️ <b>Guest Mode</b> — chats are temporary. Files, settings &amp; memory require an account.</span>
+  <div class="gt-btns">
+    <button class="gt-btn primary" onclick="location.href='/register'">Sign Up Free</button>
+    <button class="gt-btn close" onclick="document.getElementById('guest-toast').classList.remove('show')">✕</button>
   </div>
 </div>
 
@@ -1803,8 +1797,10 @@ function captureScreen() {
 const IS_GUEST = {{ 'true' if IS_GUEST else 'false' }};
 
 if(IS_GUEST){
-  // Show banner
-  document.getElementById('guest-banner').classList.add('show');
+  // Show toast briefly, auto-dismiss after 6s
+  var toast = document.getElementById('guest-toast');
+  toast.classList.add('show');
+  setTimeout(function(){ toast.classList.remove('show'); }, 6000);
 
   // Intercept clicks on locked buttons/panels
   // List of element IDs that are blocked for guests
