@@ -4,7 +4,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Assist Neo">
+<meta name="apple-mobile-web-app-title" content="AI Aurum">
 <meta name="theme-color" content="#00ff5a">
 <link rel="manifest" href="/static/manifest.json">
 <title>{{ ANAME }}</title>
@@ -225,6 +225,42 @@ body{
 @media(max-width:480px){
   #cpTabs button{padding:4px 7px!important;font-size:10px!important;}
 }
+
+/* ── Guest banner ─────────────────────────────────────────── */
+#guest-banner{display:none;align-items:center;justify-content:space-between;
+  padding:9px 18px;background:linear-gradient(90deg,#1a1200,#1e1800);
+  border-bottom:1px solid #4a3800;font-size:13px;color:#d4a800;gap:12px;
+  position:sticky;top:0;z-index:900;}
+#guest-banner.show{display:flex;}
+#guest-banner svg{flex-shrink:0;}
+#guest-banner .gb-text{flex:1;}
+#guest-banner .gb-text b{color:#ffc200;}
+#guest-banner .gb-btns{display:flex;gap:8px;flex-shrink:0;}
+.gb-btn{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;
+  cursor:pointer;border:0;transition:.15s;}
+.gb-btn.primary{background:#f0c000;color:#000;}
+.gb-btn.primary:hover{background:#ffd000;}
+.gb-btn.secondary{background:transparent;border:1px solid #4a3800;color:#d4a800;}
+.gb-btn.secondary:hover{border-color:#f0c000;color:#f0c000;}
+/* Guest-blocked items get a lock icon overlay */
+.guest-lock{position:relative;}
+.guest-lock::after{content:'🔒';position:absolute;right:4px;top:4px;
+  font-size:10px;opacity:.7;pointer-events:none;}
+/* Upgrade modal */
+#upgrade-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
+  z-index:9999;align-items:center;justify-content:center;}
+#upgrade-modal.show{display:flex;}
+.um-box{background:#181818;border:1px solid #333;border-radius:16px;
+  padding:32px 28px;max-width:380px;width:90%;text-align:center;}
+.um-box h3{color:#fff;font-size:20px;font-weight:600;margin:0 0 10px;}
+.um-box p{color:#888;font-size:14px;line-height:1.5;margin:0 0 24px;}
+.um-box .um-btns{display:flex;gap:10px;justify-content:center;}
+.um-box .um-btn{padding:11px 22px;border-radius:8px;font-size:14px;
+  font-weight:600;cursor:pointer;border:0;transition:.15s;}
+.um-box .um-btn.y{background:#f0c000;color:#000;}
+.um-box .um-btn.y:hover{background:#ffd000;}
+.um-box .um-btn.n{background:#2a2a2a;color:#aaa;}
+.um-box .um-btn.n:hover{background:#333;color:#fff;}
 </style><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
@@ -236,9 +272,33 @@ body{
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
 </head><body>
 
+<!-- Guest banner — only visible when IS_GUEST is true -->
+<div id="guest-banner">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+  </svg>
+  <div class="gb-text">You're browsing as a <b>Guest</b>. Chat works, but files, settings, memory &amp; uploads are locked.</div>
+  <div class="gb-btns">
+    <button class="gb-btn primary" onclick="location.href='/register'">Create Free Account</button>
+    <button class="gb-btn secondary" onclick="location.href='/login'">Sign In</button>
+  </div>
+</div>
+
+<!-- Upgrade prompt modal -->
+<div id="upgrade-modal">
+  <div class="um-box">
+    <h3>Feature Locked</h3>
+    <p id="upgrade-msg">This feature is only available to registered users. Create a free account to unlock everything.</p>
+    <div class="um-btns">
+      <button class="um-btn y" onclick="location.href='/register'">Create Free Account</button>
+      <button class="um-btn n" onclick="closeUpgrade()">Maybe Later</button>
+    </div>
+  </div>
+</div>
+
 <div id="splash">
-  <img class="sp-logo" src="/logo" alt="Assist Neo">
-  <div class="sp-name">Assist Neo</div>
+  <img class="sp-logo" src="/logo" alt="AI Aurum">
+  <div class="sp-name">AI Aurum</div>
   <div class="sp-sub">Your personal AI</div>
 </div>
 <script>
@@ -256,7 +316,7 @@ body{
   <div id="chatlist"></div>
   <div class="me">
     <span class="dot"></span>{{ UNAME }}
-    <button onclick="openSettings()" title="Personality &amp; Settings"
+    <button id="settings-btn" onclick="openSettings()" title="Personality &amp; Settings"
       style="background:transparent;border:0;color:var(--muted);cursor:pointer;
       padding:4px 6px;border-radius:6px;font-size:16px;line-height:1;margin-left:4px;transition:.15s;"
       onmouseenter="this.style.color='var(--acc)'" onmouseleave="this.style.color='var(--muted)'">⚙️</button>
@@ -275,7 +335,7 @@ body{
   </div>
   <div class="scroll" id="sc">
     <div id="welcome">
-      <img class="wv-logo" src="/logo" alt="Assist Neo">
+      <img class="wv-logo" src="/logo" alt="AI Aurum">
       <h2 style="font-size:22px;font-weight:600;color:var(--txt);margin:0;">Welcome, {{ UNAME }}</h2>
       <p style="color:var(--muted);font-size:14px;margin:0;">How can I help you today?</p>
     </div>
@@ -392,7 +452,7 @@ body{
   background:#1e1e24;border:1px solid var(--bdr);border-radius:16px;padding:24px;
   z-index:9999;width:380px;max-width:90vw;box-shadow:0 16px 48px rgba(0,0,0,.6);">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-    <span style="font-size:16px;font-weight:600;">&#129504; Neo's Memory</span>
+    <span style="font-size:16px;font-weight:600;">&#129504; Aurum's Memory</span>
     <button onclick="document.getElementById('memPanel').style.display='none'"
       style="background:transparent;border:0;color:var(--txt);cursor:pointer;font-size:18px;">&#10005;</button>
   </div>
@@ -433,7 +493,7 @@ body{
   </div>
 
   <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px;">Assistant Name</label>
-  <input id="settPersonaName" placeholder="e.g. Jarvis (leave blank for Assist Neo)"
+  <input id="settPersonaName" placeholder="e.g. Jarvis (leave blank for AI Aurum)"
     style="width:100%;background:#2a2a30;border:1px solid var(--bdr);border-radius:8px;
     padding:8px 12px;color:var(--txt);font-size:13px;outline:none;margin-bottom:14px;">
 
@@ -811,7 +871,7 @@ function addActions(m,text,who){
       dl.innerHTML=DL+' Download';
       dl.onclick=()=>{
         const a=document.createElement('a');
-        a.href=imgEl.src;a.download='assistneo_image.png';
+        a.href=imgEl.src;a.download='aiaurum_image.png';
         a.click();};
       bar.appendChild(dl);}}
   const c=document.createElement('button');c.className='ab';c.innerHTML=CP+' Copy';
@@ -1343,7 +1403,7 @@ setInterval(async()=>{
     (d.reminders||[]).forEach(rem=>{
       addMsg(`Reminder: ${rem.text}`,'bot');
       if('Notification' in window&&Notification.permission==='granted')
-        new Notification('Assist Neo',{body:rem.text});
+        new Notification('AI Aurum',{body:rem.text});
     });
   }catch(_){}
 },60000);
@@ -1649,7 +1709,7 @@ async function gitRun(forceAction, silent){
 }
 
 async function gitPushDesktop(){
-  const msg=document.getElementById('gitCommitMsg').value.trim()||'Update from Assist Neo';
+  const msg=document.getElementById('gitCommitMsg').value.trim()||'Update from AI Aurum';
   const out=document.getElementById('gitOutput');
   out.textContent='📤 Staging, committing and pushing…';
   try{
@@ -1737,5 +1797,60 @@ function captureScreen() {
 }
 
 </script>
+
+<script>
+// ── Guest mode wiring ──────────────────────────────────────────────────────
+const IS_GUEST = {{ 'true' if IS_GUEST else 'false' }};
+
+if(IS_GUEST){
+  // Show banner
+  document.getElementById('guest-banner').classList.add('show');
+
+  // Intercept clicks on locked buttons/panels
+  // List of element IDs that are blocked for guests
+  const LOCKED_IDS = ['files-panel','code-panel','git-push-btn','settings-btn',
+    'memory-panel','screenshot-btn','upload-img-btn','research-btn','analyze-btn'];
+
+  function showUpgrade(msg){
+    document.getElementById('upgrade-msg').textContent =
+      (msg || 'This feature is only available to registered users.') +
+      ' Create a free account to unlock everything.';
+    document.getElementById('upgrade-modal').classList.add('show');
+  }
+  window.showUpgrade = showUpgrade;
+
+  // Wrap locked buttons
+  LOCKED_IDS.forEach(function(id){
+    var el = document.getElementById(id);
+    if(!el) return;
+    el.classList.add('guest-lock');
+    el.addEventListener('click', function(e){
+      e.preventDefault(); e.stopPropagation();
+      showUpgrade('');
+    }, true);
+  });
+
+  // Intercept any fetch that returns guest_blocked:true
+  const _origFetch = window.fetch;
+  window.fetch = function(url, opts){
+    return _origFetch(url, opts).then(function(res){
+      if(!res.ok){
+        var clone = res.clone();
+        clone.json().then(function(d){
+          if(d && d.guest_blocked){
+            showUpgrade(d.error || '');
+          }
+        }).catch(function(){});
+      }
+      return res;
+    });
+  };
+}
+
+function closeUpgrade(){
+  document.getElementById('upgrade-modal').classList.remove('show');
+}
+</script>
+
 </body>
 </html>

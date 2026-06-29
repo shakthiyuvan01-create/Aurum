@@ -25,7 +25,7 @@ IMPORTANCE_KEYWORDS  = {
 }
 
 BASE     = os.path.dirname(os.path.abspath(__file__))
-DB_PATH  = os.path.join(BASE, "assistneo.db")
+DB_PATH  = os.path.join(BASE, "aiaurum.db")
 CHROMA_DIR = os.path.join(BASE, "chroma_db")
 
 # ── Try importing ChromaDB ────────────────────────────────────────────────────

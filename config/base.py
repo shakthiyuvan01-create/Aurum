@@ -20,18 +20,20 @@ class BaseConfig:
     SESSION_COOKIE_SAMESITE    = "Lax"
 
     # ── Paths ─────────────────────────────────────────────────────────────────
-    BASE_DIR    = _BASE
-    UPLOAD_DIR  = os.path.join(_BASE, "uploads")
-    CHATS_DIR   = os.path.join(_BASE, "chats")
-    DOCS_DIR    = os.path.join(_BASE, "generated_docs")
-    STATIC_DIR  = os.path.join(_BASE, "static")
+    # On Render.com the persistent disk is mounted at /data — use it when available
+    _DATA        = os.getenv("RENDER_DATA_DIR", _BASE)   # /data on Render, _BASE locally
+    BASE_DIR     = _BASE
+    UPLOAD_DIR   = os.path.join(_DATA, "uploads")
+    CHATS_DIR    = os.path.join(_DATA, "chats")
+    DOCS_DIR     = os.path.join(_DATA, "generated_docs")
+    STATIC_DIR   = os.path.join(_BASE, "static")
     WORKSPACE_DIR = os.path.normpath(
-        os.getenv("WORKSPACE_DIR", os.path.join(_BASE, "workspace"))
+        os.getenv("WORKSPACE_DIR", os.path.join(_DATA, "workspace"))
     )
 
     # ── Database ──────────────────────────────────────────────────────────────
-    DB_PATH      = os.path.join(_BASE, "assistneo.db")
-    METRICS_DB   = os.path.join(_BASE, "tool_metrics.db")
+    DB_PATH      = os.path.join(_DATA, "aiaurum.db")
+    METRICS_DB   = os.path.join(_DATA, "tool_metrics.db")
 
     # ── AI / Model settings ───────────────────────────────────────────────────
     MAIN_MODEL   = os.getenv("MAIN_MODEL",   "gpt-4o-mini")
@@ -55,6 +57,25 @@ class BaseConfig:
     TOOL_WARN_FAILURES   = int(os.getenv("TOOL_WARN_FAILURES",   "3"))
     TOOL_WARN_WINDOW     = int(os.getenv("TOOL_WARN_WINDOW",     "3600"))
 
+    # ── Speed / latency settings ──────────────────────────────────────────────
+    # Plan-phase token budget (tool decisions only, not the final answer)
+    PLAN_MAX_TOKENS      = int(os.getenv("PLAN_MAX_TOKENS",      "600"))
+    # Temperature for the plan call (lower = faster, more deterministic)
+    PLAN_TEMPERATURE     = float(os.getenv("PLAN_TEMPERATURE",   "0.3"))
+    # Temperature for the streaming answer call
+    ANSWER_TEMPERATURE   = float(os.getenv("ANSWER_TEMPERATURE", "0.6"))
+    # How many history turns to send (fewer = fewer tokens per request)
+    HISTORY_TURNS        = int(os.getenv("HISTORY_TURNS",        "6"))
+    # Semantic memory retrieval count (n=2 is fast; increase for deeper recall)
+    MEMORY_RETRIEVE_N    = int(os.getenv("MEMORY_RETRIEVE_N",    "2"))
+    # Minimum message length before semantic memory search kicks in
+    MEMORY_MIN_MSG_LEN   = int(os.getenv("MEMORY_MIN_MSG_LEN",   "40"))
+    # API request timeouts
+    API_TIMEOUT_SECS     = int(os.getenv("API_TIMEOUT_SECS",     "45"))
+    OLLAMA_TIMEOUT_SECS  = int(os.getenv("OLLAMA_TIMEOUT_SECS",  "60"))
+    # Fast-model threshold: msgs under this char count go to FAST_MODEL
+    FAST_MODEL_THRESHOLD = int(os.getenv("FAST_MODEL_THRESHOLD", "300"))
+
     # ── Memory ────────────────────────────────────────────────────────────────
     SIMILARITY_THRESHOLD  = float(os.getenv("SIMILARITY_THRESHOLD",  "0.30"))
     RECENCY_HALF_LIFE     = int(  os.getenv("RECENCY_HALF_LIFE",      str(7 * 24 * 3600)))
@@ -66,29 +87,4 @@ class BaseConfig:
 
     # ── Rate limiting (requests per minute per user) ──────────────────────────
     RATE_LIMIT_STREAM  = int(os.getenv("RATE_LIMIT_STREAM",  "60"))
-    RATE_LIMIT_API     = int(os.getenv("RATE_LIMIT_API",     "120"))
-
-    # ── Permissions ───────────────────────────────────────────────────────────
-    DEFAULT_ROLE       = "user"       # role assigned on registration
-    ADMIN_USERNAMES    = set(         # bootstrap admins (comma-separated env)
-        u.strip() for u in os.getenv("ADMIN_USERNAMES", "admin").split(",") if u.strip()
-    )
-
-    @classmethod
-    def from_env(cls) -> "BaseConfig":
-        """Return the correct config class based on FLASK_ENV / APP_ENV."""
-        env = os.getenv("FLASK_ENV", os.getenv("APP_ENV", "development")).lower()
-        mapping = {
-            "production": "config.production.ProductionConfig",
-            "prod":       "config.production.ProductionConfig",
-            "testing":    "config.testing.TestingConfig",
-            "test":       "config.testing.TestingConfig",
-        }
-        if env in mapping:
-            module_path, cls_name = mapping[env].rsplit(".", 1)
-            import importlib
-            mod = importlib.import_module(module_path)
-            return getattr(mod, cls_name)
-        # default: development
-        from config.development import DevelopmentConfig
-        return DevelopmentConfig
+  

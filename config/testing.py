@@ -11,7 +11,7 @@ class TestingConfig(BaseConfig):
     SECRET_KEY = "test-secret-key-not-for-production"
 
     # In-memory / temp-dir storage so tests don't touch real data
-    DB_PATH      = os.path.join(_TMP, "test_assistneo.db")
+    DB_PATH      = os.path.join(_TMP, "test_aiaurum.db")
     METRICS_DB   = os.path.join(_TMP, "test_tool_metrics.db")
     UPLOAD_DIR   = os.path.join(_TMP, "uploads")
     DOCS_DIR     = os.path.join(_TMP, "docs")

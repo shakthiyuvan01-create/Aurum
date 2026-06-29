@@ -9,7 +9,7 @@ def run(cmd):
         print(result.stderr)
     return result.returncode
 
-print("=== Assist Neo — Auto Git Push ===\n")
+print("=== AI Aurum — Auto Git Push ===\n")
 
 msg = input("Commit message (press Enter for default): ").strip()
 if not msg:

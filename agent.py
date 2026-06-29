@@ -57,7 +57,7 @@ def _headers(token: str) -> dict:
 
 def _chat(messages: list, model: str, token: str,
           tools_schema: list | None = None,
-          stream: bool = False, temperature: float = 0.7,
+          stream: bool = False, temperature: float = 0.6,
           max_tokens: int = 1200,
           use_ollama: bool = False,
           ollama_model: str | None = None) -> _rq.Response:
@@ -75,9 +75,9 @@ def _chat(messages: list, model: str, token: str,
     if use_ollama:
         return _rq.post(OLLAMA_API,
                         headers={"Content-Type": "application/json"},
-                        json=payload, stream=stream, timeout=120)
+                        json=payload, stream=stream, timeout=60)
     return _rq.post(GITHUB_API, headers=_headers(token),
-                    json=payload, stream=stream, timeout=90)
+                    json=payload, stream=stream, timeout=45)
 
 
 def _should_fallback(err: Exception) -> bool:
@@ -142,11 +142,16 @@ def run_stream(
         yield _sse({"delta": note})
 
     # ── Phase 1 & 2: Plan + Execute (non-streaming, up to MAX_ROUNDS) ─────────
+    # Plan phase uses fewer tokens — we only need tool_call decisions or a
+    # short direct answer, not a full streamed response.
+    _PLAN_MAX_TOKENS = 600
     for _round in range(MAX_ROUNDS):
         try:
             resp = _chat(messages, model, token,
                          tools_schema=all_tools if (all_tools and not use_ollama) else None,
-                         stream=False, use_ollama=use_ollama, ollama_model=ollama_model)
+                         stream=False, temperature=0.3,
+                         max_tokens=_PLAN_MAX_TOKENS,
+                         use_ollama=use_ollama, ollama_model=ollama_model)
             resp.raise_for_status()
             data = resp.json()
 

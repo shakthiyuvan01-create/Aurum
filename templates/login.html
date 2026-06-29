@@ -1,6 +1,6 @@
 <!DOCTYPE html><html><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Assist Neo &#8212; Sign in</title>
+<title>AI Aurum &#8212; Sign in</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:#0a0a0a;display:flex;align-items:center;justify-content:center;
@@ -30,9 +30,17 @@ input:focus{border-color:#f0c000;}
 .btn{width:100%;background:#f0c000;border:0;border-radius:8px;padding:14px;
   font-size:16px;font-weight:700;color:#000;cursor:pointer;transition:.15s;margin-top:4px;}
 .btn:hover{background:#ffd000;}
+.btn-guest{width:100%;background:transparent;border:1px solid #333;border-radius:8px;
+  padding:12px;font-size:14px;font-weight:500;color:#aaa;cursor:pointer;transition:.15s;
+  margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-guest:hover{border-color:#666;color:#ddd;background:#1a1a1a;}
+.divider{display:flex;align-items:center;gap:10px;margin:14px 0 4px;}
+.divider span{color:#444;font-size:12px;white-space:nowrap;}
+.divider::before,.divider::after{content:'';flex:1;border-top:1px solid #2a2a2a;}
 .err{color:#f87171;font-size:13px;margin-bottom:14px;min-height:18px;}
 .foot{text-align:center;margin-top:20px;color:#666;font-size:14px;}
 .foot a{color:#f0c000;text-decoration:none;font-weight:600;}
+.guest-note{font-size:11px;color:#555;text-align:center;margin-top:6px;line-height:1.4;}
 @media(max-width:640px){.left{display:none;}.right{width:100%;padding:36px 24px;}}
 </style>
 
@@ -41,7 +49,7 @@ input:focus{border-color:#f0c000;}
 </head><body>
 <div class="wrap">
   <div class="left">
-    <img class="ll" src="/logo" alt="Assist Neo">
+    <img class="ll" src="/logo" alt="AI Aurum">
     <div class="lt"><h2>Be a Part of<br><b>Something Powerful</b></h2></div>
   </div>
   <div class="right">
@@ -54,7 +62,16 @@ input:focus{border-color:#f0c000;}
     <input type="password" id="pw" placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;"
       autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="btn" onclick="doLogin()">Login</button>
-    <div class="foot">Not a member? <a href="/register">Create an account</a></div>
+    <div class="divider"><span>or</span></div>
+    <button class="btn-guest" onclick="doGuest()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      Continue as Guest
+    </button>
+    <p class="guest-note">No account needed &bull; Chat only &bull; Session expires on close</p>
+    <div class="foot">Not a member? <a href="/register">Create a free account</a></div>
   </div>
 </div>
 <script>
@@ -67,4 +84,8 @@ async function doLogin(){
     headers:{'Content-Type':'application/json'},body:JSON.stringify({username:un,password:pw})});
   const d=await r.json();
   if(d.ok)location.href='/';else em.textContent=d.error||'Wrong credentials.';}
+async function doGuest(){
+  const r=await fetch('/guest',{method:'POST',headers:{'Content-Type':'application/json'}});
+  const d=await r.json();
+  if(d.ok)location.href='/';}
 </script></body></html>

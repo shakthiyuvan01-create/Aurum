@@ -92,6 +92,31 @@ def login_required(f):
     return _wrap
 
 
+def is_guest() -> bool:
+    """Return True if the current session is a guest (no real account)."""
+    return session.get("role") == "guest"
+
+
+def no_guests(f):
+    """
+    Route decorator — blocks guest users and returns a friendly 403.
+    The frontend checks for {"error": "...", "guest_blocked": true} to show
+    an upgrade prompt instead of a generic error.
+    """
+    @wraps(f)
+    def _wrap(*args, **kwargs):
+        if not session.get("auth"):
+            return jsonify({"error": "login required"}), 401
+        if session.get("role") == "guest":
+            return jsonify({
+                "error": "This feature is not available for guest users. "
+                         "Create a free account to unlock it.",
+                "guest_blocked": True,
+            }), 403
+        return f(*args, **kwargs)
+    return _wrap
+
+
 def require_role(*roles: str):
     """
     Route decorator -- requires the user to have one of the given roles.

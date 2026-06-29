@@ -27,7 +27,7 @@ INPUTS = [
      "placeholder": "What this workflow does"},
 ]
 
-_DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assistneo.db")
+_DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "aiaurum.db")
 
 
 def _conn():

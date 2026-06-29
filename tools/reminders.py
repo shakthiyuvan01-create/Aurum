@@ -24,7 +24,7 @@ INPUTS = [
 log = logging.getLogger("tools.reminders")
 
 BASE    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_PATH = os.path.join(BASE, "assistneo.db")
+DB_PATH = os.path.join(BASE, "aiaurum.db")
 
 def _conn():
     c = sqlite3.connect(DB_PATH, check_same_thread=False)

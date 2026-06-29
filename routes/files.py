@@ -3,7 +3,7 @@ routes/files.py — workspace file editor, code runner, git push
 """
 import os, subprocess, logging
 from flask import Blueprint, request, jsonify
-from services.auth_service import login_required, current_user
+from services.auth_service import login_required, current_user, no_guests
 
 files_bp = Blueprint("files", __name__)
 log = logging.getLogger("routes.files")
@@ -38,6 +38,7 @@ def _safe_path(rel: str) -> str | None:
 
 @files_bp.route("/files/list")
 @login_required
+@no_guests
 def files_list():
     log.debug("files_list: user=%s dir=%s", current_user(), request.args.get("dir",""))
     dir_rel = request.args.get("dir", "").strip()
@@ -60,6 +61,7 @@ def files_list():
 
 @files_bp.route("/files/read")
 @login_required
+@no_guests
 def files_read():
     rel = request.args.get("path", "").strip()
     if not rel:
@@ -80,6 +82,7 @@ def files_read():
 
 @files_bp.route("/files/write", methods=["POST"])
 @login_required
+@no_guests
 def files_write():
     data    = request.get_json(force=True) or {}
     rel     = (data.get("path") or "").strip()
@@ -97,6 +100,7 @@ def files_write():
 
 @files_bp.route("/files/delete", methods=["POST"])
 @login_required
+@no_guests
 def files_delete():
     data = request.get_json(force=True) or {}
     rel  = (data.get("path") or "").strip()
@@ -111,6 +115,7 @@ def files_delete():
 
 @files_bp.route("/files/mkdir", methods=["POST"])
 @login_required
+@no_guests
 def files_mkdir():
     data = request.get_json(force=True) or {}
     rel  = (data.get("path") or "").strip()
@@ -125,6 +130,7 @@ def files_mkdir():
 
 @files_bp.route("/code/run", methods=["POST"])
 @login_required
+@no_guests
 def code_run():
     log.info("code_run: user=%s", current_user())
     import tools.code_runner as _cr
@@ -160,10 +166,11 @@ def code_run():
 
 @files_bp.route("/git/push", methods=["POST"])
 @login_required
+@no_guests
 def git_push():
     log.info("git_push: user=%s", current_user())
     data    = request.get_json(force=True) or {}
-    msg     = (data.get("message") or "Update from Assist Neo").strip()
+    msg     = (data.get("message") or "Update from AI Aurum").strip()
     base    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     output  = []
 

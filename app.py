@@ -1,5 +1,5 @@
 """
-app.py — Assist Neo Flask application
+app.py — AI Aurum Flask application
 ======================================
 Entry point.  Run with:  python app.py
 OR keep smith_web.py as the launch file (it now just imports this).
@@ -162,8 +162,8 @@ from services.ai_service import route_model as _route_model
 # ── Before-request auth guard ─────────────────────────────────────────────────
 @app.before_request
 def _require_login():
-    PUBLIC = {"auth.login", "auth.register", "upload.serve_upload",
-              "upload.serve_logo", "upload.serve_static"}
+    PUBLIC = {"auth.login", "auth.register", "auth.guest_login",
+              "upload.serve_upload", "upload.serve_logo", "upload.serve_static"}
     ep = request.endpoint or ""
     if ep in PUBLIC or "static" in ep:
         return
@@ -235,7 +235,7 @@ from routes.admin import admin_bp, _init as _admin_init
 _admin_init({"db": _db})
 app.register_blueprint(admin_bp)
 
-log.info("Assist Neo — %d blueprints registered", 9)
+log.info("AI Aurum — %d blueprints registered", 9)
 log.info("Tools loaded: %s", len(_tools.list_tools()))
 
 
@@ -254,6 +254,7 @@ if __name__ == "__main__":
 
     ip   = _get_ip()
     port = int(os.getenv("PORT", 5000))
-    log.info("Starting Assist Neo on http://%s:%d", ip, port)
+    log.info("Starting AI Aurum on http://%s:%d", ip, port)
     threading.Timer(1.5, lambda: webbrowser.open("http://127.0.0.1:%d" % port)).start()
-    app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
+    app.run(host="0.0.0.0", port=port, debug=False,
+use_reloader=False)

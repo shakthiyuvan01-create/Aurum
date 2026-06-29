@@ -3,7 +3,7 @@ routes/settings.py — personality settings, model routing prefs
 """
 import logging
 from flask import Blueprint, request, jsonify
-from services.auth_service import login_required, current_user
+from services.auth_service import login_required, current_user, no_guests
 
 settings_bp = Blueprint("settings", __name__)
 log = logging.getLogger("routes.settings")
@@ -19,6 +19,7 @@ def _db():
 
 @settings_bp.route("/settings/personality", methods=["GET", "POST"])
 @login_required
+@no_guests
 def personality_route():
     log.info("settings: user=%s method=%s", current_user(), request.method)
     uname = current_user()

@@ -1,5 +1,5 @@
-// Assist Neo Service Worker — enables PWA install on mobile
-const CACHE = 'assistneo-v1';
+// AI Aurum Service Worker — enables PWA install on mobile
+const CACHE = 'aiaurum-v1';
 const STATIC = ['/', '/static/manifest.json'];
 
 self.addEventListener('install', e => {
