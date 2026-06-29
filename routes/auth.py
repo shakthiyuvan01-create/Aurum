@@ -1,7 +1,7 @@
 """
-routes/auth.py — login, register, logout
+routes/auth.py — login, register, logout, guest
 """
-import logging
+import uuid, logging
 from flask import Blueprint, request, session, redirect, jsonify, render_template
 from services.auth_service import load_users, hash_password, check_password, login_required
 
@@ -108,6 +108,26 @@ def register():
             return jsonify({"error": err}), 400
         return _register_page(err)
     return _register_page()
+
+
+@auth_bp.route("/guest", methods=["GET", "POST"])
+def guest_login():
+    """
+    One-click guest access -- no account needed.
+    Creates an ephemeral session with role='guest'.
+    Guest sessions expire when the browser closes (not permanent).
+    """
+    log.info("guest login from %s", request.remote_addr)
+    guest_id = "guest_" + uuid.uuid4().hex[:8]
+    session["auth"]     = True
+    session["username"] = guest_id
+    session["nickname"] = "Guest"
+    session["role"]     = "guest"
+    session["is_guest"] = True
+    session.permanent   = False   # expires on browser close
+    if request.is_json:
+        return jsonify({"ok": True, "role": "guest", "username": guest_id})
+    return redirect("/")
 
 
 @auth_bp.route("/logout")

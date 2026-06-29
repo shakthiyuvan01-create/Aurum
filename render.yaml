@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: yuvanaurum
+    runtime: python
+    region: singapore
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --workers 2 --threads 2 --timeout 120 --bind 0.0.0.0:$PORT
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENWEATHER_API_KEY
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: GOOGLE_CSE_ID
+        sync: false
+      - key: ADMIN_USERNAMES
+        sync: false
+      - key: RENDER_DATA_DIR
+        value: /data
+    disk:
+      name: aiaurum-data
+      mountPath: /data
+      sizeGB: 1

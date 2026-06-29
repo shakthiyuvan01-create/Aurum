@@ -45,7 +45,7 @@ _WIND_DIR = {
 def run(location: str, units: str = "metric") -> dict:
     loc_enc = urllib.parse.quote(location)
     url = f"https://wttr.in/{loc_enc}?format=j1"
-    req = urllib.request.Request(url, headers={"User-Agent": "AssistNeo/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "AIAurum/1.0"})
     try:
         with urllib.request.urlopen(req, timeout=8) as r:
             data = json.loads(r.read().decode())

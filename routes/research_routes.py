@@ -74,6 +74,8 @@ def _sse(data: dict) -> str:
 def deep_research():
     if not session.get("auth"):
         return jsonify({"error": "login"}), 401
+    if session.get("role") == "guest":
+        return jsonify({"error": "Research is not available for guest users. Create a free account.", "guest_blocked": True}), 403
 
     body  = request.json or {}
     query = body.get("query", "").strip()

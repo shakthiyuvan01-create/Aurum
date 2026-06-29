@@ -22,7 +22,7 @@ log = logging.getLogger("error_handler")
 # ── Typed application exceptions ─────────────────────────────────────────────
 
 class AppError(Exception):
-    """Base class — all Assist Neo exceptions inherit from this."""
+    """Base class — all AI Aurum exceptions inherit from this."""
     status_code: int = 500
     default_message: str = "An unexpected error occurred."
 

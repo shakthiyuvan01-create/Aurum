@@ -3,7 +3,7 @@ routes/upload.py — image upload, file serving, screenshot
 """
 import os, uuid, re, time, base64, logging
 from flask import Blueprint, request, jsonify, send_from_directory
-from services.auth_service import login_required, current_user
+from services.auth_service import login_required, current_user, no_guests
 
 upload_bp = Blueprint("upload", __name__)
 log = logging.getLogger("routes.upload")
@@ -35,6 +35,7 @@ def serve_static(filename):
 
 @upload_bp.route("/upload/image", methods=["POST"])
 @login_required
+@no_guests
 def upload_image():
     log.info("upload_image: user=%s", current_user())
     f = request.files.get("image")
@@ -61,6 +62,7 @@ def serve_upload(filename):
 
 @upload_bp.route("/screenshot", methods=["POST"])
 @login_required
+@no_guests
 def web_screenshot():
     log.info("screenshot: user=%s", current_user())
     try:
@@ -81,7 +83,7 @@ def serve_logo():
     from flask import send_file
     import io
     base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    logo_path = os.path.join(base, "assistneo_logo.png")
+    logo_path = os.path.join(base, "aiaurum_logo.png")
     if os.path.exists(logo_path):
         return send_file(logo_path, mimetype="image/png")
     # placeholder 1×1 transparent PNG

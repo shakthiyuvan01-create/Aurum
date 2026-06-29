@@ -1,6 +1,6 @@
 """
 ====================================================================
-   ASSIST NEO  --  personal AI assistant (web + local)
+   AI AURUM  --  personal AI assistant (web + local)
 ====================================================================
   * Greets you by name, remembers things you tell it
   * Answers questions using GitHub Models (GPT-4o-mini) + Gemini
@@ -26,7 +26,7 @@ load_dotenv()
 #  CONFIG
 # ====================================================================
 
-ASSISTANT_NAME = "Assist Neo"
+ASSISTANT_NAME = "AI Aurum"
 USER_NAME      = "Yuvan"
 MEMORY_FILE     = os.path.join(os.path.dirname(os.path.abspath(__file__)), "memory.json")
 _NEO_MEMORY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "neo_memory.json")
@@ -364,8 +364,8 @@ def handle_personal(text: str) -> bool:
         "who designed you", "who is your creator", "who is your developer",
         "who programmed you", "who wrote you", "who owns you",
         "what company made you", "what company created you", "which company made you",
-        "which company created you", "who is behind you", "who made assist neo",
-        "who created assist neo", "who built assist neo", "are you made by",
+        "which company created you", "who is behind you", "who made ai aurum",
+        "who created ai aurum", "who built ai aurum", "are you made by",
         "are you from", "what are you built on", "who is your maker",
         "tell me about your creator", "who invented you",
     )):

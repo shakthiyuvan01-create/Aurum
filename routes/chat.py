@@ -3,7 +3,7 @@ routes/chat.py — /ask (non-stream), /chats CRUD, /greet, /project, /memory
 """
 import os, uuid, logging, re
 from flask import Blueprint, request, session, jsonify, render_template, redirect
-from services.auth_service import login_required, current_user, current_nick
+from services.auth_service import login_required, current_user, no_guests, current_nick
 
 chat_bp = Blueprint("chat", __name__)
 log = logging.getLogger("routes.chat")
@@ -25,7 +25,8 @@ def _brain():    return _deps["brain"]   # project-aware brain function
 def home():
     return render_template("index.html",
                            ANAME=_asst().ASSISTANT_NAME,
-                           UNAME=current_nick() or "there")
+                           UNAME=current_nick() or "there",
+                           IS_GUEST=session.get("is_guest", False))
 
 
 @chat_bp.route("/greet")
@@ -214,6 +215,7 @@ def memory_route():
 
 @chat_bp.route("/memory/vector_clear", methods=["POST"])
 @login_required
+@no_guests
 def vector_clear_route():
     _vmem().clear_user_memory(current_user())
     return jsonify({"ok": True})

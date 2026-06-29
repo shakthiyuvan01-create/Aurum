@@ -1,5 +1,5 @@
 """
-routes/stream_routes.py — SSE streaming endpoint for Assist Neo
+routes/stream_routes.py — SSE streaming endpoint for AI Aurum
 ================================================================
 Registered as a Flask Blueprint in smith_web.py.
 
@@ -107,15 +107,17 @@ def stream_ask():
 
     # ── build history for the agent ──────────────────────────────────────
     chat["messages"].append({"role": "user", "text": msg})
+    # Keep last 6 turns (12 messages max) — enough context, fewer tokens per request
     history_messages = [
         {"role": "user" if m["role"] == "user" else "assistant", "content": m["text"]}
-        for m in chat["messages"][-8:-1]    # last N turns, excluding current
+        for m in chat["messages"][-6:-1]
     ]
 
     # ── memory + persona ─────────────────────────────────────────────────
     mem_facts = db.get_memories(uname)
-    # Only do vector search for messages long enough to benefit (avoids ChromaDB lag on short msgs)
-    sem_mems  = vmem.retrieve_relevant(uname, msg, n=3) if len(msg) > 20 else []
+    # Only vector-search for substantive messages (≥40 chars) — avoids ChromaDB
+    # overhead on greetings / one-word queries and speeds up short-turn responses
+    sem_mems  = vmem.retrieve_relevant(uname, msg, n=2) if len(msg) >= 40 else []
     persona     = settings.get("persona_name", "").strip()
     custom_inst = settings.get("custom_instructions", "").strip()
     asst_name   = persona or asst.ASSISTANT_NAME
@@ -173,11 +175,13 @@ def stream_ask():
         # ── persist after streaming + emit enriched done ─────────────
         if reply_text:
             chat["messages"].append({"role": "assistant", "text": reply_text})
-            _save_chat(cid, uname, title, chat["messages"])
-            try:
-                vmem.store_conversation(uname, msg, reply_text, cid)
-            except Exception as ve:
-                log.warning("vector store failed: %s", ve)
+            # Guests are ephemeral — don't write to DB or vector memory
+            if not session.get("is_guest"):
+                _save_chat(cid, uname, title, chat["messages"])
+                try:
+                    vmem.store_conversation(uname, msg, reply_text, cid)
+                except Exception as ve:
+                    log.warning("vector store failed: %s", ve)
         yield f"data: {json.dumps({'done': True, 'chat_id': cid, 'title': title, 'model': model_key})}\n\n"
 
 

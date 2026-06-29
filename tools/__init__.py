@@ -215,6 +215,3 @@ def call_multiple_concurrent(tool_calls: list, username: str = "default") -> lis
                for tc in tool_calls]
     log.info("Concurrent tools %s finished in %.2fs", names, elapsed)
     return results
-         for tc in tool_calls]
-    log.info("Concurrent tools %s finished in %.2fs", names, elapsed)
-    return results

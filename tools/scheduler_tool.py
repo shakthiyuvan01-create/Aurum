@@ -130,7 +130,7 @@ def _add_job(job_id, task_name, task_action, trigger_type, trigger_kwargs):
                 log.info("scheduler reminder: %s", task_name)
                 try:
                     from plyer import notification
-                    notification.notify(title="Assist Neo Reminder",
+                    notification.notify(title="AI Aurum Reminder",
                                         message=task_name, timeout=10)
                 except Exception:
                     pass
@@ -147,7 +147,7 @@ def run(action: str, task_name: str = "", schedule: str = "",
 
     if action == "list":
         if _scheduler is None:
-            return {"message": "⚠️ Scheduler not running. Restart Assist Neo."}
+            return {"message": "⚠️ Scheduler not running. Restart AI Aurum."}
         jobs = _scheduler.get_jobs()
         if not jobs:
             return {"message": "No scheduled tasks."}

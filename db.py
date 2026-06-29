@@ -5,7 +5,7 @@ Replaces: users.json, chats/, neo_memory.json
 import sqlite3, os, time, json, logging, glob
 
 log = logging.getLogger("db")
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assistneo.db")
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aiaurum.db")
 
 def _conn():
     c = sqlite3.connect(DB_PATH, check_same_thread=False)

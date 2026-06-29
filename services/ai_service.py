@@ -23,10 +23,13 @@ _COMPLEX_KEYWORDS = {
 def route_model(msg: str, settings: dict) -> str:
     """
     Returns 'code', 'fast', or 'main'.
-    'code'  → GPT-4o (CODE_MODEL)
-    'fast'  → GPT-4o-mini (FAST_MODEL)
-    'main'  → configured MAIN_MODEL
+    'code'  → GPT-4o (CODE_MODEL)      — coding / debugging tasks
+    'fast'  → GPT-4o-mini (FAST_MODEL) — short questions, chat, tool queries
+    'main'  → configured MAIN_MODEL    — long analysis, essays, research
     Respects user's model_routing setting (0 = always use main).
+
+    Speed strategy: default to 'fast' unless complexity signals demand more.
+    gpt-4o-mini is ~2-3x faster and sufficient for most conversational turns.
     """
     if not settings.get("model_routing", 1):
         return "main"
@@ -34,15 +37,24 @@ def route_model(msg: str, settings: dict) -> str:
     low   = msg.lower()
     words = set(low.split())
 
+    # Code work → use code-optimised model
     if words & _CODE_KEYWORDS or any(k in low for k in _CODE_KEYWORDS if " " in k):
         return "code"
-    if len(msg) < 120 and not any(k in low for k in _COMPLEX_KEYWORDS):
-        return "fast"
-    return "main"
+
+    # Genuinely complex requests -> main model
+    if any(k in low for k in _COMPLEX_KEYWORDS):
+        return "main"
+
+    # Long messages (>= 300 chars) may need deeper reasoning -> main
+    if len(msg) >= 300:
+        return "main"
+
+    # Everything else -> fast model (gpt-4o-mini is 2-3x faster)
+    return "fast"
 
 
 def model_name(key: str, assistant_module) -> str:
-    """Resolve routing key to actual model string."""
+    # Resolve routing key to actual model string
     return {
         "code": os.getenv("CODE_MODEL", "gpt-4o"),
         "fast": os.getenv("FAST_MODEL", "gpt-4o-mini"),
