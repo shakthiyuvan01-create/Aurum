@@ -44,7 +44,7 @@ body{display:flex;background:var(--bg);color:var(--txt);
   flex-direction:column;align-items:center;justify-content:center;gap:16px;
   animation:splashGo 2.8s ease forwards;}
 @keyframes splashGo{0%,60%{opacity:1;}100%{opacity:0;pointer-events:none;}}
-.sp-logo{width:110px;height:110px;border-radius:50%;object-fit:cover;
+.sp-logo{width:160px;height:160px;border-radius:50%;object-fit:cover;
   border:3px solid #00ff88;box-shadow:0 0 40px #3a8cf855;
   animation:spPop 2.8s ease forwards;}
 @keyframes spPop{0%{transform:scale(.8);opacity:0;}30%{transform:scale(1.06);opacity:1;}
@@ -68,8 +68,8 @@ animation:spFI .6s .3s ease both;
 /* layout */
 .side{width:260px;background:var(--side);display:flex;flex-direction:column;
   padding:14px 10px;flex-shrink:0;border-right:1px solid var(--bdr);overflow-y:auto;}
-.side-logo{width:90px;height:90px;border-radius:50%;object-fit:cover;
-  border:2px solid var(--bdr);display:block;margin:0 auto 6px;}
+.side-logo{width:130px;height:130px;border-radius:50%;object-fit:cover;
+  border:2px solid var(--bdr);display:block;margin:0 auto 10px;}
 .brand{font-size:20px;font-weight:700;padding:8px 10px 14px;color:var(--acc);}
 .item{display:flex;align-items:center;gap:10px;width:100%;cursor:pointer;
   background:transparent;color:var(--txt);border:0;border-radius:10px;
@@ -169,7 +169,7 @@ box-shadow:0 0 15px #00ff88;
 .hint{max-width:760px;margin:7px auto 0;text-align:center;color:var(--muted);font-size:12px;}
 #welcome{display:flex;flex-direction:column;align-items:center;
   justify-content:center;height:100%;gap:14px;animation:rise .4s ease;}
-.wv-logo{width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--bdr);}
+.wv-logo{width:150px;height:150px;border-radius:50%;object-fit:cover;border:3px solid var(--bdr);}
 .top-bar{display:none;align-items:center;gap:12px;padding:12px 16px;
   background:var(--side);border-bottom:1px solid var(--bdr);}
 .top-bar .brand-m{font-size:18px;font-weight:700;color:var(--acc);}
@@ -258,6 +258,79 @@ body{
 .um-box .um-btn.y:hover{background:#ffd000;}
 .um-box .um-btn.n{background:#2a2a2a;color:#aaa;}
 .um-box .um-btn.n:hover{background:#333;color:#fff;}
+/* ── Skills sidebar ───────────────────────────────────────────── */
+.skill-item{display:flex;align-items:center;gap:8px;padding:7px 12px;
+  border-radius:8px;cursor:pointer;font-size:13px;color:var(--muted);
+  transition:.12s;border:0;background:transparent;width:100%;text-align:left;}
+.skill-item:hover{background:var(--act);color:var(--txt);}
+.skill-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+/* ── Sub-agent panel ──────────────────────────────────────────── */
+#subagent-panel{display:none;position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%);z-index:9000;
+  background:#111;border:1px solid #2a2a2a;border-radius:16px;
+  padding:24px;width:min(680px,92vw);max-height:82vh;overflow-y:auto;
+  box-shadow:0 16px 48px rgba(0,0,0,.7);}
+#subagent-panel.show{display:block;}
+.sa-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.sa-header h3{color:#fff;font-size:17px;font-weight:600;margin:0;}
+.sa-close{background:transparent;border:0;color:#666;font-size:20px;cursor:pointer;padding:2px 6px;}
+.sa-close:hover{color:#fff;}
+.sa-task-input{width:100%;box-sizing:border-box;background:#1e1e1e;border:1px solid #2a2a2a;
+  border-radius:8px;padding:10px 12px;font-size:14px;color:#fff;
+  outline:none;resize:vertical;min-height:60px;margin-bottom:12px;}
+.sa-task-input:focus{border-color:var(--acc);}
+.sa-run-btn{background:var(--acc);border:0;border-radius:8px;padding:10px 20px;
+  font-size:14px;font-weight:700;color:#000;cursor:pointer;}
+.sa-run-btn:hover{filter:brightness(1.1);}
+.sa-agents{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-top:16px;}
+.sa-agent{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:12px;}
+.sa-agent.running{border-color:#f0c00066;animation:saGlow 1.5s ease-in-out infinite;}
+@keyframes saGlow{0%,100%{box-shadow:none;}50%{box-shadow:0 0 12px #f0c00033;}}
+.sa-agent.done{border-color:#00ff8855;}
+.sa-agent-id{font-weight:700;font-size:11px;color:var(--acc);margin-bottom:4px;}
+.sa-agent-task{color:var(--muted);margin-bottom:6px;font-size:11px;word-break:break-word;}
+.sa-agent-result{color:var(--txt);font-size:12px;max-height:90px;
+  overflow-y:auto;word-break:break-word;white-space:pre-wrap;}
+.sa-synthesis{margin-top:16px;background:#0d1117;border:1px solid #30363d;
+  border-radius:10px;padding:14px;font-size:13px;color:var(--txt);white-space:pre-wrap;}
+/* ── Skills modal ─────────────────────────────────────────────── */
+#skills-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
+  z-index:9999;align-items:center;justify-content:center;}
+#skills-modal.show{display:flex;}
+.sm-box{background:#141414;border:1px solid #2a2a2a;border-radius:16px;
+  padding:24px;width:min(620px,92vw);max-height:80vh;overflow-y:auto;}
+.sm-box h3{color:#fff;font-size:17px;font-weight:600;margin:0 0 14px;}
+.sm-search{width:100%;box-sizing:border-box;background:#1e1e1e;border:1px solid #2a2a2a;
+  border-radius:8px;padding:9px 12px;color:#fff;font-size:13px;outline:none;margin-bottom:12px;}
+.sm-search:focus{border-color:var(--acc);}
+.sm-skill{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:12px;margin-bottom:10px;}
+.sm-skill-name{font-weight:600;color:#fff;font-size:14px;margin-bottom:3px;}
+.sm-skill-desc{color:var(--muted);font-size:12px;margin-bottom:6px;}
+.sm-skill-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px;}
+.sm-tag{background:#2a2a2a;color:var(--acc);border-radius:4px;padding:2px 7px;font-size:11px;font-weight:600;}
+.sm-skill-content{background:#0d1117;border-radius:6px;padding:8px;
+  font-size:12px;color:#ccc;max-height:80px;overflow:hidden;white-space:pre-wrap;cursor:pointer;}
+.sm-skill-content.expanded{max-height:none;}
+.sm-del-btn{background:transparent;border:1px solid #333;color:#666;
+  border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;margin-top:6px;}
+.sm-del-btn:hover{border-color:#f87171;color:#f87171;}
+.ab.skill-save{color:var(--acc);}
+/* ── Project context modal ────────────────────────────────────── */
+#projctx-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
+  z-index:9999;align-items:center;justify-content:center;}
+#projctx-modal.show{display:flex;}
+.pc-box{background:#141414;border:1px solid #2a2a2a;border-radius:16px;padding:24px;width:min(500px,92vw);}
+.pc-box h3{color:#fff;font-size:17px;font-weight:600;margin:0 0 16px;}
+.pc-label{color:#888;font-size:12px;margin:10px 0 4px;}
+.pc-input{width:100%;box-sizing:border-box;background:#1e1e1e;border:1px solid #2a2a2a;
+  border-radius:8px;padding:9px 12px;color:#fff;font-size:13px;outline:none;}
+.pc-input:focus{border-color:var(--acc);}
+.pc-save{background:var(--acc);border:0;border-radius:8px;padding:10px 20px;
+  font-size:14px;font-weight:700;color:#000;cursor:pointer;margin-top:14px;width:100%;}
+.pc-save:hover{filter:brightness(1.1);}
+.proj-ctx-badge{font-size:11px;color:var(--acc);padding:2px 12px 8px;
+  cursor:pointer;opacity:.7;display:block;}
+.proj-ctx-badge:hover{opacity:1;}
 </style><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
@@ -275,6 +348,78 @@ body{
   <div class="gt-btns">
     <button class="gt-btn primary" onclick="location.href='/register'">Sign Up Free</button>
     <button class="gt-btn close" onclick="document.getElementById('guest-toast').classList.remove('show')">✕</button>
+  </div>
+</div>
+
+<!-- Skills modal -->
+<div id="skills-modal">
+  <div class="sm-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <h3>🧠 Saved Skills</h3>
+      <button onclick="closeSkillsModal()" class="sa-close">✕</button>
+    </div>
+    <input class="sm-search" id="sm-search" placeholder="Search skills…" oninput="filterSkills(this.value)">
+    <div id="sm-skills-list"></div>
+    <div style="margin-top:14px;border-top:1px solid #2a2a2a;padding-top:14px;">
+      <div style="color:#888;font-size:12px;margin-bottom:8px;font-weight:600;">SAVE A NEW SKILL</div>
+      <input class="sm-search" id="new-skill-name" placeholder="Skill name…" style="margin-bottom:8px;">
+      <input class="sm-search" id="new-skill-desc" placeholder="Description (optional)…" style="margin-bottom:8px;">
+      <textarea class="sm-search" id="new-skill-content" rows="4"
+        placeholder="Skill content — paste the solution, code pattern, or approach…"
+        style="resize:vertical;min-height:80px;margin-bottom:8px;"></textarea>
+      <input class="sm-search" id="new-skill-tags" placeholder="Tags (comma-separated, e.g. python,api,auth)…" style="margin-bottom:10px;">
+      <button onclick="saveNewSkill()" class="sa-run-btn" style="width:100%;">💾 Save Skill</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sub-agent panel -->
+<div id="subagent-panel">
+  <div class="sa-header">
+    <h3>⚡ Parallel Sub-Agents</h3>
+    <button onclick="closeSubagent()" class="sa-close">✕</button>
+  </div>
+  <p style="color:var(--muted);font-size:13px;margin:0 0 14px;">
+    Break a complex task across multiple AI agents running in parallel, then synthesise results.
+  </p>
+  <textarea class="sa-task-input" id="sa-task-input"
+    placeholder="Describe your task… e.g. 'Research the pros and cons of React vs Vue vs Svelte'"></textarea>
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    <button class="sa-run-btn" onclick="runSubagents()">▶ Run Parallel Agents</button>
+    <label style="color:#888;font-size:13px;display:flex;align-items:center;gap:6px;">
+      Agents:
+      <select id="sa-n-agents" style="background:#1e1e1e;border:1px solid #2a2a2a;
+        color:#fff;border-radius:6px;padding:4px 8px;font-size:13px;">
+        <option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option>
+      </select>
+    </label>
+  </div>
+  <div id="sa-progress" style="margin-top:14px;color:var(--muted);font-size:13px;"></div>
+  <div class="sa-agents" id="sa-agents-grid"></div>
+  <div id="sa-synthesis" class="sa-synthesis" style="display:none;"></div>
+</div>
+
+<!-- Project context modal -->
+<div id="projctx-modal">
+  <div class="pc-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <h3>📁 Project Context</h3>
+      <button onclick="closeProjCtx()" class="sa-close">✕</button>
+    </div>
+    <p style="color:#666;font-size:13px;margin:0 0 14px;">
+      Set your active project so AI Aurum always knows what you're working on — no need to re-explain.
+    </p>
+    <div class="pc-label">Project Name</div>
+    <input class="pc-input" id="pc-name" placeholder="e.g. My SaaS App">
+    <div class="pc-label">Description</div>
+    <input class="pc-input" id="pc-desc" placeholder="Brief description of what you're building…">
+    <div class="pc-label">Tech Stack (comma-separated)</div>
+    <input class="pc-input" id="pc-stack" placeholder="e.g. Python, Flask, React, PostgreSQL">
+    <div class="pc-label">Goals / Current Focus</div>
+    <input class="pc-input" id="pc-goals" placeholder="e.g. Build auth system, optimise DB queries…">
+    <button class="pc-save" onclick="saveProjCtx()">✓ Save Project Context</button>
+    <button onclick="clearProjCtx()" style="background:transparent;border:0;color:#555;
+      font-size:12px;cursor:pointer;margin-top:10px;width:100%;">Clear project context</button>
   </div>
 </div>
 
@@ -303,11 +448,25 @@ body{
 <aside class="side" id="side">
   <img class="side-logo" src="/logo" alt="logo">
   <div class="brand">{{ ANAME }}</div>
+  <div id="proj-ctx-badge" class="proj-ctx-badge" onclick="openProjCtx()" title="Set active project context">
+    📁 <span id="proj-ctx-name">No project set</span>
+  </div>
   <button class="item newchat" onclick="newChat()">&#65291;&nbsp; New chat</button>
   <div class="sec">PROJECTS</div>
   <div id="projs"></div>
   <div class="sec">RECENT CHATS</div>
   <div id="chatlist"></div>
+  <div class="sec" style="display:flex;align-items:center;justify-content:space-between;padding-right:12px;">
+    SKILLS
+    <button onclick="openSkillsModal()" style="background:transparent;border:0;color:var(--acc);
+      font-size:13px;cursor:pointer;padding:0;">+ Manage</button>
+  </div>
+  <div id="skillslist" style="padding:0 4px;"></div>
+  <div class="sec" style="display:flex;align-items:center;justify-content:space-between;padding-right:12px;">
+    SUB-AGENTS
+    <button onclick="openSubagent()" style="background:transparent;border:0;color:var(--acc);
+      font-size:13px;cursor:pointer;padding:0;">▶ Run</button>
+  </div>
   <div class="me">
     <span class="dot"></span>{{ UNAME }}
     <button id="settings-btn" onclick="openSettings()" title="Personality &amp; Settings"
@@ -344,49 +503,49 @@ body{
       border:0;color:var(--txt);cursor:pointer;padding:10px 14px;border-radius:8px;font-size:14px;"
       onmouseenter="this.style.background='var(--act)'"
       onmouseleave="this.style.background='transparent'">
-      &#128206; Upload photos &amp; files
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="8 12 12 8 16 12"/><line x1="12" y1="8" x2="12" y2="17"/></svg> Upload photos &amp; files
     </button>
     <button onclick="captureScreen();togglePlusMenu();"
       style="display:flex;align-items:center;gap:10px;width:100%;background:transparent;
       border:0;color:var(--txt);cursor:pointer;padding:10px 14px;border-radius:8px;font-size:14px;"
       onmouseenter="this.style.background='var(--act)'"
       onmouseleave="this.style.background='transparent'">
-      &#128247; Take screenshot
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="18" x2="12" y2="21"/></svg> Take screenshot
     </button>
     <button onclick="toggleResearch();togglePlusMenu();"
       style="display:flex;align-items:center;gap:10px;width:100%;background:transparent;
       border:0;color:var(--txt);cursor:pointer;padding:10px 14px;border-radius:8px;font-size:14px;"
       onmouseenter="this.style.background='var(--act)'"
       onmouseleave="this.style.background='transparent'">
-      &#128300; Deep Research mode
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg> Deep Research mode
     </button>
     <button onclick="document.getElementById('da').click();togglePlusMenu();"
       style="display:flex;align-items:center;gap:10px;width:100%;background:transparent;
       border:0;color:var(--txt);cursor:pointer;padding:10px 14px;border-radius:8px;font-size:14px;"
       onmouseenter="this.style.background='var(--act)'"
       onmouseleave="this.style.background='transparent'">
-      &#128202; Analyze Data
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg> Analyze Data
     </button>
     <button onclick="toggleMemory();togglePlusMenu();"
       style="display:flex;align-items:center;gap:10px;width:100%;background:transparent;
       border:0;color:var(--txt);cursor:pointer;padding:10px 14px;border-radius:8px;font-size:14px;"
       onmouseenter="this.style.background='var(--act)'"
       onmouseleave="this.style.background='transparent'">
-      &#129504; Memory
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg> Memory
     </button>
     <button onclick="openToolsPanel();togglePlusMenu();"
       style="display:flex;align-items:center;gap:10px;width:100%;background:transparent;
       border:0;color:var(--txt);cursor:pointer;padding:10px 14px;border-radius:8px;font-size:14px;"
       onmouseenter="this.style.background='var(--act)'"
       onmouseleave="this.style.background='transparent'">
-      🔧 Tools &amp; Plugins
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg> Tools &amp; Plugins
     </button>
     <button onclick="openCodePanel();togglePlusMenu();"
       style="display:flex;align-items:center;gap:10px;width:100%;background:transparent;
       border:0;color:var(--txt);cursor:pointer;padding:10px 14px;border-radius:8px;font-size:14px;"
       onmouseenter="this.style.background='var(--act)'"
       onmouseleave="this.style.background='transparent'">
-      &#128187; Code &amp; Files
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Code &amp; Files
     </button>
   </div>
   <div class="pill">
@@ -397,16 +556,16 @@ body{
       background:linear-gradient(90deg,#1a3a2a,#0d2a1a);border:1px solid #2d6a4f;
       border-radius:8px;padding:5px 12px;font-size:12px;color:#52d68a;
       align-items:center;gap:8px;">
-      &#128300; Deep Research mode ON &nbsp;
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Deep Research mode ON &nbsp;
       <span onclick="toggleResearch()" style="cursor:pointer;opacity:0.7;font-size:11px;">&#10005; turn off</span>
     </div>
     <!-- Image preview strip -->
     <div id="imgPreview" style="display:none;padding:6px 12px 0;display:flex;gap:8px;flex-wrap:wrap;"></div>
     <div style="display:flex;align-items:center;gap:4px;flex:1;">
     <button title="Attach image" onclick="document.getElementById('imgInput').click()"
-      style="background:none;border:0;color:var(--muted);cursor:pointer;font-size:20px;padding:4px 6px;flex-shrink:0;">🖼️</button>
+      style="background:none;border:0;color:var(--muted);cursor:pointer;padding:4px 6px;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
     <button title="Camera" onclick="openCamera()"
-      style="background:none;border:0;color:var(--muted);cursor:pointer;font-size:20px;padding:4px 6px;flex-shrink:0;">📷</button>
+      style="background:none;border:0;color:var(--muted);cursor:pointer;padding:4px 6px;flex-shrink:0;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
     <textarea id="bx" rows="1" placeholder="Message {{ ANAME }}..."
       oninput="grow(this);updateSendBtn()" onkeydown="key(event)" style="flex:1;"></textarea>
     </div>
@@ -421,14 +580,14 @@ body{
   <input type="file" id="fi" hidden onchange="upload()" accept="image/*,video/*,.pdf,.csv,.xlsx,.xls,.txt,.py,.js,.html,.md">
   <input type="file" id="da" hidden accept=".csv,.xlsx,.xls" onchange="analyzeData()">
   <input type="file" id="imgInput" hidden accept="image/*" onchange="attachImage(this)">
-  <div class="hint">{{ ANAME }} &middot; Enter to send &middot; 🖼️ attach image &middot; 📷 camera</div>
+  <div class="hint">{{ ANAME }} &middot; Enter to send &middot; attach image &middot; camera</div>
 
   <!-- Camera Modal -->
   <div id="cameraModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);
     z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;">
     <div style="background:#1e1e24;border-radius:16px;padding:20px;max-width:500px;width:90vw;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <span style="font-weight:600;font-size:15px;">📷 Camera</span>
+        <span style="font-weight:600;font-size:15px;display:flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Camera</span>
         <button onclick="closeCamera()" style="background:none;border:0;color:var(--muted);font-size:20px;cursor:pointer;">✕</button>
       </div>
       <video id="camVideo" autoplay playsinline style="width:100%;border-radius:10px;background:#000;max-height:320px;object-fit:cover;"></video>
@@ -446,7 +605,7 @@ body{
   background:#1e1e24;border:1px solid var(--bdr);border-radius:16px;padding:24px;
   z-index:9999;width:380px;max-width:90vw;box-shadow:0 16px 48px rgba(0,0,0,.6);">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-    <span style="font-size:16px;font-weight:600;">&#129504; Aurum's Memory</span>
+    <span style="font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg> Aurum's Memory</span>
     <button onclick="document.getElementById('memPanel').style.display='none'"
       style="background:transparent;border:0;color:var(--txt);cursor:pointer;font-size:18px;">&#10005;</button>
   </div>
@@ -466,7 +625,7 @@ body{
   background:#13171c;border-left:1px solid var(--bdr);z-index:9991;flex-direction:column;overflow:hidden;">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px;
     border-bottom:1px solid var(--bdr);flex-shrink:0;">
-    <span style="font-size:16px;font-weight:700;">🔧 Tools &amp; Plugins</span>
+    <span style="font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> Tools &amp; Plugins</span>
     <button onclick="closeToolsPanel()" style="background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:20px;">✕</button>
   </div>
   <!-- Tool tabs -->
@@ -523,7 +682,7 @@ body{
   <!-- Header + tabs -->
   <div style="display:flex;align-items:center;gap:0;border-bottom:1px solid #30363d;flex-shrink:0;background:#161b22;">
     <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;flex:1;">
-      <span style="font-size:15px;font-weight:700;color:#e6edf3;">&#128187; Code &amp; Files</span>
+      <span style="font-size:15px;font-weight:700;color:#e6edf3;display:flex;align-items:center;gap:8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Code &amp; Files</span>
       <div id="cpTabs" style="display:flex;gap:2px;">
         <button onclick="cpTab('editor')"   id="cptab_editor"   class="cp-tab active-tab">&#9654; Editor</button>
         <button onclick="cpTab('files')"    id="cptab_files"    class="cp-tab">&#128194; Files</button>
@@ -1106,7 +1265,7 @@ async function send() {
           // Show tool chip
           const chip = document.createElement('div');
           chip.style.cssText = 'font-size:12px;color:var(--muted);padding:2px 0 4px 2px;';
-          chip.textContent = '🔧 ' + data.tool_used + '…';
+          chip.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> ${data.tool_used}…`;
           msgEl.insertBefore(chip, bubble);
         }
 
@@ -1201,7 +1360,7 @@ function _renderToolTabs(){
       border-radius:20px;padding:5px 13px;font-size:12px;cursor:pointer;white-space:nowrap;transition:.15s;"
       onmouseenter="this.style.borderColor='var(--acc)';this.style.color='var(--acc)';"
       onmouseleave="this.style.borderColor='var(--bdr)';this.style.color=_activeTool==='${t.name}'?'var(--acc)':'var(--muted)';">
-      ${t.icon||'🔧'} ${t.name}
+      ${t.icon||''} ${t.name}
     </button>`
   ).join('') +
   `<button onclick="_selectTool('__custom__')"
@@ -1235,7 +1394,7 @@ function _renderToolForm(tool){
     <button onclick="_runTool('${tool.name}')"
       style="width:100%;background:var(--acc);border:0;border-radius:10px;padding:11px;
       color:#000;font-weight:700;cursor:pointer;font-size:14px;margin-top:6px;">
-      ${tool.icon||'🔧'} Run ${tool.name}
+      ${tool.icon||''} Run ${tool.name}
     </button>
     <div id="toolResult" style="margin-top:16px;"></div>
   `;
@@ -1602,7 +1761,7 @@ async function filesNav(dir){
     if(!html) html='<span style="color:#8b949e;padding:8px 12px;font-size:12px;">Empty</span>';
     tree.innerHTML=html;
     _addFtreeStyles();
-  }catch(e){tree.innerHTML='<span style="color:#e74c3c;padding:8px;">'+e+'</span>';}
+  }catch(e){tree.innerHTML='<span style="c  }catch(e){tree.innerHTML='<span style="color:#e74c3c;padding:8px;">'+e+'</span>';}
 }
 
 function _addFtreeStyles(){
@@ -1622,7 +1781,6 @@ async function filesOpen(path){
   const wrap=document.getElementById('fileEditorWrap');
   wrap.style.display='flex';
   const area=document.getElementById('fileEditorArea');
-  // init file CodeMirror once
   if(!_fileCm && typeof CodeMirror!=='undefined'){
     _fileCm=CodeMirror.fromTextArea(area,{
       theme:'dracula',lineNumbers:true,matchBrackets:true,
@@ -1634,29 +1792,21 @@ async function filesOpen(path){
   try{
     const r=await fetch('/files/read?path='+encodeURIComponent(path));
     const d=await r.json();
-    if(d.error){if(_fileCm)_fileCm.setValue('Error: '+d.error);return;}
-    if(_fileCm){
-      const ext=path.split('.').pop().toLowerCase();
-      const modeMap={py:'python',js:'javascript',sh:'shell',sql:'text/x-sql',
-        html:'htmlmixed',css:'css',json:'application/json'};
-      _fileCm.setOption('mode',modeMap[ext]||'null');
-      _fileCm.setValue(d.content||'');
-    }else{area.value=d.content||'';}
-  }catch(e){if(_fileCm)_fileCm.setValue('Load error: '+e);}
+    if(d.error){alert('Error: '+d.error);return;}
+    if(_fileCm) _fileCm.setValue(d.content||'');
+    else area.value=d.content||'';
+  }catch(e){alert('Error reading file: '+e);}
 }
-
-async function fileSave(){
-  if(!_currentFile){alert('No file open.');return;}
-  const content=_fileCm?_fileCm.getValue():document.getElementById('fileEditorArea').value;
+async function filesSave(){
+  if(!_currentFile){alert('No file open');return;}
+  const content=_fileCm?_fileCm.getValue():(document.getElementById('fileEditorArea').value);
   const r=await fetch('/files/write',{method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({path:_currentFile,content})});
   const d=await r.json();
-  const nm=document.getElementById('fileEditorName');
-  if(d.ok){nm.style.color='#3fb950';setTimeout(()=>{nm.style.color='';},1500);}
-  else{alert('Save failed: '+d.error);}
+  const out=document.getElementById('cpOutput');
+  out.textContent=d.ok?'✅ Saved: '+_currentFile:'❌ '+d.error;
 }
-
 async function filesNewFile(){
   const name=prompt('File name (inside workspace):');
   if(!name) return;
@@ -1679,174 +1829,330 @@ async function filesNewDir(){
   else alert('Error: '+d.error);
 }
 
-/* ──────────────────────────────────────────────────────────────────
-   GIT PANEL
-   ────────────────────────────────────────────────────────────────── */
+/* ── GIT PANEL ─────────────────────────────────────────────────── */
 async function gitRun(forceAction, silent){
   const action=forceAction||document.getElementById('gitAction').value;
   const msg=document.getElementById('gitCommitMsg').value.trim();
   const custom=document.getElementById('gitCustomCmd').value.trim();
   const out=document.getElementById('gitOutput');
   if(!silent) out.textContent='Running git '+action+'…';
+  const body={action};
+  if(msg) body.message=msg;
+  if(custom) body.custom=custom;
   try{
-    const body={action};
-    if(msg) body.message=msg;
-    if(custom) body.custom_cmd=custom;
-    const r=await fetch('/tools/run',{method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({tool:'git',...body})});
-    const d=await r.json();
-    const result=d.result||d;
-    if(result.error){out.textContent='❌ '+result.error;return;}
-    out.textContent=result.output||(result.success?'✅ Done':'(no output)');
-  }catch(e){out.textContent='Request failed: '+e;}
-}
-
-async function gitPushDesktop(){
-  const msg=document.getElementById('gitCommitMsg').value.trim()||'Update from AI Aurum';
-  const out=document.getElementById('gitOutput');
-  out.textContent='📤 Staging, committing and pushing…';
-  try{
-    const r=await fetch('/git/push',{method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({message:msg})});
-    const d=await r.json();
-    if(d.ok){
-      out.textContent='✅ Pushed!\n\n'+d.output+'\n\n🖥️ Opening GitHub Desktop…';
-    }else{
-      out.textContent='❌ Push failed:\n'+d.output;
-    }
-  }catch(e){out.textContent='Request failed: '+e;}
-}
-
-/* ──────────────────────────────────────────────────────────────────
-   DEBUGGER PANEL
-   ────────────────────────────────────────────────────────────────── */
-async function dbgAnalyze(){
-  const code=document.getElementById('dbgCode').value.trim();
-  const err=document.getElementById('dbgError').value.trim();
-  const lang=document.getElementById('dbgLang').value;
-  const res=document.getElementById('dbgResult');
-  if(!code){alert('Paste some code first.');return;}
-  res.innerHTML='<span style="color:#8b949e;font-size:13px;">Analyzing…</span>';
-  try{
-    const body={code,language:lang,ai_debug:true};
-    if(err) body.stdin=err;  // pass error as stdin for context — /code/run will handle
-    const r=await fetch('/code/run',{method:'POST',
+    const r=await fetch('/git/run',{method:'POST',
       headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const d=await r.json();
-    const analysis=d.ai_analysis||d.error||'No analysis returned.';
-    res.innerHTML=`<div style="background:#0d1117;border:1px solid #30363d;border-radius:10px;padding:16px;font-size:13px;color:#e6edf3;line-height:1.6;white-space:pre-wrap;word-wrap:break-word;">${_htmlEscape(analysis)}</div>`;
-  }catch(e){res.innerHTML='<span style="color:#e74c3c;">Request failed: '+e+'</span>';}
+    if(!silent) out.textContent=d.output||d.error||'Done';
+  }catch(e){if(!silent) out.textContent='Error: '+e;}
 }
+
 function _htmlEscape(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
-
-/* ── Missing core functions ────────────────────────────────────── */
-
-function newChat() {
-  th.innerHTML = '';
-  chatId = null;
-  bx.value = '';
+/* ── MISSING CORE ──────────────────────────────────────────────── */
+function newChat(){
+  th.innerHTML='';
+  chatId=null;
+  bx.value='';
   grow(bx);
   updateSendBtn();
-  document.getElementById('welcome') && (document.getElementById('welcome').style.display = 'flex');
+  const w=document.getElementById('welcome');
+  if(w) w.style.display='flex';
   closeSide();
-  document.querySelectorAll('.chat-item').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.chat-item').forEach(b=>b.classList.remove('on'));
+}
+function greet(){
+  const w=document.getElementById('welcome');
+  if(w) w.style.display='flex';
+  th.innerHTML='';
+  chatId=null;
 }
 
-function greet() {
-  const w = document.getElementById('welcome');
-  if (w) { w.style.display = 'flex'; }
-  th.innerHTML = '';
-  chatId = null;
+/* ══════════════════════════════════════════════════════════════════
+   SKILLS — Self-Evolving Knowledge
+   ══════════════════════════════════════════════════════════════════ */
+let _allSkills=[];
+
+async function loadSkills(){
+  try{
+    const r=await fetch('/skills');
+    const d=await r.json();
+    _allSkills=d.skills||[];
+    renderSidebarSkills();
+  }catch(e){console.warn('skills load failed',e);}
 }
 
-let plusMenuOpen = false;
-function togglePlusMenu() {
-  const m = document.getElementById('plusMenu');
-  if (!m) return;
-  plusMenuOpen = !plusMenuOpen;
-  m.style.display = plusMenuOpen ? 'block' : 'none';
-}
-document.addEventListener('click', function(e) {
-  if (plusMenuOpen && !e.target.closest('#plusMenu') && !e.target.closest('[onclick*="togglePlusMenu"]')) {
-    plusMenuOpen = false;
-    const m = document.getElementById('plusMenu');
-    if (m) m.style.display = 'none';
+function renderSidebarSkills(){
+  const el=document.getElementById('skillslist');
+  if(!el) return;
+  if(!_allSkills.length){
+    el.innerHTML='<div style="padding:4px 12px;font-size:12px;color:var(--muted);">No skills saved yet</div>';
+    return;
   }
-});
-
-let researchMode = false;
-function toggleResearch() {
-  researchMode = !researchMode;
-  const bar = document.getElementById('resBar');
-  if (bar) bar.style.display = researchMode ? 'flex' : 'none';
-  bx.placeholder = researchMode ? 'Deep Research query…' : 'Message {{ ANAME }}…';
+  el.innerHTML=_allSkills.slice(0,5).map(s=>`
+    <button class="skill-item" onclick="useSkill('${s.id}')" title="${s.description||s.name}">
+      🧠 <span>${s.name}</span>
+    </button>`).join('');
+  if(_allSkills.length>5)
+    el.innerHTML+=`<div style="padding:2px 12px;font-size:11px;color:var(--muted);">+${_allSkills.length-5} more — <button onclick="openSkillsModal()" style="background:transparent;border:0;color:var(--acc);font-size:11px;cursor:pointer;">View all</button></div>`;
 }
 
-function captureScreen() {
-  // Placeholder — screenshot capture not supported in browser without extension
-  addMsg('📷 Screenshot capture requires a desktop integration. Coming soon!', 'bot');
+function useSkill(skillId){
+  const s=_allSkills.find(x=>x.id===skillId);
+  if(!s) return;
+  bx.value='Use this skill pattern:\n\n'+s.content;
+  grow(bx);
+  updateSendBtn();
+  bx.focus();
+  closeSide();
 }
 
-</script>
+function openSkillsModal(){
+  document.getElementById('skills-modal').classList.add('show');
+  renderSkillsList(_allSkills);
+}
+function closeSkillsModal(){
+  document.getElementById('skills-modal').classList.remove('show');
+}
 
-<script>
-// ── Guest mode wiring ──────────────────────────────────────────────────────
-const IS_GUEST = {{ 'true' if IS_GUEST else 'false' }};
-
-if(IS_GUEST){
-  // Show toast briefly, auto-dismiss after 6s
-  var toast = document.getElementById('guest-toast');
-  toast.classList.add('show');
-  setTimeout(function(){ toast.classList.remove('show'); }, 6000);
-
-  // Intercept clicks on locked buttons/panels
-  // List of element IDs that are blocked for guests
-  const LOCKED_IDS = ['files-panel','code-panel','git-push-btn','settings-btn',
-    'memory-panel','screenshot-btn','upload-img-btn','research-btn','analyze-btn'];
-
-  function showUpgrade(msg){
-    document.getElementById('upgrade-msg').textContent =
-      (msg || 'This feature is only available to registered users.') +
-      ' Create a free account to unlock everything.';
-    document.getElementById('upgrade-modal').classList.add('show');
+function renderSkillsList(skills){
+  const el=document.getElementById('sm-skills-list');
+  if(!skills.length){
+    el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px 0;">No skills yet. Save your first skill below.</div>';
+    return;
   }
-  window.showUpgrade = showUpgrade;
+  el.innerHTML=skills.map(s=>`
+    <div class="sm-skill">
+      <div class="sm-skill-name">${s.name}</div>
+      ${s.description?`<div class="sm-skill-desc">${s.description}</div>`:''}
+      ${s.tags&&s.tags.length?`<div class="sm-skill-tags">${s.tags.map(t=>`<span class="sm-tag">${t}</span>`).join('')}</div>`:''}
+      <div class="sm-skill-content" onclick="this.classList.toggle('expanded')">${s.content}</div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
+        <span style="font-size:11px;color:var(--muted);">Used ${s.usage_count||0}×</span>
+        <button class="sm-del-btn" onclick="deleteSkill('${s.id}')">🗑 Delete</button>
+      </div>
+    </div>`).join('');
+}
 
-  // Wrap locked buttons
-  LOCKED_IDS.forEach(function(id){
-    var el = document.getElementById(id);
-    if(!el) return;
-    el.classList.add('guest-lock');
-    el.addEventListener('click', function(e){
-      e.preventDefault(); e.stopPropagation();
-      showUpgrade('');
-    }, true);
-  });
+function filterSkills(q){
+  if(!q.trim()){renderSkillsList(_allSkills);return;}
+  const ql=q.toLowerCase();
+  renderSkillsList(_allSkills.filter(s=>
+    (s.name+' '+s.description+' '+(s.tags||[]).join(' ')+' '+s.content).toLowerCase().includes(ql)
+  ));
+}
 
-  // Intercept any fetch that returns guest_blocked:true
-  const _origFetch = window.fetch;
-  window.fetch = function(url, opts){
-    return _origFetch(url, opts).then(function(res){
-      if(!res.ok){
-        var clone = res.clone();
-        clone.json().then(function(d){
-          if(d && d.guest_blocked){
-            showUpgrade(d.error || '');
-          }
-        }).catch(function(){});
-      }
-      return res;
-    });
+async function saveNewSkill(){
+  const name=(document.getElementById('new-skill-name').value||'').trim();
+  const desc=(document.getElementById('new-skill-desc').value||'').trim();
+  const content=(document.getElementById('new-skill-content').value||'').trim();
+  const tags=(document.getElementById('new-skill-tags').value||'').split(',').map(t=>t.trim()).filter(Boolean);
+  if(!name||!content){alert('Name and content are required.');return;}
+  try{
+    const r=await fetch('/skills',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name,description:desc,content,tags})});
+    const d=await r.json();
+    if(d.ok){
+      document.getElementById('new-skill-name').value='';
+      document.getElementById('new-skill-desc').value='';
+      document.getElementById('new-skill-content').value='';
+      document.getElementById('new-skill-tags').value='';
+      await loadSkills();
+      renderSkillsList(_allSkills);
+    }else alert('Error: '+d.error);
+  }catch(e){alert('Error: '+e);}
+}
+
+async function deleteSkill(id){
+  if(!confirm('Delete this skill?')) return;
+  await fetch('/skills/'+id,{method:'DELETE'});
+  await loadSkills();
+  renderSkillsList(_allSkills);
+}
+
+// "Save as Skill" button injected on bot messages
+function addSkillSaveBtn(bar, text){
+  const btn=document.createElement('button');
+  btn.className='ab skill-save';
+  btn.innerHTML='🧠 Save Skill';
+  btn.onclick=async()=>{
+    const name=prompt('Skill name:');
+    if(!name) return;
+    const tags=(prompt('Tags (comma-separated, optional):')||'').split(',').map(t=>t.trim()).filter(Boolean);
+    const r=await fetch('/skills',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name,description:'Saved from chat',content:text,tags})});
+    const d=await r.json();
+    if(d.ok){btn.innerHTML='✅ Saved';btn.disabled=true;await loadSkills();}
+    else alert('Error: '+d.error);
   };
+  bar.appendChild(btn);
 }
 
-function closeUpgrade(){
-  document.getElementById('upgrade-modal').classList.remove('show');
+/* ══════════════════════════════════════════════════════════════════
+   SUB-AGENTS — Parallel AI Workers
+   ══════════════════════════════════════════════════════════════════ */
+function openSubagent(){
+  document.getElementById('subagent-panel').classList.add('show');
+  document.getElementById('sa-agents-grid').innerHTML='';
+  document.getElementById('sa-progress').textContent='';
+  document.getElementById('sa-synthesis').style.display='none';
 }
+function closeSubagent(){
+  document.getElementById('subagent-panel').classList.remove('show');
+}
+
+async function runSubagents(){
+  const task=(document.getElementById('sa-task-input').value||'').trim();
+  if(!task){alert('Enter a task first.');return;}
+  const n=parseInt(document.getElementById('sa-n-agents').value)||3;
+  const grid=document.getElementById('sa-agents-grid');
+  const progress=document.getElementById('sa-progress');
+  const synthesis=document.getElementById('sa-synthesis');
+  grid.innerHTML='';
+  synthesis.style.display='none';
+  synthesis.textContent='';
+  progress.textContent='⏳ Decomposing task into '+n+' sub-tasks…';
+
+  const agentCards={};
+
+  try{
+    const resp=await fetch('/subagent',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({task,n_agents:n})});
+    const reader=resp.body.getReader();
+    const dec=new TextDecoder();
+    let buf='';
+    while(true){
+      const{done,value}=await reader.read();
+      if(done) break;
+      buf+=dec.decode(value,{stream:true});
+      const lines=buf.split('\n');
+      buf=lines.pop();
+      for(const line of lines){
+        if(!line.startsWith('data:')) continue;
+        try{
+          const ev=JSON.parse(line.slice(5).trim());
+          if(ev.error){progress.textContent='❌ '+ev.error;return;}
+          if(ev.subagent_status){
+            progress.textContent='⚡ '+ev.message;
+            if(ev.sub_tasks){
+              grid.innerHTML='';
+              ev.sub_tasks.forEach((t,i)=>{
+                const c=document.createElement('div');
+                c.className='sa-agent';
+                c.id='sa-card-'+(i+1);
+                c.innerHTML=`<div class="sa-agent-id">Agent ${i+1}</div><div class="sa-agent-task">${t}</div><div class="sa-agent-result" id="sa-res-${i+1}">⏳ Waiting…</div>`;
+                grid.appendChild(c);
+                agentCards[i+1]=c;
+              });
+            }
+          }
+          if(ev.subagent_start){
+            const c=agentCards[ev.subagent_start.id];
+            if(c){c.classList.add('running');document.getElementById('sa-res-'+ev.subagent_start.id).textContent='⚡ Running…';}
+          }
+          if(ev.subagent_done){
+            const{id,result}=ev.subagent_done;
+            const c=agentCards[id];
+            if(c){c.classList.remove('running');c.classList.add('done');
+              document.getElementById('sa-res-'+id).textContent=result;}
+          }
+          if(ev.delta){
+            synthesis.style.display='block';
+            synthesis.textContent=(synthesis.textContent||'')+ev.delta;
+          }
+          if(ev.done){
+            progress.textContent='✅ Done — '+ev.n_agents+' agents synthesised.';
+            // Optionally copy result to chat
+          }
+        }catch(_){}
+      }
+    }
+  }catch(e){progress.textContent='❌ Error: '+e;}
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PROJECT CONTEXT
+   ══════════════════════════════════════════════════════════════════ */
+async function loadProjCtx(){
+  try{
+    const r=await fetch('/project');
+    const d=await r.json();
+    const badge=document.getElementById('proj-ctx-name');
+    if(badge) badge.textContent=d.name||'No project set';
+    // Pre-fill modal fields if open
+    const ni=document.getElementById('pc-name');
+    if(ni){
+      ni.value=d.name||'';
+      document.getElementById('pc-desc').value=d.description||'';
+      document.getElementById('pc-stack').value=(d.tech_stack||[]).join(', ');
+      document.getElementById('pc-goals').value=d.goals||'';
+    }
+  }catch(e){console.warn('proj ctx load failed',e);}
+}
+
+function openProjCtx(){
+  document.getElementById('projctx-modal').classList.add('show');
+  loadProjCtx();
+}
+function closeProjCtx(){
+  document.getElementById('projctx-modal').classList.remove('show');
+}
+
+async function saveProjCtx(){
+  const name=(document.getElementById('pc-name').value||'').trim();
+  const desc=(document.getElementById('pc-desc').value||'').trim();
+  const stack=(document.getElementById('pc-stack').value||'').split(',').map(t=>t.trim()).filter(Boolean);
+  const goals=(document.getElementById('pc-goals').value||'').trim();
+  const r=await fetch('/project',{method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name,description:desc,tech_stack:stack,goals})});
+  const d=await r.json();
+  if(d.ok){
+    const badge=document.getElementById('proj-ctx-name');
+    if(badge) badge.textContent=name||'No project set';
+    closeProjCtx();
+  }else alert('Error: '+d.error);
+}
+
+async function clearProjCtx(){
+  await fetch('/project',{method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name:'',description:'',tech_stack:[],goals:''})});
+  const badge=document.getElementById('proj-ctx-name');
+  if(badge) badge.textContent='No project set';
+  closeProjCtx();
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PATCH addActions — add "Save as Skill" to bot messages
+   ══════════════════════════════════════════════════════════════════ */
+const _origAddActions = typeof addActions === 'function' ? addActions : null;
+function addActions(m, text, who){
+  if(_origAddActions) _origAddActions(m, text, who);
+  else {
+    // Minimal fallback if original wasn't defined yet
+    const bar=document.createElement('div');
+    bar.className='actions';
+    const c=document.createElement('button');
+    c.className='ab';
+    c.innerHTML='📋 Copy';
+    c.onclick=()=>navigator.clipboard.writeText(text);
+    bar.appendChild(c);
+    m.appendChild(bar);
+  }
+  if(who==='bot'&&text!=='[Generated Image]'){
+    const bar=m.querySelector('.actions');
+    if(bar) addSkillSaveBtn(bar, text);
+  }
+}
+
+/* ── Init on load ──────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded',()=>{
+  loadSkills();
+  loadProjCtx();
+});
 </script>
-
-</body>
-</html>
+</body></html>

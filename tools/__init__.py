@@ -215,3 +215,33 @@ def call_multiple_concurrent(tool_calls: list, username: str = "default") -> lis
                for tc in tool_calls]
     log.info("Concurrent tools %s finished in %.2fs", names, elapsed)
     return results
+
+
+# ── Dynamic plugin auto-discovery ─────────────────────────────────────────────
+import importlib.util as _iutil
+from pathlib import Path as _Path
+
+_PLUGINS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "plugins")
+
+def _load_plugins() -> None:
+    """Auto-discover and register plugins from the plugins/ directory."""
+    plugins_dir = os.path.normpath(_PLUGINS_DIR)
+    if not os.path.isdir(plugins_dir):
+        return
+    for _path in sorted(_Path(plugins_dir).glob("*.py")):
+        if _path.name.startswith("_"):
+            continue
+        try:
+            _spec   = _iutil.spec_from_file_location(_path.stem, _path)
+            _module = _iutil.module_from_spec(_spec)
+            _spec.loader.exec_module(_module)
+            _name = getattr(_module, "NAME", None)
+            _desc = getattr(_module, "DESCRIPTION", None)
+            _run  = getattr(_module, "run", None)
+            if _name and _desc and callable(_run):
+                _REGISTRY[_name] = _module
+                log.info("Plugin auto-loaded: %s", _name)
+        except Exception as _pe:
+            log.warning("Plugin load error (%s): %s", _path.name, _pe)
+
+_load_plugins()
