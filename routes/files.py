@@ -3,7 +3,7 @@ routes/files.py — workspace file editor, code runner, git push
 """
 import os, subprocess, logging
 from flask import Blueprint, request, jsonify
-from services.auth_service import login_required, current_user, no_guests
+from services.auth_service import login_required, current_user, no_guests, require_role
 
 files_bp = Blueprint("files", __name__)
 log = logging.getLogger("routes.files")
@@ -130,7 +130,7 @@ def files_mkdir():
 
 @files_bp.route("/code/run", methods=["POST"])
 @login_required
-@no_guests
+@require_role("admin")
 def code_run():
     log.info("code_run: user=%s", current_user())
     import tools.code_runner as _cr
@@ -208,4 +208,42 @@ def git_push():
         return jsonify({"ok": True, "output": "\n".join(output)})
     except Exception as e:
         log.error("git_push failed: %s", e)
-        return jsonify({"ok": False, "output": str(e)})
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+# ── git run (general) ─────────────────────────────────────────────────────────
+
+@files_bp.route("/git/run", methods=["POST"])
+@login_required
+@no_guests
+def git_run():
+    log.info("git_run: user=%s", current_user())
+    data   = request.get_json(force=True) or {}
+    action = (data.get("action") or "status").strip()
+    msg    = (data.get("message") or "").strip()
+    custom = (data.get("custom") or "").strip()
+    base   = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    _SAFE = {"status", "log", "diff", "branch", "pull", "fetch", "stash",
+             "commit", "push", "add", "reset"}
+    if action not in _SAFE and not custom:
+        return jsonify({"error": "unsafe git action"}), 400
+
+    try:
+        if custom:
+            parts = custom.split()
+            if parts[0] == "git":
+                parts = parts[1:]
+            cmd = ["git"] + parts
+        elif action == "commit":
+            subprocess.run(["git", "add", "-A"], cwd=base, capture_output=True, timeout=15)
+            cmd = ["git", "commit", "-m", msg or "Update from AI Aurum"]
+        else:
+            cmd = ["git", action]
+
+        r = subprocess.run(cmd, cwd=base, capture_output=True, text=True, timeout=30)
+        output = (r.stdout + r.stderr).strip() or "(no output)"
+        return jsonify({"ok": r.returncode == 0, "output": output})
+    except Exception as e:
+        log.error("git_run failed: %s", e)
+        return jsonify({"ok": False, "error": str(e)}), 500

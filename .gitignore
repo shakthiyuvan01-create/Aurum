@@ -9,6 +9,20 @@ neo_memory.json
 uploads/
 chats/
 
+# Databases
+*.db
+
+# Binaries & build output
+ngrok.exe
+dist/
+build/
+*.exe
+*.bak
+
+# Generated docs
+generated_docs/
+workspace/
+
 # Python
 __pycache__/
 *.py[cod]

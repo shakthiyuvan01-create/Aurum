@@ -11,6 +11,7 @@
 ====================================================================
 """
 
+import ast as _ast
 import os
 import time
 import logging
@@ -893,7 +894,14 @@ def handle_basics(text: str) -> bool:
     expr = re.sub(r"(what is|whats|what's|calculate|compute|how much is)", "", expr).strip(" ?")
     if expr and re.fullmatch(r"[0-9\.\s\+\-\*\/\(\)]+", expr):
         try:
-            say(f"That's {eval(expr, {'__builtins__': {}}, {})}.")
+            _allowed = (_ast.Expression, _ast.BinOp, _ast.UnaryOp, _ast.Constant,
+                        _ast.Add, _ast.Sub, _ast.Mult, _ast.Div, _ast.Pow, _ast.Mod,
+                        _ast.FloorDiv, _ast.USub, _ast.UAdd, _ast.Load)
+            _tree = _ast.parse(expr, mode="eval")
+            for _node in _ast.walk(_tree):
+                if not isinstance(_node, _allowed):
+                    raise ValueError("disallowed node")
+            say(f"That's {eval(compile(_tree, '<calc>', 'eval'), {'__builtins__': {}}, {})}.")
             return True
         except Exception:
             pass
@@ -921,10 +929,12 @@ def answer(question: str) -> None:
     if needs_web(question):
         web_results = fetch_web_search(question)
         if web_results:
-            enriched = (
-                f"Answer this question using the web search results below.\n"
-                f"Question: {question}\n\n"
-                f"Search results:\n{web_results}\n\n"
+            say(ask_ai_brain(question + "\n\nWeb search results:\n" + web_results))
+        else:
+            say(ask_ai_brain(question))
+        return
+    say(ask_ai_brain(question))
+b_results}\n\n"
                 "Give a clear, direct answer based on these results."
             )
             say(ask_ai_brain(enriched, with_context=False))

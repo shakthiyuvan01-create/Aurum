@@ -134,3 +134,13 @@ def guest_login():
 def logout():
     session.clear()
     return redirect("/login")
+
+
+@auth_bp.route("/csrf-token")
+@login_required
+def csrf_token():
+    """Return the current CSRF token so the frontend can attach it to requests."""
+    import secrets
+    if not session.get("_csrf_token"):
+        session["_csrf_token"] = secrets.token_hex(24)
+    return jsonify({"csrf_token": session["_csrf_token"]})

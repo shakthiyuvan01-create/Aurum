@@ -58,6 +58,27 @@ def init_db():
                 self_reflect      INTEGER DEFAULT 0,
                 updated_at        INTEGER DEFAULT (strftime('%s','now'))
             );
+            CREATE TABLE IF NOT EXISTS project_context (
+                username     TEXT PRIMARY KEY,
+                name         TEXT DEFAULT '',
+                description  TEXT DEFAULT '',
+                tech_stack   TEXT DEFAULT '[]',
+                goals        TEXT DEFAULT '',
+                env_info     TEXT DEFAULT '{}',
+                updated_at   INTEGER DEFAULT (strftime('%s','now'))
+            );
+            CREATE TABLE IF NOT EXISTS user_skills (
+                id           TEXT PRIMARY KEY,
+                username     TEXT NOT NULL,
+                name         TEXT NOT NULL,
+                description  TEXT DEFAULT '',
+                content      TEXT NOT NULL,
+                tags         TEXT DEFAULT '[]',
+                usage_count  INTEGER DEFAULT 0,
+                created_at   INTEGER DEFAULT (strftime('%s','now')),
+                updated_at   INTEGER DEFAULT (strftime('%s','now'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_skills_user ON user_skills(username, created_at DESC);
         """)
     # migration: add role column to existing DBs that predate it
     try:
@@ -246,3 +267,82 @@ def save_settings(username: str, persona_name: str = "", custom_instructions: st
                 self_reflect=excluded.self_reflect,
                 updated_at=strftime('%s','now')
         """, (username, persona_name, custom_instructions, model_routing, self_reflect))
+
+# ── Project Context ────────────────────────────────────────────────────────────
+def get_project_context(username: str) -> dict:
+    with _conn() as db:
+        row = db.execute("SELECT * FROM project_context WHERE username=?", (username,)).fetchone()
+    if row:
+        d = dict(row)
+        d["tech_stack"] = json.loads(d.get("tech_stack") or "[]")
+        d["env_info"]   = json.loads(d.get("env_info") or "{}")
+        return d
+    return {"username": username, "name": "", "description": "", "tech_stack": [], "goals": "", "env_info": {}}
+
+def save_project_context(username: str, name: str = "", description: str = "",
+                         tech_stack: list | None = None, goals: str = "",
+                         env_info: dict | None = None):
+    with _conn() as db:
+        db.execute("""
+            INSERT INTO project_context (username, name, description, tech_stack, goals, env_info)
+            VALUES (?,?,?,?,?,?)
+            ON CONFLICT(username) DO UPDATE SET
+                name=excluded.name, description=excluded.description,
+                tech_stack=excluded.tech_stack, goals=excluded.goals,
+                env_info=excluded.env_info,
+                updated_at=strftime('%s','now')
+        """, (username, name, description,
+              json.dumps(tech_stack or []), goals,
+              json.dumps(env_info or {})))
+
+# ── User Skills ────────────────────────────────────────────────────────────────
+def get_skills(username: str) -> list[dict]:
+    with _conn() as db:
+        rows = db.execute(
+            "SELECT * FROM user_skills WHERE username=? ORDER BY created_at DESC",
+            (username,)).fetchall()
+    result = []
+    for r in rows:
+        d = dict(r)
+        d["tags"] = json.loads(d.get("tags") or "[]")
+        result.append(d)
+    return result
+
+def save_skill(username: str, skill_id: str, name: str, description: str,
+               content: str, tags: list | None = None) -> None:
+    with _conn() as db:
+        db.execute("""
+            INSERT INTO user_skills (id, username, name, description, content, tags)
+            VALUES (?,?,?,?,?,?)
+            ON CONFLICT(id) DO UPDATE SET
+                name=excluded.name, description=excluded.description,
+                content=excluded.content, tags=excluded.tags,
+                updated_at=strftime('%s','now')
+        """, (skill_id, username, name, description, content, json.dumps(tags or [])))
+
+def delete_skill(skill_id: str, username: str) -> None:
+    with _conn() as db:
+        db.execute("DELETE FROM user_skills WHERE id=? AND username=?", (skill_id, username))
+
+def search_skills(username: str, query: str, limit: int = 5) -> list[dict]:
+    """Simple text search — returns skills where name/description/content match query."""
+    q = "%" + query.lower() + "%"
+    with _conn() as db:
+        rows = db.execute("""
+            SELECT * FROM user_skills
+            WHERE username=?
+              AND (LOWER(name) LIKE ? OR LOWER(description) LIKE ?
+                   OR LOWER(content) LIKE ? OR LOWER(tags) LIKE ?)
+            ORDER BY usage_count DESC, created_at DESC
+            LIMIT ?
+        """, (username, q, q, q, q, limit)).fetchall()
+    result = []
+    for r in rows:
+        d = dict(r)
+        d["tags"] = json.loads(d.get("tags") or "[]")
+        result.append(d)
+    return result
+
+def increment_skill_usage(skill_id: str) -> None:
+    with _conn() as db:
+        db.execute("UPDATE user_skills SET usage_count=usage_count+1 WHERE id=?", (skill_id,))

@@ -43,6 +43,7 @@ import db          as _db
 import vector_memory as _vmem
 import assistant   as _asst
 import agent       as _agent
+import subagent    as _subagent
 import tools       as _tools
 
 try:
@@ -215,10 +216,16 @@ from routes.upload import upload_bp, _init as _upload_init
 _upload_init({"upload_dir": UPLOAD_DIR, "static_dir": STATIC_DIR})
 app.register_blueprint(upload_bp)
 
-# tools (/tools, /tools/run, /tools/reload, /tools/custom/save, /docs, /reminders, /tts)
+# tools (/tools, /tools/run, /tools/reload, /tools/custom/save, /docs, /reminders, /tts,
+#        /skills, /project)
 from routes.tools_routes import tools_bp, _init as _tools_init
-_tools_init({"tools": _tools, "docs_dir": DOCS_DIR})
+_tools_init({"tools": _tools, "docs_dir": DOCS_DIR, "db": _db})
 app.register_blueprint(tools_bp)
+
+# subagent (/subagent)
+from routes.subagent_routes import subagent_bp, _init as _subagent_init
+_subagent_init({"assistant": _asst, "subagent": _subagent})
+app.register_blueprint(subagent_bp)
 
 # files (/files/*, /code/run, /git/push)
 from routes.files import files_bp, _init as _files_init
@@ -235,26 +242,95 @@ from routes.admin import admin_bp, _init as _admin_init
 _admin_init({"db": _db})
 app.register_blueprint(admin_bp)
 
-log.info("AI Aurum — %d blueprints registered", 9)
-log.info("Tools loaded: %s", len(_tools.list_tools()))
+# debate (/debate, /debate/status)
+from routes.debate_routes import debate_bp, _init as _debate_init
+_debate_init({"assistant": _asst})
+app.register_blueprint(debate_bp)
 
+# agents (/agents, /agents/run, /agents/<name>/ask)
+from routes.agents_routes import agents_bp, _init as _agents_init
+_agents_init({"db": _db, "assistant": _asst})
+app.register_blueprint(agents_bp)
 
-# ── run ───────────────────────────────────────────────────────────────────────
+# planning (/plan, /plan/preview)
+from routes.planning_routes import planning_bp, _init as _planning_init
+_planning_init({"db": _db})
+app.register_blueprint(planning_bp)
+
+# workflows (/workflows)
+from routes.workflow_routes import workflow_bp, _init as _workflow_init
+_workflow_init({"db": _db})
+app.register_blueprint(workflow_bp)
+
+# workspace / projects (/workspace/projects)
+from routes.workspace_routes import workspace_bp, _init as _workspace_init
+_workspace_init({"db": _db})
+app.register_blueprint(workspace_bp)
+
+# dashboard (/dashboard, /dashboard/stream)
+from routes.dashboard_routes import dashboard_bp, _init as _dashboard_init
+_dashboard_init({"db": _db})
+app.register_blueprint(dashboard_bp)
+
+# analytics (/analytics)
+from routes.analytics_routes import analytics_bp, _init as _analytics_init
+_analytics_init({"db": _db})
+app.register_blueprint(analytics_bp)
+
+# model voting (/vote)
+from routes.vote_routes import vote_bp, _init as _vote_init
+_vote_init({"db": _db})
+app.register_blueprint(vote_bp)
+
+# voice assistant (/voice/*)
+from routes.voice_routes import voice_bp, _init as _voice_init
+_voice_init({"db": _db})
+app.register_blueprint(voice_bp)
+
+# observability traces (/traces, /traces/<id>)
+from routes.trace_routes import trace_bp, _init as _trace_init
+_trace_init({})
+app.register_blueprint(trace_bp)
+
+# -- Flask-Limiter ----------------------------------------------------------------
+try:
+    from flask_limiter import Limiter
+    from flask_limiter.util import get_remote_address
+    _limiter = Limiter(
+        app,
+        key_func=get_remote_address,
+        default_limits=["600 per hour", "60 per minute"],
+        storage_uri="memory://",
+    )
+    log.info("Flask-Limiter active")
+except ImportError:
+    log.info("flask-limiter not installed -- rate limiting disabled")
+
+# -- Session age enforcement -------------------------------------------------------
+import time as _time
+
+@app.before_request
+def _enforce_session_age():
+    if session.get("auth"):
+        created = session.get("_created_at", 0)
+        if not created:
+            session["_created_at"] = _time.time()
+        elif _time.time() - created > 60 * 60 * 24 * 30:
+            session.clear()
+
+# -- Auto-learning daily schedule --------------------------------------------------
+if _sched:
+    try:
+        from services.auto_learn import run_daily_learning
+        _sched.add_job(run_daily_learning, "cron", hour=3, minute=0, id="auto_learn",
+                       replace_existing=True)
+        log.info("Auto-learning scheduled (03:00 daily)")
+    except Exception as _ale:
+        log.debug("Auto-learn schedule failed: %s", _ale)
+
+# -- Run ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    import webbrowser, socket
-
-    def _get_ip():
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("8.8.8.8", 80))
-            return s.getsockname()[0]
-        except Exception as _e:
-            log.debug("IP detection failed: %s", _e)
-            return "127.0.0.1"
-
-    ip   = _get_ip()
     port = int(os.getenv("PORT", 5000))
-    log.info("Starting AI Aurum on http://%s:%d", ip, port)
-    threading.Timer(1.5, lambda: webbrowser.open("http://127.0.0.1:%d" % port)).start()
-    app.run(host="0.0.0.0", port=port, debug=False,
-use_reloader=False)
+    debug = os.getenv("FLASK_DEBUG", "0") == "1"
+    log.info("Starting AI Aurum on port %d (debug=%s)", port, debug)
+    app.run(host="0.0.0.0", port=port, debug=debug, threaded=True)
