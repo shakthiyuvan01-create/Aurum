@@ -740,7 +740,7 @@ body{
         <div id="fileEditorWrap" style="flex:1;overflow:hidden;display:none;flex-direction:column;">
           <div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid #30363d;background:#161b22;">
             <span id="fileEditorName" style="font-size:13px;color:#e6edf3;font-family:monospace;"></span>
-            <button onclick="fileSave()" style="margin-left:auto;background:#238636;border:0;border-radius:6px;padding:4px 12px;color:#fff;font-size:12px;cursor:pointer;">Save</button>
+            <button onclick="filesSave()" style="margin-left:auto;background:#238636;border:0;border-radius:6px;padding:4px 12px;color:#fff;font-size:12px;cursor:pointer;">Save</button>
           </div>
           <textarea id="fileEditorArea" style="display:none;"></textarea>
         </div>
@@ -1002,7 +1002,6 @@ let currentUtt=null;
 function speakOnDevice(text,btn){
   if(currentUtt){window.speechSynthesis.cancel();currentUtt=null;
     document.querySelectorAll('.ab.playing').forEach(b=>{b.classList.remove('playing');b.innerHTML=PL+' Play';});return;}
-  fetch('/stop_speech',{method:'POST'});
   document.querySelectorAll('.ab.playing').forEach(b=>{b.classList.remove('playing');b.innerHTML=PL+' Play';});
   currentUtt=new SpeechSynthesisUtterance(text);currentUtt.lang='en-IN';currentUtt.rate=0.92;
   currentUtt.onend=()=>{currentUtt=null;btn.innerHTML=PL+' Play';btn.classList.remove('playing');};
@@ -1016,7 +1015,7 @@ function addActions(m,text,who){
   const isImage=text==='[Generated Image]';
   if(who==='bot'&&!isImage){
     const p=document.createElement('button');p.className='ab';
-   p.innerHTML=PL+' Play';p.onclick=()=>speakElevenLabs(text);bar.appendChild(p);}
+   p.innerHTML=PL+' Play';p.onclick=()=>speakElevenLabs(text,p);bar.appendChild(p);}
   if(who==='bot'&&isImage){
     const imgEl=m.querySelector('img');
     if(imgEl){
@@ -1031,7 +1030,12 @@ function addActions(m,text,who){
   c.onclick=()=>navigator.clipboard.writeText(text).then(()=>{
     c.innerHTML=CP+' Copied';c.classList.add('ok');
     setTimeout(()=>{c.innerHTML=CP+' Copy';c.classList.remove('ok');},2000);});
-  bar.appendChild(c);m.appendChild(bar);}
+  bar.appendChild(c);
+  // Save as Skill button (bot messages only)
+  if(who==='bot'&&text&&text!=='[Generated Image]'){
+    addSkillSaveBtn(bar, text);
+  }
+  m.appendChild(bar);}
 
 function grow(t){t.style.height='auto';t.style.height=Math.min(t.scrollHeight,160)+'px';}
 
@@ -1056,21 +1060,29 @@ function sendOrMic() {
 }
 
 function toggleMic() {
-  if (!navigator.mediaDevices) return;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SR) { _micViaSpeechAPI(SR); return; }
+  if (!navigator.mediaDevices) { alert('Microphone needs HTTPS (or localhost). Open the app over https to use voice input.'); return; }
   if (isRecording) { _mediaRec && _mediaRec.stop(); return; }
   navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
     isRecording = true;
     document.getElementById('micSvg').style.color = 'var(--acc)';
     _audioChunks = [];
-    _mediaRec = new MediaRecorder(stream);
+    let _opts = {};
+    for (const mt of ['audio/webm', 'audio/mp4', 'audio/ogg']) {
+      if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(mt)) { _opts = { mimeType: mt }; break; }
+    }
+    _mediaRec = new MediaRecorder(stream, _opts);
     _mediaRec.ondataavailable = e => _audioChunks.push(e.data);
     _mediaRec.onstop = () => {
       isRecording = false;
       document.getElementById('micSvg').style.color = '';
       stream.getTracks().forEach(t => t.stop());
-      const blob = new Blob(_audioChunks, { type: 'audio/webm' });
-      const fd = new FormData(); fd.append('audio', blob, 'voice.webm');
-      fetch('/transcribe', { method: 'POST', body: fd })
+      const mt   = (_mediaRec && _mediaRec.mimeType) || 'audio/webm';
+      const ext   = mt.indexOf('mp4') > -1 ? 'mp4' : (mt.indexOf('ogg') > -1 ? 'ogg' : 'webm');
+      const blob = new Blob(_audioChunks, { type: mt });
+      const fd = new FormData(); fd.append('audio', blob, 'voice.' + ext);
+      fetch('/voice/transcribe', { method: 'POST', body: fd })
         .then(r => r.json()).then(d => {
           if (d.text) { bx.value = d.text; grow(bx); updateSendBtn(); send(); }
         }).catch(() => {});
@@ -1178,7 +1190,7 @@ async function send() {
 
   try {
     // ── Research shortcut (/research or /r) ──────────────────────
-    if (msg.startsWith('/research ') || msg.startsWith('/r ')) {
+    if (_researchMode || msg.startsWith('/research ') || msg.startsWith('/r ')) {
       const query = msg.replace(/^\/(research|r)\s+/, '');
       const t = typing();
       const r = await fetch('/research', {
@@ -1761,7 +1773,7 @@ async function filesNav(dir){
     if(!html) html='<span style="color:#8b949e;padding:8px 12px;font-size:12px;">Empty</span>';
     tree.innerHTML=html;
     _addFtreeStyles();
-  }catch(e){tree.innerHTML='<span style="c  }catch(e){tree.innerHTML='<span style="color:#e74c3c;padding:8px;">'+e+'</span>';}
+  }catch(e){tree.innerHTML='<span style="color:#e74c3c;padding:8px;">'+e+'</span>';}
 }
 
 function _addFtreeStyles(){
@@ -2126,33 +2138,236 @@ async function clearProjCtx(){
   closeProjCtx();
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   PATCH addActions — add "Save as Skill" to bot messages
-   ══════════════════════════════════════════════════════════════════ */
-const _origAddActions = typeof addActions === 'function' ? addActions : null;
-function addActions(m, text, who){
-  if(_origAddActions) _origAddActions(m, text, who);
-  else {
-    // Minimal fallback if original wasn't defined yet
-    const bar=document.createElement('div');
-    bar.className='actions';
-    const c=document.createElement('button');
-    c.className='ab';
-    c.innerHTML='📋 Copy';
-    c.onclick=()=>navigator.clipboard.writeText(text);
-    bar.appendChild(c);
-    m.appendChild(bar);
-  }
-  if(who==='bot'&&text!=='[Generated Image]'){
-    const bar=m.querySelector('.actions');
-    if(bar) addSkillSaveBtn(bar, text);
-  }
-}
 
 /* ── Init on load ──────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded',()=>{
   loadSkills();
   loadProjCtx();
 });
+
+// ── Plus menu / screenshot / research / upload / analyze (fix: were missing) ──
+let _researchMode = false;
+
+function togglePlusMenu() {
+  const m = document.getElementById('plusMenu');
+  m.style.display = (m.style.display === 'block') ? 'none' : 'block';
+}
+
+document.addEventListener('click', function (e) {
+  const m = document.getElementById('plusMenu');
+  const b = document.getElementById('plusBtn');
+  if (!m || m.style.display !== 'block') return;
+  if (!m.contains(e.target) && !b.contains(e.target)) m.style.display = 'none';
+});
+
+function toggleResearch() {
+  _researchMode = !_researchMode;
+  const badge = document.getElementById('researchBadge');
+  if (badge) badge.style.display = _researchMode ? 'flex' : 'none';
+}
+
+async function captureScreen() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+    alert('Screen capture is not supported on this browser (phones do not allow it). Use Upload photos instead.');
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+    const track = stream.getVideoTracks()[0];
+    const video = document.createElement('video');
+    video.srcObject = stream;
+    await video.play();
+    await new Promise(r => setTimeout(r, 300));
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    track.stop();
+    const dataUrl = canvas.toDataURL('image/png');
+    _attachedB64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
+    _attachedMime = 'image/png';
+    _showImgPreview(dataUrl);
+  } catch (err) {
+    console.warn('Screenshot cancelled or failed:', err);
+  }
+}
+
+function upload() {
+  const input = document.getElementById('fi');
+  const file = input.files[0];
+  if (!file) return;
+  const name = file.name.toLowerCase();
+  if (file.type.startsWith('image/')) { attachImage(input); return; }
+  if (/\.(csv|xlsx|xls)$/.test(name)) { _analyzeFile(file); input.value = ''; return; }
+  if (/\.(txt|py|js|html|md)$/.test(name)) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      bx.value = (bx.value ? bx.value + '\n\n' : '') +
+        'File: ' + file.name + '\n```\n' + e.target.result.slice(0, 12000) + '\n```';
+      grow(bx); updateSendBtn(); bx.focus();
+    };
+    reader.readAsText(file);
+    input.value = '';
+    return;
+  }
+  alert('This file type is not supported yet. Use images, CSV/Excel, or text files.');
+  input.value = '';
+}
+
+function analyzeData() {
+  const input = document.getElementById('da');
+  const file = input.files[0];
+  if (!file) return;
+  _analyzeFile(file);
+  input.value = '';
+}
+
+async function _analyzeFile(file) {
+  hideWelcome();
+  addMsg('Analyze this file: ' + escHtml(file.name), 'user');
+  const t = typing();
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const r = await fetch('/analyze', { method: 'POST', body: fd });
+    const d = await r.json();
+    t.remove();
+    const { m, b } = addMsg('', 'bot');
+    b.innerHTML = parseMarkdown(d.reply || d.error || 'No response');
+    addActions(m, d.reply || '', 'bot');
+  } catch (err) {
+    t.remove();
+    addMsg('Analysis failed: ' + escHtml(String(err)), 'bot');
+  }
+}
+
+
+// ── Server TTS playback (ElevenLabs/edge-tts via /voice/speak) ──────────────
+// Phone-safe: Audio element is created and unlocked inside the tap gesture.
+let _ttsAudio = null;
+const _SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==';
+
+function _resetPlayBtns() {
+  document.querySelectorAll('.ab.playing').forEach(b => {
+    b.classList.remove('playing'); b.innerHTML = PL + ' Play';
+  });
+}
+
+function _stripForSpeech(t) {
+  return t.replace(/```[\s\S]*?```/g, ' code block. ')
+          .replace(/https?:\S+/g, ' link ')
+          .replace(/[*_#`>|]/g, ' ')
+          .replace(/\s+/g, ' ').trim().slice(0, 4000);
+}
+
+async function speakElevenLabs(text, btn) {
+  // Toggle off if anything is already playing
+  if (_ttsAudio) { _ttsAudio.pause(); _ttsAudio = null; _resetPlayBtns(); return; }
+  if (currentUtt) { window.speechSynthesis.cancel(); currentUtt = null; _resetPlayBtns(); return; }
+
+  _resetPlayBtns();
+  btn.classList.add('playing'); btn.innerHTML = SQ + ' Stop';
+
+  // Create + unlock audio synchronously inside the tap (required on iOS/Android)
+  const audio = new Audio(_SILENT_WAV);
+  audio.playsInline = true;
+  audio.play().catch(() => {});
+  _ttsAudio = audio;
+
+  const clean = _stripForSpeech(text);
+  try {
+    const r = await fetch('/voice/speak', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: clean })
+    });
+    if (!r.ok) throw new Error('TTS backend unavailable');
+    const blob = await r.blob();
+    if (_ttsAudio !== audio) return;           // user tapped Stop meanwhile
+    const url = URL.createObjectURL(blob);
+    audio.src = url;
+    audio.onended = audio.onerror = () => {
+      URL.revokeObjectURL(url);
+      if (_ttsAudio === audio) { _ttsAudio = null; _resetPlayBtns(); }
+    };
+    await audio.play();
+  } catch (err) {
+    // Server TTS failed -> fall back to on-device speech synthesis
+    if (_ttsAudio === audio) _ttsAudio = null;
+    btn.classList.remove('playing'); btn.innerHTML = PL + ' Play';
+    if ('speechSynthesis' in window) speakOnDevice(clean, btn);
+    else alert('Voice playback is not available: no TTS backend and no device speech support.');
+  }
+}
+
+
+// ── Mic via browser SpeechRecognition (phone + desktop Chrome/Safari) ────────
+let _srRec = null;
+function _micViaSpeechAPI(SR) {
+  if (isRecording) { try { _srRec && _srRec.stop(); } catch (e) {} return; }
+  _srRec = new SR();
+  _srRec.lang = 'en-IN';
+  _srRec.interimResults = false;
+  _srRec.maxAlternatives = 1;
+  isRecording = true;
+  document.getElementById('micSvg').style.color = 'var(--acc)';
+  _srRec.onresult = e => {
+    const t = e.results[0][0].transcript;
+    if (t) { bx.value = t; grow(bx); updateSendBtn(); send(); }
+  };
+  _srRec.onerror = e => {
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      alert('Microphone blocked. Allow mic access in your browser, and use HTTPS on phones.');
+    }
+  };
+  _srRec.onend = () => {
+    isRecording = false;
+    document.getElementById('micSvg').style.color = '';
+    _srRec = null;
+  };
+  _srRec.start();
+}
+
+
+// ── Remaining dead buttons: git push, upgrade modal, debugger tab ───────────
+async function gitPushDesktop() {
+  const out = document.getElementById('gitOutput');
+  const msg = document.getElementById('gitCommitMsg').value.trim() || 'Update from AI Aurum';
+  out.textContent = 'Committing and pushing...';
+  try {
+    const r = await fetch('/git/push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg })
+    });
+    const d = await r.json();
+    out.textContent = (d.ok ? 'Pushed.\n' : 'Push failed.\n') + (d.output || d.error || '');
+  } catch (e) { out.textContent = 'Error: ' + e; }
+}
+
+function closeUpgrade() {
+  document.getElementById('upgrade-modal').classList.remove('show');
+}
+
+async function dbgAnalyze() {
+  const code = document.getElementById('dbgCode').value.trim();
+  const err  = document.getElementById('dbgError').value.trim();
+  const lang = document.getElementById('dbgLang').value;
+  const res  = document.getElementById('dbgResult');
+  if (!code) { res.innerHTML = '<em style="color:#8b949e">Paste some code first.</em>'; return; }
+  res.innerHTML = '<em style="color:#8b949e">Analyzing...</em>';
+  const prompt = 'Debug this ' + lang + ' code. Find the bug, explain it briefly, and give the fixed code.\n\nCODE:\n```' +
+    lang + '\n' + code + '\n```' + (err ? '\n\nERROR:\n```\n' + err + '\n```' : '');
+  try {
+    const r = await fetch('/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: prompt })
+    });
+    const d = await r.json();
+    res.innerHTML = parseMarkdown(d.reply || d.error || 'No response');
+  } catch (e) { res.innerHTML = 'Error: ' + e; }
+}
+
 </script>
 </body></html>

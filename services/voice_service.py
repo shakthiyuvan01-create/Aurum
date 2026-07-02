@@ -9,6 +9,8 @@ from typing import Callable, Optional
 
 log = logging.getLogger("services.voice")
 
+_VOSK_MODEL = None  # cached vosk model (68MB - load once)
+
 
 # ── STT — Speech-to-Text ──────────────────────────────────────────────────────
 def transcribe(audio_path: str, language: str = "en") -> dict:
@@ -45,6 +47,46 @@ def transcribe(audio_path: str, language: str = "en") -> dict:
         pass
     except Exception as e:
         log.warning("Local whisper failed: %s", e)
+
+    # Try vosk (offline, uses ./model directory)
+    try:
+        import wave, json as _json, shutil, subprocess
+        from vosk import Model, KaldiRecognizer
+        model_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "model")
+        if os.path.isdir(model_dir):
+            wav_path = audio_path
+            conv = None
+            if shutil.which("ffmpeg"):
+                conv = audio_path + ".conv.wav"
+                subprocess.run(
+                    ["ffmpeg", "-y", "-i", audio_path, "-ar", "16000", "-ac", "1", "-f", "wav", conv],
+                    capture_output=True, timeout=60,
+                )
+                if os.path.exists(conv) and os.path.getsize(conv) > 44:
+                    wav_path = conv
+            global _VOSK_MODEL
+            if _VOSK_MODEL is None:
+                _VOSK_MODEL = Model(model_dir)
+            wf = wave.open(wav_path, "rb")
+            rec = KaldiRecognizer(_VOSK_MODEL, wf.getframerate())
+            parts = []
+            while True:
+                data = wf.readframes(4000)
+                if not data:
+                    break
+                if rec.AcceptWaveform(data):
+                    parts.append(_json.loads(rec.Result()).get("text", ""))
+            parts.append(_json.loads(rec.FinalResult()).get("text", ""))
+            wf.close()
+            if conv and os.path.exists(conv):
+                os.unlink(conv)
+            text = " ".join(p for p in parts if p).strip()
+            if text:
+                return {"text": text, "language": language, "backend": "vosk"}
+    except ImportError:
+        pass
+    except Exception as e:
+        log.warning("vosk failed: %s", e)
 
     return {"error": "No STT backend available. Install: pip install openai-whisper OR set OPENAI_API_KEY"}
 
