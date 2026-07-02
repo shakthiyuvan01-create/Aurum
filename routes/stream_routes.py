@@ -27,6 +27,27 @@ def _current_user() -> str:
 def _route_model(msg: str, settings: dict) -> str:
     return _deps["route_model"](msg, settings)
 
+def _smart_title(msg: str, reply: str) -> str:
+    """AI-generated descriptive chat title: 'hi' -> 'Greeting exchange',
+    'what is coding' -> 'Coding basics'. Falls back to the raw message."""
+    try:
+        from providers import AI
+        t = AI.generate(
+            "Create a short descriptive title (2-4 words) for a chat that starts "
+            "with this exchange. Examples: 'hi' -> Greeting exchange; "
+            "'what is coding' -> Coding basics; 'fix my python error' -> Python debugging.\n"
+            "Reply with ONLY the title, no quotes, no punctuation at the end.\n\n"
+            "User: %s\nAssistant: %s" % (msg[:300], reply[:300]),
+            model=os.getenv("FAST_MODEL", "gpt-4o-mini"),
+            max_tokens=12, temperature=0.2)
+        t = t.strip().strip('"').strip("'").rstrip(".")
+        if t and not t.startswith("[AI error") and 1 <= len(t) <= 60:
+            return t[:40]
+    except Exception as e:
+        log.debug("smart title failed: %s", e)
+    return (msg[:40] if msg else "Chat")
+
+
 def _save_chat(cid, uname, title, messages):
     _deps["db"].save_chat(cid, uname, title, messages)
 
@@ -65,8 +86,11 @@ def stream():
 
     if is_guest:
         chat = {"id": cid, "title": msg[:40] if msg else "Chat", "messages": []}
+        is_new_chat = True
     else:
-        chat = db.get_chat(cid) or {"id": cid, "title": msg[:40] if msg else "Chat", "messages": []}
+        _existing = db.get_chat(cid)
+        is_new_chat = _existing is None
+        chat = _existing or {"id": cid, "title": msg[:40] if msg else "Chat", "messages": []}
 
     settings = db.get_settings(uname) if not is_guest else {}
     title    = chat.get("title") or (msg[:40] if msg else "Chat")
@@ -184,6 +208,8 @@ def stream():
             return
 
         chat["messages"].append({"role": "assistant", "text": reply_text})
+        if is_new_chat and msg:
+            title = _smart_title(msg, reply_text)
         if not is_guest:
             _save_chat(cid, uname, title, chat["messages"])
             try:

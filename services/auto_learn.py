@@ -36,28 +36,11 @@ def _conn():
 
 
 def _ai(prompt: str, max_tokens: int = 800) -> str:
-    token = os.getenv("GITHUB_TOKEN","")
-    if not token: return "[]"
-    try:
-        import requests
-        r = requests.post(
-            "https://models.inference.ai.azure.com/chat/completions",
-            headers={"Authorization":f"Bearer {token}","Content-Type":"application/json"},
-            json={
-                "model":"gpt-4o-mini",
-                "messages":[
-                    {"role":"system","content":"You extract learning insights from conversations. Output JSON only."},
-                    {"role":"user","content":prompt},
-                ],
-                "max_tokens":max_tokens,"temperature":0.2,
-            },
-            timeout=30,
-        )
-        if r.status_code == 200:
-            return r.json()["choices"][0]["message"]["content"].strip()
-    except Exception as e:
-        log.error("_ai error: %s", e)
-    return "[]"
+    from providers import AI
+    out = AI.generate(prompt,
+                      system="You extract learning insights from conversations. Output JSON only.",
+                      model="gpt-4o-mini", max_tokens=max_tokens, temperature=0.2)
+    return out if out and not out.startswith("[AI error") else "[]"
 
 
 def _get_todays_chats(username: str) -> list[str]:

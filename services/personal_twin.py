@@ -87,27 +87,9 @@ def get_preferences(username: str) -> dict:
 
 # ── Style analysis ─────────────────────────────────────────────────────────────
 def _ai(prompt: str, max_tokens: int = 1000) -> str:
-    token = os.getenv("GITHUB_TOKEN", "")
-    if not token:
-        return ""
-    try:
-        import requests
-        r = requests.post(
-            "https://models.inference.ai.azure.com/chat/completions",
-            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-            json={
-                "model": "gpt-4o",
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": max_tokens,
-                "temperature": 0.2,
-            },
-            timeout=60,
-        )
-        if r.status_code == 200:
-            return r.json()["choices"][0]["message"]["content"].strip()
-    except Exception as e:
-        log.error("_ai: %s", e)
-    return ""
+    from providers import AI
+    out = AI.generate(prompt, model="gpt-4o", max_tokens=max_tokens, temperature=0.2)
+    return "" if out.startswith("[AI error") else out
 
 
 def analyse_style(username: str) -> dict:

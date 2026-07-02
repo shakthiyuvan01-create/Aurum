@@ -252,3 +252,54 @@ def project_save():
     )
     log.info("project context updated for %s", uname)
     return jsonify({"ok": True})
+
+
+@tools_bp.route("/providers/status")
+@login_required
+def providers_status():
+    """Health of the unified AI provider chain (providers/ package)."""
+    from providers import AI
+    return jsonify(AI.status())
+
+
+@tools_bp.route("/tools/run_async", methods=["POST"])
+@login_required
+def tools_run_async():
+    """Run a heavy tool (browser, document, meeting, coding team...) in the
+    background so the UI never freezes. Returns a job_id to poll."""
+    from services import task_queue
+    body = request.json or {}
+    name = (body.get("tool") or "").strip()
+    args = body.get("args", {})
+    if not name:
+        return jsonify({"error": "tool name required"}), 400
+    tool_info = _tools().get_tool(name)
+    if tool_info and any(i["name"] == "username" for i in tool_info.get("inputs", [])):
+        args.setdefault("username", current_user())
+    registry = _tools()
+    job_id = task_queue.enqueue(registry.call, name, **args)
+    log.info("tools_run_async: user=%s tool=%s job=%s", current_user(), name, job_id)
+    return jsonify({"ok": True, "job_id": job_id, "poll": "/tasks/" + job_id})
+
+
+@tools_bp.route("/tasks/<job_id>")
+@login_required
+def task_status(job_id):
+    """Poll a background job: {status: queued/started/finished/failed, result, error}."""
+    from services import task_queue
+    return jsonify(task_queue.get_status(job_id))
+
+
+@tools_bp.route("/permissions", methods=["GET", "POST"])
+@login_required
+def permissions():
+    """View or toggle dangerous-capability permissions.
+    POST body: {"capability": "shell", "allowed": true}"""
+    from services.permission_manager import perms
+    if request.method == "POST":
+        body = request.get_json(force=True) or {}
+        cap = (body.get("capability") or "").strip()
+        ok = perms.set(cap, bool(body.get("allowed")))
+        if not ok:
+            return jsonify({"error": "unknown capability", "valid": list(perms.all().keys())}), 400
+    return jsonify(perms.all())

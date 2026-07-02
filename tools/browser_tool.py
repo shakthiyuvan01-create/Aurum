@@ -47,6 +47,10 @@ def _get_browser(headless: bool = True):
 
 def run(action: str, url: str = "", selector: str = "", text: str = "",
         headless: str = "true") -> dict:
+    from services.permission_manager import perms
+    if not perms.check("browser"):
+        return perms.deny_message("browser")
+
     try:
         from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
     except ImportError:

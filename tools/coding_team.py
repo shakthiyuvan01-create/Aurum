@@ -30,24 +30,8 @@ _STAGES = ["planner","architect","programmer","tester","debugger","reviewer","se
 
 
 def _ai(prompt: str, system: str = "", model: str = "gpt-4o", max_tokens: int = 2000) -> str:
-    token = os.getenv("GITHUB_TOKEN","")
-    if not token: return "[GITHUB_TOKEN not set]"
-    try:
-        import requests
-        msgs = []
-        if system: msgs.append({"role":"system","content":system})
-        msgs.append({"role":"user","content":prompt})
-        r = requests.post(
-            "https://models.inference.ai.azure.com/chat/completions",
-            headers={"Authorization":f"Bearer {token}","Content-Type":"application/json"},
-            json={"model":model,"messages":msgs,"max_tokens":max_tokens,"temperature":0.3},
-            timeout=120,
-        )
-        if r.status_code == 200:
-            return r.json()["choices"][0]["message"]["content"].strip()
-        return f"[AI error {r.status_code}]"
-    except Exception as e:
-        return f"[Exception: {e}]"
+    from providers import AI
+    return AI.generate(prompt, system=system, model=model, max_tokens=max_tokens, temperature=0.3)
 
 
 def _planner(description: str, language: str) -> dict:

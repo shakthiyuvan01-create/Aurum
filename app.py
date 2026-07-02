@@ -77,6 +77,13 @@ _db.migrate_json(
 )
 _vmem.init()
 
+# ── Activity log: persist agent/team events, task history ───────────────────
+try:
+    from services.activity_log import init_subscribers as _al_init
+    _al_init()
+except Exception as _e:
+    log.warning("activity_log init failed: %s", _e)
+
 # ── APScheduler ──────────────────────────────────────────────────────────────
 try:
     from apscheduler.schedulers.background import BackgroundScheduler
@@ -325,6 +332,13 @@ if _sched:
         _sched.add_job(run_daily_learning, "cron", hour=3, minute=0, id="auto_learn",
                        replace_existing=True)
         log.info("Auto-learning scheduled (03:00 daily)")
+        try:
+            from services.self_improve import run_review as _si_run
+            _sched.add_job(_si_run, "cron", day_of_week="sun", hour=4, minute=0,
+                           id="self_improve", replace_existing=True)
+            log.info("Self-improvement review scheduled (Sun 04:00, permission-gated)")
+        except Exception as _e:
+            log.warning("self_improve scheduling failed: %s", _e)
     except Exception as _ale:
         log.debug("Auto-learn schedule failed: %s", _ale)
 

@@ -90,3 +90,18 @@ def admin_reset_metric(tool_name: str):
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@admin_bp.route("/self_improve/run", methods=["POST"])
+@require_role("admin")
+def self_improve_run():
+    """Manually trigger the safeguarded self-improvement review."""
+    from services.self_improve import run_review
+    return jsonify(run_review(force=True))
+
+
+@admin_bp.route("/self_improve/report")
+@require_role("admin")
+def self_improve_report():
+    from services.self_improve import get_reports
+    return jsonify({"reports": get_reports()})

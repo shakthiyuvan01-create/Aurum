@@ -519,6 +519,13 @@ body{
       onmouseleave="this.style.background='transparent'">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg> Deep Research mode
     </button>
+    <button onclick="bx.value='/team ';grow(bx);updateSendBtn();bx.focus();togglePlusMenu();"
+      style="display:flex;align-items:center;gap:10px;width:100%;background:transparent;
+      border:0;color:var(--txt);cursor:pointer;padding:10px 14px;border-radius:8px;font-size:14px;"
+      onmouseenter="this.style.background='var(--act)'"
+      onmouseleave="this.style.background='transparent'">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Agent Team
+    </button>
     <button onclick="document.getElementById('da').click();togglePlusMenu();"
       style="display:flex;align-items:center;gap:10px;width:100%;background:transparent;
       border:0;color:var(--txt);cursor:pointer;padding:10px 14px;border-radius:8px;font-size:14px;"
@@ -1189,6 +1196,13 @@ async function send() {
   clearAttachedImage();
 
   try {
+    // ── Agent team shortcut (/team or /agents) ───────────────────
+    if (msg.startsWith('/team ') || msg.startsWith('/agents ')) {
+      const goal = msg.replace(/^\/(team|agents)\s+/, '');
+      await runAgentTeam(goal);
+      return;
+    }
+
     // ── Research shortcut (/research or /r) ──────────────────────
     if (_researchMode || msg.startsWith('/research ') || msg.startsWith('/r ')) {
       const query = msg.replace(/^\/(research|r)\s+/, '');
@@ -2367,6 +2381,88 @@ async function dbgAnalyze() {
     const d = await r.json();
     res.innerHTML = parseMarkdown(d.reply || d.error || 'No response');
   } catch (e) { res.innerHTML = 'Error: ' + e; }
+}
+
+
+// ── Multi-agent team runner with live status dashboard (/team <goal>) ───────
+async function runAgentTeam(goal) {
+  hideWelcome();
+  const card = document.createElement('div');
+  card.style.cssText = 'background:#1b1b20;border:1px solid var(--bdr);border-radius:12px;' +
+    'padding:14px 16px;margin:8px 0;font-size:13px;max-width:92%;';
+  card.innerHTML = '<div style="font-weight:600;margin-bottom:8px;color:var(--txt);">' +
+    'Agent Team</div><div class="team-rows" style="display:flex;flex-direction:column;' +
+    'gap:6px;color:var(--muted);">CEO is routing your goal...</div>';
+  th.appendChild(card);
+  sc.scrollTop = sc.scrollHeight;
+  const rows = card.querySelector('.team-rows');
+  const state = {};
+
+  function render() {
+    rows.innerHTML = Object.entries(state).map(([agent, st]) => {
+      const color = st === 'done' ? '#52d68a' : (st === 'working' ? 'var(--acc)' : '#8b949e');
+      const mark  = st === 'done' ? '&#10003;' : (st === 'working' ? '&#9679;' : '&#9675;');
+      const label = st === 'working' ? 'working...' : st;
+      return '<div style="display:flex;gap:8px;align-items:center;">' +
+        '<span style="color:' + color + ';width:14px;">' + mark + '</span>' +
+        '<span style="text-transform:capitalize;color:var(--txt);">' + agent + '</span>' +
+        '<span style="color:#8b949e;font-size:12px;">' + label + '</span></div>';
+    }).join('');
+    sc.scrollTop = sc.scrollHeight;
+  }
+
+  let bubbleRef = null, acc = '';
+  try {
+    const resp = await fetch('/agents/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ goal })
+    });
+    if (!resp.ok) { rows.innerHTML = 'Error ' + resp.status; return; }
+    const reader = resp.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n'); buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let d; try { d = JSON.parse(line.slice(6)); } catch { continue; }
+
+        if (d.error) { rows.innerHTML = 'Error: ' + escHtml(d.error); return; }
+        if (d.status === 'plan' && d.agents) {
+          d.agents.forEach(a => { if (!(a in state)) state[a] = 'waiting'; });
+          render();
+        }
+        if (d.status === 'working' && d.agent) { state[d.agent] = 'working'; render(); }
+        if (d.status === 'step_done' && d.agent) { state[d.agent] = 'done'; render(); }
+        if (d.synthesising) {
+          Object.keys(state).forEach(a => state[a] = 'done'); render();
+          rows.insertAdjacentHTML('beforeend',
+            '<div style="color:#8b949e;margin-top:4px;">CEO is writing the final answer...</div>');
+        }
+        if (d.delta) {
+          if (!bubbleRef) { bubbleRef = addMsg('', 'bot'); }
+          acc += d.delta;
+          bubbleRef.b.textContent = acc;
+          sc.scrollTop = sc.scrollHeight;
+        }
+        if (d.done) {
+          const reply = d.reply || acc;
+          if (!bubbleRef) bubbleRef = addMsg('', 'bot');
+          bubbleRef.b.innerHTML = parseMarkdown(reply);
+          addActions(bubbleRef.m, reply, 'bot');
+          rows.insertAdjacentHTML('beforeend',
+            '<div style="color:#52d68a;margin-top:4px;">Done in ' + (d.duration || '?') + 's</div>');
+          sc.scrollTop = sc.scrollHeight;
+        }
+      }
+    }
+  } catch (e) {
+    rows.innerHTML = 'Error: ' + escHtml(String(e));
+  }
 }
 
 </script>

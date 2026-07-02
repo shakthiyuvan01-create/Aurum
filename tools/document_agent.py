@@ -71,27 +71,8 @@ def _extract_text(file_path: str) -> str:
 
 
 def _ai(prompt: str, max_tokens: int = 1500) -> str:
-    token = os.getenv("GITHUB_TOKEN", "")
-    if not token:
-        return "[GITHUB_TOKEN not set]"
-    try:
-        import requests
-        r = requests.post(
-            "https://models.inference.ai.azure.com/chat/completions",
-            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-            json={
-                "model": "gpt-4o",
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": max_tokens,
-                "temperature": 0.3,
-            },
-            timeout=90,
-        )
-        if r.status_code == 200:
-            return r.json()["choices"][0]["message"]["content"].strip()
-        return f"[AI error {r.status_code}]"
-    except Exception as e:
-        return f"[Exception: {e}]"
+    from providers import AI
+    return AI.generate(prompt, model="gpt-4o", max_tokens=max_tokens, temperature=0.3)
 
 
 def _chunk_text(text: str, chunk_size: int = 8000) -> list[str]:
@@ -125,9 +106,14 @@ def _summarize(text: str, file_name: str) -> str:
     return _ai(f"Create a final comprehensive summary from these section summaries:\n\n{combined}", max_tokens=800)
 
 
-def _qa(text: str, question: str) -> str:
-    chunks = _chunk_text(text, 6000)
-    relevant = chunks[0]  # TODO: vector search for large docs
+def _qa(text: str, question: str, file_path: str = "", username: str = "") -> str:
+    # RAG: chunk -> embed -> retrieve only the relevant parts (services/rag_service)
+    try:
+        from services.rag_service import qa_context
+        relevant = qa_context(file_path or "inline", text, question,
+                              username=username or "default")
+    except Exception:
+        relevant = _chunk_text(text, 6000)[0]
     return _ai(
         f"Answer this question based ONLY on the document text.\n"
         f"Question: {question}\n\nDocument:\n{relevant}",
@@ -198,7 +184,7 @@ def run(
     if action == "qa":
         if not question:
             return {"error": "question required for Q&A"}
-        result = _qa(text, question)
+        result = _qa(text, question, file_path=file_path, username=username)
         return {"result": result}
 
     if action == "compare":
