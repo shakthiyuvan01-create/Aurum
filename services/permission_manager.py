@@ -29,6 +29,7 @@ DEFAULTS = {
     "messaging":      False,   # sending messages (Telegram etc.)
     "network":        True,    # outbound web requests from tools
     "self_improve":   False,   # autonomous self-improvement loop (suggestions only)
+    "background_ai":  True,    # ambient intelligence: KG extraction, predictions, experience learning
 }
 
 

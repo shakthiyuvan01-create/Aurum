@@ -299,6 +299,14 @@ from routes.trace_routes import trace_bp, _init as _trace_init
 _trace_init({})
 app.register_blueprint(trace_bp)
 
+from routes.aurum_routes import aurum_bp, _init as _aurum_init
+_aurum_init({"db": _db})
+app.register_blueprint(aurum_bp)
+
+from routes.canvas_routes import canvas_bp, _init as _canvas_init
+_canvas_init({"db": _db})
+app.register_blueprint(canvas_bp)
+
 # -- Flask-Limiter ----------------------------------------------------------------
 try:
     from flask_limiter import Limiter
@@ -337,6 +345,10 @@ if _sched:
             _sched.add_job(_si_run, "cron", day_of_week="sun", hour=4, minute=0,
                            id="self_improve", replace_existing=True)
             log.info("Self-improvement review scheduled (Sun 04:00, permission-gated)")
+            from services.dream_mode import run_dream as _dream
+            _sched.add_job(_dream, "cron", hour=2, minute=30,
+                           id="dream_mode", replace_existing=True)
+            log.info("Dream mode scheduled (02:30 daily, permission-gated)")
         except Exception as _e:
             log.warning("self_improve scheduling failed: %s", _e)
     except Exception as _ale:

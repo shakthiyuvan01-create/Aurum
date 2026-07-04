@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Aurum - Live Dashboard</title>
+<style>
+  :root{--bg:#101014;--card:#1b1b20;--bdr:#2c2c33;--txt:#e6e6ea;--muted:#8b949e;--acc:#26d0a8;--warn:#f0a000;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;padding:20px;}
+  h1{font-size:20px;display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+  .sub{color:var(--muted);font-size:12px;margin-bottom:18px;}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--acc);display:inline-block;animation:pulse 2s infinite;}
+  @keyframes pulse{50%{opacity:.35}}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-bottom:18px;}
+  .tile{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:14px;text-align:center;}
+  .tile .v{font-size:26px;color:var(--acc);font-weight:600;}
+  .tile .l{font-size:11px;color:var(--muted);margin-top:4px;}
+  .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;}
+  .card{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:16px;}
+  .card h2{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+  .bar{height:7px;background:#111116;border-radius:4px;margin:4px 0 10px;}
+  .bar>div{height:7px;border-radius:4px;background:var(--acc);transition:width .8s;}
+  .row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #232329;}
+  .row:last-child{border:0;}
+  .muted{color:var(--muted);}
+  a{color:var(--acc);text-decoration:none;font-size:12px;}
+</style>
+</head>
+<body>
+<h1><span class="dot"></span> AI Aurum - Live Dashboard <a href="/" style="margin-left:auto;">back to chat</a></h1>
+<div class="sub">Auto-updates: system every 5s (SSE), intelligence every 30s. <span id="ts" class="muted"></span></div>
+
+<div class="grid" id="tiles"></div>
+
+<div class="cols">
+  <div class="card"><h2>System (live)</h2><div id="sys"><span class="muted">connecting...</span></div></div>
+  <div class="card"><h2>Consciousness</h2><div id="mind"><span class="muted">loading...</span></div></div>
+  <div class="card"><h2>Agent health</h2><div id="agents"><span class="muted">loading...</span></div></div>
+  <div class="card"><h2>Recent activity</h2><div id="hist"><span class="muted">loading...</span></div></div>
+  <div class="card"><h2>Economics (7 days)</h2><div id="econ"><span class="muted">loading...</span></div></div>
+  <div class="card"><h2>Hired workforce</h2><div id="hired"><span class="muted">loading...</span></div></div>
+</div>
+
+<script>
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const pct = v => Math.max(0, Math.min(100, Math.round(v || 0)));
+
+function tiles(d) {
+  const t = [
+    ['confidence', (d.confidence ?? '?') + '%'],
+    ['memories', d.memories_loaded ?? 0],
+    ['knowledge entities', d.knowledge_entities ?? 0],
+    ['experiences', d.experiences ?? 0],
+    ['standing rules', d.standing_rules ?? 0],
+    ['open missions', d.missions_open ?? 0],
+    ['agents', d.active_agents ?? 12],
+    ['risk', d.risk_level || '?'],
+  ];
+  document.getElementById('tiles').innerHTML = t.map(x =>
+    '<div class="tile"><div class="v">' + esc(x[1]) + '</div><div class="l">' + x[0] + '</div></div>').join('');
+}
+
+function bars(el, entries) {
+  el.innerHTML = entries.map(([k, v, suffix]) =>
+    '<div class="row"><span>' + esc(k) + '</span><span class="muted">' + esc(v) + (suffix||'%') + '</span></div>' +
+    (typeof v === 'number' ? '<div class="bar"><div style="width:' + pct(v) + '%"></div></div>' : '')).join('');
+}
+
+// live system via SSE
+try {
+  const es = new EventSource('/dashboard/stream');
+  es.onmessage = e => {
+    try {
+      const d = JSON.parse(e.data);
+      const s = d.system || {};
+      const entries = [];
+      if (s.cpu_percent != null) entries.push(['CPU', s.cpu_percent]);
+      if (s.ram_percent != null || s.memory_percent != null)
+        entries.push(['RAM', s.ram_percent ?? s.memory_percent]);
+      if (s.disk_percent != null) entries.push(['Disk', s.disk_percent]);
+      if (!entries.length) {
+        document.getElementById('sys').innerHTML =
+          '<pre style="font-size:11px;color:#8b949e;white-space:pre-wrap;">' +
+          esc(JSON.stringify(s).slice(0, 500)) + '</pre>';
+      } else bars(document.getElementById('sys'), entries);
+      document.getElementById('ts').textContent = 'last update ' + new Date().toLocaleTimeString();
+    } catch (err) {}
+  };
+  es.onerror = () => { document.getElementById('sys').innerHTML = '<span class="muted">stream reconnecting...</span>'; };
+} catch (e) {}
+
+async function refresh() {
+  try { tiles(await (await fetch('/consciousness')).json()); } catch (e) {}
+  try {
+    const d = await (await fetch('/agents/health')).json();
+    const list = d.agents || d.health || [];
+    const rows = Array.isArray(list)
+      ? list.map(a => [a.agent || a.name, Math.round((a.score ?? a.health ?? 1) * 100)])
+      : Object.entries(list).map(([k, v]) => [k, Math.round((v.score ?? v ?? 1) * 100)]);
+    bars(document.getElementById('agents'), rows.slice(0, 10));
+  } catch (e) { document.getElementById('agents').innerHTML = '<span class="muted">unavailable</span>'; }
+  try {
+    const d = await (await fetch('/timeline?days=2')).json();
+    const evs = Object.values(d.timeline || {}).flat().slice(0, 8);
+    document.getElementById('hist').innerHTML = evs.length ? evs.map(e =>
+      '<div class="row"><span>' + esc(e.text).slice(0, 46) + '</span><span class="muted">' +
+      esc(e.kind) + '</span></div>').join('') : '<span class="muted">nothing yet today</span>';
+  } catch (e) {}
+  try {
+    const d = await (await fetch('/economics')).json();
+    document.getElementById('econ').innerHTML =
+      (d.week_tasks || []).map(t => '<div class="row"><span>' + esc(t.kind) + ' tasks</span><span class="muted">' +
+        t.count + ' (' + t.seconds + 's)</span></div>').join('') +
+      '<div class="row"><span>events</span><span class="muted">' + (d.events_7d ?? 0) + '</span></div>' +
+      '<div class="row"><span>est. lifetime API cost</span><span class="muted">$' +
+      (d.estimated_api_cost_total_usd ?? 0) + '</span></div>';
+  } catch (e) {}
+  try {
+    const d = await (await fetch('/agents/hired')).json();
+    document.getElementById('hired').innerHTML = (d.hired || []).length ? d.hired.map(a =>
+      '<div class="row"><span>' + esc(a.name) + '</span><span class="muted">' + esc(a.title) + '</span></div>').join('')
+      : '<span class="muted">No hires yet - the CEO creates specialists when /team runs need them.</span>';
+  } catch (e) {}
+}
+refresh();
+setInterval(refresh, 30000);
+</script>
+</body>
+</html>

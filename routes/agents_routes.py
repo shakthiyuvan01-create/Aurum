@@ -80,7 +80,7 @@ def agents_health():
     from services.agent_health import health
     from services.capability_registry import registry
     out = {}
-    for name in registry.capabilities:
+    for name in registry._agents:
         stats = health.stats(name)
         out[name] = {
             "score":        round(health.score(name), 3),

@@ -303,3 +303,63 @@ def permissions():
         if not ok:
             return jsonify({"error": "unknown capability", "valid": list(perms.all().keys())}), 400
     return jsonify(perms.all())
+
+
+@tools_bp.route("/skillstore")
+@login_required
+def skillstore_list():
+    """AI Skill Store: curated packs installable in one click."""
+    from services import skill_store
+    uname = current_user()
+    try:
+        installed = {s["name"].split(":")[0].strip()
+                     for s in _db().get_skills(uname)}
+    except Exception:
+        installed = set()
+    return jsonify({"packs": skill_store.list_packs(installed)})
+
+
+@tools_bp.route("/skillstore/install", methods=["POST"])
+@login_required
+def skillstore_install():
+    from services import skill_store
+    body = request.get_json(force=True) or {}
+    return jsonify(skill_store.install((body.get("pack") or "").strip(),
+                                       current_user(), _db()))
+
+
+@tools_bp.route("/screen_check", methods=["POST"])
+@login_required
+def screen_check():
+    """Computer vision screen watcher: sends a frame to the vision model and
+    reports only if it spots errors, dialogs, popups, or compiler warnings."""
+    body = request.get_json(force=True) or {}
+    b64 = body.get("image_b64", "")
+    if not b64:
+        return jsonify({"error": "image_b64 required"}), 400
+    import os as _os, requests as _rq
+    token = _os.getenv("GITHUB_TOKEN", "")
+    if not token:
+        return jsonify({"error": "no vision backend"}), 500
+    try:
+        r = _rq.post(
+            "https://models.inference.ai.azure.com/chat/completions",
+            headers={"Authorization": "Bearer " + token,
+                     "Content-Type": "application/json"},
+            json={"model": _os.getenv("VISION_MODEL", "gpt-4o"),
+                  "max_tokens": 200,
+                  "messages": [{"role": "user", "content": [
+                      {"type": "text", "text":
+                       "You are a screen watcher. Look for error messages, "
+                       "exception tracebacks, warning dialogs, popups, or IDE/"
+                       "compiler errors. If you find one, reply: ISSUE: <what "
+                       "it is and the suggested fix in 1-2 sentences>. If the "
+                       "screen looks fine, reply exactly: OK"},
+                      {"type": "image_url", "image_url": {
+                          "url": "data:image/jpeg;base64," + b64}}]}]},
+            timeout=45)
+        r.raise_for_status()
+        answer = r.json()["choices"][0]["message"]["content"].strip()
+        return jsonify({"ok": True, "issue": None if answer == "OK" else answer})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502

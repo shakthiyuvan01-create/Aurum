@@ -4,13 +4,13 @@
 
 # ✦ AI AURUM
 
-**The Personal AI Assistant from the Future**
+**The Personal AI Operating System**
 
 [![Made by Yuvan Industries](https://img.shields.io/badge/Made%20by-Yuvan%20Industries-gold?style=for-the-badge)](https://github.com)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python)](https://python.org)
-[![Flask](https://img.shields.io/badge/Flask-Web%20App-black?style=for-the-badge&logo=flask)](https://flask.palletsprojects.com)
-[![AI Powered](https://img.shields.io/badge/AI-GPT--4o%20%2B%20Agent%20Loop-orange?style=for-the-badge)](https://github.com)
-[![Deploy on Render](https://img.shields.io/badge/Deploy-Render.com-46E3B7?style=for-the-badge&logo=render)](https://yuvanaurum.onrender.com)
+[![Flask](https://img.shields.io/badge/Flask-22%20Blueprints-black?style=for-the-badge&logo=flask)](https://flask.palletsprojects.com)
+[![Multi-Agent](https://img.shields.io/badge/AI-12%2B%20Agents%20%7C%2048%20Tools-orange?style=for-the-badge)](https://github.com)
+[![Providers](https://img.shields.io/badge/Providers-GitHub%20%7C%20Nara%20%7C%20Gemini%20%7C%20OpenAI%20%7C%20Ollama-46E3B7?style=for-the-badge)](https://github.com)
 
 > *"The Future Is Not Coming. We Are Building It."*
 > — Yuvan Industries
@@ -21,339 +21,149 @@
 
 ## ✨ What is AI Aurum?
 
-**AI Aurum** is a full-featured personal AI assistant that runs in your browser. It combines a smart ReAct agent loop, long-term semantic memory, real-time SSE streaming, multimodal vision, image generation, a built-in code editor, file browser, Git integration, browser automation, task scheduling, document generation, deep web research, and a plugin tool system — all from a clean, modern web interface.
+**AI Aurum** is a full personal AI operating system that runs in your browser. A CEO agent
+orchestrates a company of specialist agents (and hires new ones when needed), backed by a
+5-tier memory system, a live knowledge graph, an experience database, 48 auto-discovered
+tools, voice conversation, screen guidance, autonomous research, and a command palette that
+puts all of it one keystroke away.
 
-Built by **Yuvan Industries** — a forward-thinking technology company from the future.
-
-🌐 **Live:** [yuvanaurum.onrender.com](https://yuvanaurum.onrender.com)
-
----
-
-## ⚡ Features
-
-### 🤖 AI & Chat
-| Feature | Description |
-|---|---|
-| 🧠 **Multi-Model Routing** | Auto-routes to GPT-4o (code), GPT-4o-mini (fast), or main model based on query type |
-| 🔄 **ReAct Agent Loop** | Plan → Execute Tools concurrently → Stream Answer in one turn |
-| 📡 **SSE Streaming** | Token-by-token streaming with animated typing indicator |
-| 🖼️ **Image Generation** | Creates images via Pollinations AI — no extra API key needed |
-| 🗂️ **Chat History** | Full conversation history with sidebar browser |
-| 👁️ **Vision / Multimodal** | Send images to GPT-4o for analysis, description, or OCR |
-| 📷 **Camera Capture** | Take a photo directly from the UI and send it to the AI |
-
-### 🧩 Memory
-| Feature | Description |
-|---|---|
-| 🗄️ **SQLite Memory** | All user data, chats, settings, and memories stored in `aiaurum.db` |
-| 🔍 **Vector Memory** | ChromaDB semantic search — retrieves relevant past conversations |
-| 📝 **Personal Facts** | Remembers your name, notes, and preferences permanently |
-| ⚡ **Smart Retrieval** | Recency + importance + similarity scoring for best memory results |
-
-### 🔧 Tools & Plugins
-| Tool | What it does |
-|---|---|
-| 🌤️ **Weather** | Live weather for any city |
-| 🧮 **Calculator** | Arithmetic and expression evaluation |
-| 📰 **News** | Latest headlines on any topic |
-| ⏰ **Reminders** | Set reminders by natural language |
-| 📅 **Calendar** | Add and view calendar events |
-| 📧 **Email** | Draft and send emails |
-| 💻 **Code Runner** | Execute Python/JS/Bash in sandbox |
-| 🔀 **Git** | Run Git commands from the UI |
-| 🌐 **Web Search** | Live DuckDuckGo search |
-| 🔗 **Web Browse** | Fetch and read any URL |
-| 📺 **YouTube** | Search and summarise YouTube videos |
-| 🔬 **Deep Research** | Multi-step research with synthesis |
-| 📄 **PDF / DOCX / PPT** | Generate and analyse documents |
-| 🤖 **Browser Automation** | Playwright-powered web automation |
-| ⏱️ **Task Scheduler** | Schedule recurring AI tasks with APScheduler |
-| 🔗 **Workflow Chains** | Chain multiple tools in sequence |
-
-Tools are auto-discovered from `tools/` — drop a `.py` file to add a new plugin.
-
-### 💻 Coding Panel
-| Tab | Feature |
-|---|---|
-| ✏️ **Editor** | CodeMirror 5 with syntax highlighting, multi-language, run & save |
-| 📁 **Files** | Full project file browser — navigate, open, edit, create files & folders |
-| 🔀 **Git** | Run any Git command and see output inline |
-| 🐛 **Debugger** | Paste broken code → AI explains what's wrong and how to fix it |
-
-### 🔒 Security & Users
-| Feature | Description |
-|---|---|
-| 👤 **Multi-User Login** | Per-user sessions, memory, and settings |
-| 👻 **Guest Mode** | One-click guest access — chat works, account features locked |
-| 🛡️ **Role-Based Access** | `user`, `admin`, `readonly`, `guest` roles |
-| 🔑 **Admin Panel** | `/admin/users` and `/admin/metrics` for managing users and tool stats |
-| 🧱 **Centralised Errors** | Typed exceptions (`BadRequest`, `Forbidden`, etc.) with JSON responses |
+Everything runs against a **unified provider chain** — GitHub Models → NaraRouter → Gemini
+→ OpenAI → Ollama — with automatic failover, so the assistant keeps working even when a
+backend goes down or runs out of quota.
 
 ---
 
-## 🧠 Architecture
-
-```
-User Message
-     │
-     ▼
-┌─────────────────────────────────────────────────────────┐
-│                      AI Aurum Agent                     │
-│                                                         │
-│  Phase 1 — Plan (low tokens, fast)                      │
-│    LLM sees tools schema → decides which tools needed   │
-│                                                         │
-│  Phase 2 — Execute (concurrent via ThreadPoolExecutor)  │
-│    weather / calculator / news / web_search / vision …  │
-│    → results injected back into context                 │
-│                                                         │
-│  Phase 3 — Stream Answer                                │
-│    Final LLM call streams token-by-token via SSE        │
-└─────────────────────────────────────────────────────────┘
-     │
-     ▼
-┌─────────────────────────────────────────────────────────┐
-│                     Memory System                       │
-│                                                         │
-│  SQLite (aiaurum.db)     ←→   ChromaDB (vector store)   │
-│  • chats                       • semantic retrieval     │
-│  • memories / facts            • recency + importance   │
-│  • settings / users / roles                             │
-└─────────────────────────────────────────────────────────┘
-```
-
----
-
-## 📦 Installation
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/YOUR_USERNAME/AIAurum.git
-cd AIAurum
-```
-
-### 2. Install Dependencies
+## 🚀 Quick Start
 
 ```bash
 pip install -r requirements.txt
+python app.py            # http://localhost:5000
 ```
 
-### 3. Create a `.env` File
+`.env` keys (any ONE provider is enough — the chain handles the rest):
 
-```env
-GITHUB_TOKEN=your_github_token_here
-OPENAI_API_KEY=your_openai_key_here        # optional
-GEMINI_API_KEY=your_gemini_key_here        # optional
-OPENWEATHER_API_KEY=your_weather_key       # optional
-GOOGLE_API_KEY=your_google_key             # optional
-ADMIN_USERNAMES=yourusername               # comma-separated admin accounts
-
-# Optional model overrides
-MAIN_MODEL=gpt-4o-mini
-CODE_MODEL=gpt-4o
-FAST_MODEL=gpt-4o-mini
-```
-
-| Key | Where to get it |
+| Key | Purpose |
 |---|---|
-| `GITHUB_TOKEN` | [github.com/settings/tokens](https://github.com/settings/tokens) → Models permission |
-| `OPENAI_API_KEY` | [platform.openai.com](https://platform.openai.com) |
-| `GEMINI_API_KEY` | [aistudio.google.com](https://aistudio.google.com) |
-
-### 4. Run
-
-```bash
-python app.py
-```
-
-Open `http://localhost:5000` — log in or continue as Guest. 🎉
+| `GITHUB_TOKEN` | GitHub Models (gpt-4o / gpt-4o-mini) — primary |
+| `NARA_API_KEY` + `NARA_MODEL` | NaraRouter gateway (mistral-large, 5M free tokens) |
+| `GEMINI_API_KEY` | Google Gemini + grounded web search |
+| `OPENAI_API_KEY` | OpenAI API + Whisper STT |
+| `ELEVENLABS_API_KEY` | Premium text-to-speech (falls back to edge-tts, then device voice) |
+| `AI_PROVIDER_ORDER` | Optional, e.g. `nara,github,gemini,openai,ollama` |
+| `SMTP_USER` / `SMTP_PASS` | Email tool |
 
 ---
 
-## ☁️ Deploy to Render
+## ⌨️ Command Palette — press **Ctrl+K**
 
-A `render.yaml` is included. Connect this repo at [render.com](https://render.com) and it deploys automatically to `yuvanaurum.onrender.com`. Set your API keys in the Render dashboard under Environment Variables.
+One search bar controls everything: panels, tools, dashboards, missions, research,
+personalities, and every shortcut below.
 
----
+### Chat shortcuts
 
-## 🗂️ Project Structure
-
-```
-AIAurum/
-│
-├── app.py                  # Flask entry point — Blueprint registration
-├── assistant.py            # AI calls, image gen, memory helpers
-├── agent.py                # ReAct agent loop (Plan → Execute → Stream)
-├── db.py                   # SQLite helpers — users, chats, memory, settings
-├── vector_memory.py        # ChromaDB semantic memory
-│
-├── config/
-│   ├── base.py             # All settings with env-var overrides
-│   ├── development.py
-│   ├── production.py
-│   └── testing.py
-│
-├── routes/
-│   ├── auth.py             # /login  /register  /guest  /logout
-│   ├── chat.py             # /  /ask  /greet  /project  /chats  /memory
-│   ├── stream_routes.py    # /stream (SSE)
-│   ├── files.py            # /files/*  /code/run  /git/push
-│   ├── upload.py           # /upload/image  /screenshot  /logo
-│   ├── tools_routes.py     # /tools  /tools/run  /tts  /docs  /reminders
-│   ├── settings.py         # /settings/personality
-│   ├── research_routes.py  # /research  /analyze
-│   └── admin.py            # /admin/users  /admin/metrics
-│
-├── services/
-│   ├── auth_service.py     # login_required, no_guests, require_role
-│   ├── ai_service.py       # Model routing (fast/code/main)
-│   ├── error_handler.py    # Typed exceptions + Flask error handlers
-│   ├── chat_service.py     # Chat history helpers
-│   └── speech_service.py   # TTS
-│
-├── tools/
-│   ├── __init__.py         # Tool registry, concurrent execution
-│   ├── tool_metrics.py     # Per-tool SQLite metrics (runtime, failures)
-│   ├── weather.py
-│   ├── calculator.py
-│   ├── news.py
-│   ├── reminders.py
-│   ├── calendar_tool.py
-│   ├── web_search.py
-│   ├── browser_tool.py
-│   ├── youtube_tool.py
-│   ├── deep_research.py
-│   ├── vision_tool.py
-│   ├── code_runner.py
-│   ├── git_tool.py
-│   ├── pdf_tool.py
-│   ├── ppt_tool.py
-│   ├── scheduler_tool.py
-│   └── workflow_tool.py
-│
-├── tests/
-│   ├── conftest.py
-│   ├── test_tools.py
-│   ├── test_memory.py
-│   ├── test_metrics.py
-│   ├── test_api.py
-│   └── test_agent.py
-│
-├── templates/
-│   ├── index.html          # Main UI — chat, sidebar, coding panel
-│   ├── login.html          # Login + Guest access
-│   └── register.html
-│
-├── static/
-│   ├── manifest.json       # PWA manifest
-│   └── sw.js               # Service Worker
-│
-├── aiaurum_logo.png        # App logo
-├── aiaurum.db              # SQLite: chats, users, memories, settings
-├── render.yaml             # Render.com deployment config
-├── requirements.txt
-├── requirements-dev.txt    # pytest, pytest-cov, pytest-mock
-└── .env                    # API keys (keep private!)
-```
-
----
-
-## 🛣️ Roadmap
-
-- [x] Multi-Model Routing (GPT-4o / GPT-4o-mini / Gemini)
-- [x] ReAct Agent with Concurrent Tool Calling
-- [x] SSE Token Streaming
-- [x] SQLite Memory (chats, users, facts, settings)
-- [x] Vector Memory (ChromaDB semantic search + recency scoring)
-- [x] Image Generation (Pollinations AI)
-- [x] Vision / Multimodal (GPT-4o image analysis)
-- [x] Plugin Tool System (auto-discovery)
-- [x] Coding Panel (editor, file browser, git, debugger)
-- [x] Internet Tools (web search, browse, YouTube, deep research)
-- [x] Document Tools (PDF, DOCX, PPT generation & analysis)
-- [x] Browser Automation (Playwright)
-- [x] Task Scheduler (APScheduler)
-- [x] Multi-User Login & Role-Based Access
-- [x] Guest Mode (ephemeral access without an account)
-- [x] Admin Panel (user management, tool metrics)
-- [x] Centralised Error Handling
-- [x] Configuration Layer (dev / prod / test)
-- [x] Test Suite (pytest — tools, memory, metrics, API, agent)
-- [x] Mobile PWA Support
-- [x] Render.com Deployment
-- [ ] Voice Mode (live speech input/output)
-- [ ] Multi-Agent System
-- [ ] Marketplace Plugin Store
-
----
-
-## 🔒 Security Notes
-
-- Never share your `.env` file
-- Use a GitHub Fine-Grained Token (Models permission only)
-- All chat data is stored locally in `aiaurum.db`
-- File browser is sandboxed to the project workspace directory
-- Guest sessions are fully ephemeral — no data written to DB
-
----
-
-## 🧪 Testing
-
-```bash
-pip install -r requirements-dev.txt
-pytest
-```
-
-| Test File | Covers |
+| Shortcut | What it does |
 |---|---|
-| `test_tools.py` | Tool loading, schema, calculator, concurrent execution |
-| `test_memory.py` | Recency scoring, importance, store/retrieve |
-| `test_metrics.py` | Record calls, rolling average, warn threshold |
-| `test_api.py` | All route groups — auth, chat, tools, admin |
-| `test_agent.py` | SSE format, agent stream with mocked LLM |
+| `/team <goal>` | CEO + specialist agents with a **live status board**, message passing, and a self-critique review round |
+| `/vibe <app idea>` | Vibe coding — dev team builds a working multi-file project |
+| `/pm <project>` | Autonomous project manager: roadmap → code → tests → fixes → git |
+| `/deep <topic>` | Autonomous research report with cited sources (`/deepppt` adds a PowerPoint) |
+| `/mission <goal>` | Mission Mode: objectives, roadmap, tasks, deadlines, budget, progress |
+| `/twin <question>` | Your Digital Twin answers the way *you* would |
+| `/detective <problem>` | Evidence → hypotheses with confidence → best explanation |
+| `/lab <prompt>` | AI Laboratory: run one prompt across models, judge the winner |
+| `/innovate` `/strategy` `/resolve` `/textbook` `/negotiate` | Thinking modes: invention, strategy + scenarios + failure odds, source conflicts, mini-textbook, contract review |
+| `/audit` / `/docs` | Code audit report / self-generated README + architecture docs |
+| `/research <q>` or `/r` | Quick deep-research mode |
+
+### The + menu
+
+Upload files & photos · Take screenshot · **Live Screen Guidance** (AI sees your screen) ·
+**Watch Screen for Errors** (auto-alerts) · **Voice Conversation** (hands-free, say "stop"/"continue") ·
+**Meeting Mode** (record any Teams/Zoom/Meet tab → minutes + action items) · Deep Research ·
+**Agent Team** · **Vibe Code** · **Document Canvas** · Analyze Data · Memory · Tools & Plugins · Code & Files
+
+---
+
+## 🧠 Intelligence Systems
+
+| System | What it does |
+|---|---|
+| **CEO Orchestrator** | Routes goals to specialists, runs parallel waves, critiques its own answer, dispatches review rounds |
+| **Agent Company** | 12 built-in employees with personalities — and the CEO **hires new specialists** (CFO, legal, robotics…) when a job needs one |
+| **Agent Mailbox** | Agents message each other: `@reviewer: check the SQL` is delivered into the reviewer's context |
+| **5-Tier Memory** | Working → conversation → knowledge graph → vector (ChromaDB) → archive (FTS5), unified behind one Memory API |
+| **Live Knowledge Graph** | Every conversation extracts entities/relations in the background — browse it as the **Memory Map** |
+| **Experience Database** | Every solved problem becomes a reusable strategy, auto-injected into similar future runs |
+| **Standing Rules** | Say *"Always answer electrical questions using IS standards"* — stored and applied forever |
+| **Memory DNA** | Identity profile: learning/decision/coding style, strengths, gaps, monthly evolution |
+| **Memory Compression** | 1000s of facts → clusters → 3 permanent beliefs |
+| **Dream Mode** | Nightly (permission-gated): mines the web for discoveries in your topics, writes a Dream Report |
+| **RAG Pipeline** | Documents: chunk → embed → retrieve top-k instead of stuffing prompts |
+| **Prediction Engine** | Clickable chips predict your next request after every answer |
+| **Confidence Bars** | Every reply shows self-evaluated confidence (green/amber) |
+
+## 📊 Dashboards
+
+| View | Where |
+|---|---|
+| **Live Dashboard** | `/live` — SSE system stats + agents + economics + activity, auto-updating |
+| **Consciousness Dashboard** | Ctrl+K — what the AI knows, is unsure about, and is waiting for; risk level |
+| **AI Timeline** | Everything you did, day by day |
+| **AI Universe** | Your topics as clickable planets |
+| **Command Center / Skill Levels / Pattern Hunter / Research DB / Hired Agents** | Ctrl+K |
+
+## 🛠️ Tools (48, auto-discovered)
+
+Multi-step **web agent** (Playwright, goal-driven) · **video → SOP/minutes** (transcribe + synthesize) ·
+website monitor · electrical engineering (IS/IEC) · document agent (PDF/DOCX/OCR + RAG Q&A) ·
+meeting assistant · dev agent · code auditor · doc generator · simulator (preview destructive ops) ·
+knowledge graph · email/messaging (permission-gated) · scheduler · vision · OCR · Excel/PPT/PDF ·
+weather · news · YouTube · stock price plugin · **+ drop any .py into `plugins/` — zero config**
+
+## 🔐 Safety
+
+- **Permission Manager** (`/permissions`): browser, shell, file-delete, packages, messaging, self-improve, background-AI — dangerous ones OFF by default
+- **Background AI toggle** — one switch kills all ambient AI calls (Ctrl+K)
+- **Simulator** — destructive operations preview exactly what they'd do first
+- **Self-improvement & Dream Mode** — suggestions only, rate-limited, never auto-commit
+- Web agent refuses payment/password fields; guests are sandboxed
+
+## 🏗️ Architecture
+
+```
+User ⇄ SSE Chat UI (PWA, mobile-ready, Ctrl+K palette)
+          │
+Flask (22 blueprints, 129 routes) ── tracer → /traces (thinking screen)
+          │
+CEO Agent ──► Planner · Researcher · Programmer · Reviewer · Debugger
+   │          Browser · Vision · Security · Automation · Memory · Voice
+   │          + dynamically hired specialists          (agent mailbox ⇄)
+          │
+providers/ ── GitHub → Nara → Gemini → OpenAI → Ollama (auto-failover)
+          │
+SQLite (WAL) + ChromaDB + NetworkX ── memory, experiences, missions,
+timeline, research DB, canvas versions, benchmarks, agent logs
+```
+
+## 📁 Key Paths
+
+| Path | Contents |
+|---|---|
+| `app.py` | 22 blueprints, scheduler (auto-learn 03:00, dream 02:30, self-review Sun 04:00) |
+| `agents/` | BaseAgent + 12 specialists + CEO + `run_team_stream` |
+| `providers/` | Unified AI layer — add a provider in ~40 lines |
+| `services/` | memory, mailbox, experience, permissions, RAG, dream, activity log… |
+| `tools/` | 48 tools — each: `NAME`, `DESCRIPTION`, `INPUTS`, `run()` |
+| `routes/` | API blueprints (`aurum_routes.py` = dashboards/DNA/universe…) |
+| `templates/` | `index.html` (single-page app) + `dashboard.html` (`/live`) |
+| `plugins/` | Drop-in plugins, auto-loaded |
 
 ---
 
 <div align="center">
 
-## 👨‍💻 Created By
+**Built with ⚡ by Yuvan Industries**
 
-<br/>
-
-### ✦ YUVAN INDUSTRIES ✦
-
-**A Future Technology Company**
-
-*Building the intelligent systems of tomorrow — today.*
-
-<br/>
-
-| Focus Area | |
-|---|---|
-| 🤖 Artificial Intelligence | 🦾 Robotics |
-| 🧬 Autonomous Systems | 💡 Smart Software |
-| 🌐 Intelligent Platforms | 🔭 Future Technologies |
-
-<br/>
-
-> *Yuvan Industries is on a mission to build AI that feels human,*
-> *software that thinks ahead, and technology that changes lives.*
-
-<br/>
-
-📧 **Contact:** [shakthiyuvan01@gmail.com](mailto:kalakotinagajyothi@gmail.com)
-
-🌐 **Live App:** [yuvanaurum.onrender.com](https://yuvanaurum.onrender.com)
-
-<br/>
-
-⭐ **If you find AI Aurum useful, give it a star.**
-
-<br/>
-
----
-
-*© 2026 Yuvan Industries. All rights reserved.*
+*104 → 140+ tasks and counting.*
 
 </div>

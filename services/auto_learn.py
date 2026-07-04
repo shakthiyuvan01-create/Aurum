@@ -167,3 +167,25 @@ def schedule_daily(scheduler, username: str) -> None:
         log.info("auto_learn: daily job scheduled for %s at 03:00", username)
     except Exception as e:
         log.warning("auto_learn: scheduler failed: %s", e)
+
+
+def run_daily_learning() -> dict:
+    """Scheduler entry point (app.py imports this): run daily_learn_job for
+    every registered user. Was missing -- auto-learn never actually ran."""
+    import sqlite3
+    results = {}
+    try:
+        con = _conn()
+        users = [r[0] for r in con.execute("SELECT username FROM users").fetchall()]
+        con.close()
+    except Exception as e:
+        log.error("run_daily_learning: cannot list users: %s", e)
+        return {"error": str(e)}
+    for u in users:
+        try:
+            results[u] = daily_learn_job(u)
+        except Exception as e:
+            results[u] = {"error": str(e)}
+            log.warning("daily learn failed for %s: %s", u, e)
+    log.info("Daily learning done for %d users", len(users))
+    return results

@@ -35,9 +35,55 @@ _REGISTRY: dict[str, type[BaseAgent]] = {
 }
 
 
+# ── AI Company: each agent is an employee with a personality ────────────────
+PERSONALITIES = {
+    "ceo":            ("Chief Executive", "Decisive and strategic. You weigh trade-offs fast, delegate clearly, and always keep the user's actual goal in focus."),
+    "planner":        ("Head of Planning", "Methodical and calm. You think in checklists and dependencies, and always state time estimates."),
+    "researcher":     ("Research Lead", "Endlessly curious and rigorous. You cite sources, flag uncertainty honestly, and love surprising facts."),
+    "programmer":     ("Senior Engineer", "Pragmatic craftsman. You write clean, working code first, mention edge cases, and hate over-engineering."),
+    "debugger":       ("Debugging Specialist", "Patient and forensic. You reason from evidence, never guess wildly, and celebrate root causes."),
+    "reviewer":       ("QA Lead", "Constructively picky. You catch what others miss and always say what is good before what is wrong."),
+    "memory_manager": ("Knowledge Archivist", "Organized and precise. You keep facts tidy, cross-referenced, and retrievable."),
+    "vision":         ("Vision Analyst", "Observant and exact. You describe what you actually see, measurements first, interpretation second."),
+    "voice":          ("Communications Officer", "Clear and warm. You make everything easy to listen to."),
+    "automation":     ("Automation Engineer", "Efficiency-obsessed. If it happens twice, you script it."),
+    "browser":        ("Field Agent", "Resourceful web navigator. You get in, get the data, and report back concisely."),
+    "security":       ("Security Chief", "Professionally paranoid. You think like an attacker and always mention the mitigation."),
+}
+
+
+class DynamicAgent(BaseAgent):
+    """A specialist hired at runtime (services/dynamic_agents)."""
+    def __init__(self, spec: dict, username: str = "default"):
+        self.name          = spec["name"]
+        self.role          = spec.get("title", spec["name"])
+        self.model         = spec.get("model", "gpt-4o-mini")
+        self.system_prompt = spec.get("prompt", "You are a helpful specialist.")
+        self.icon          = "🧩"
+        super().__init__(username=username)
+        self.name = spec["name"]  # BaseAgent.__init__ may reset class attrs
+
+
 def get_agent(name: str, username: str = "default") -> BaseAgent:
-    cls = _REGISTRY.get(name, ResearcherAgent)
-    return cls(username=username)
+    cls = _REGISTRY.get(name)
+    if cls is None:
+        # Not a built-in: check the hired workforce, or hire on the spot
+        try:
+            from services import dynamic_agents
+            spec = dynamic_agents.get(name)
+            if spec is None:
+                spec = dynamic_agents.hire(name, need="requested by CEO routing")
+            if spec and not spec.get("error"):
+                return DynamicAgent(spec, username=username)
+        except Exception as e:
+            log.debug("dynamic agent fallback: %s", e)
+        cls = ResearcherAgent
+    agent = cls(username=username)
+    p = PERSONALITIES.get(name)
+    if p:
+        agent.system_prompt = (agent.system_prompt or "") + \
+            "\n\nYour role in the AI Aurum company: %s. Personality: %s" % p
+    return agent
 
 
 def list_agents() -> list[dict]:
@@ -94,6 +140,13 @@ def run_team_stream(goal: str, username: str = "default"):
                               "agents": [s.get("agent") for s in steps]}, async_=True)
 
     shared_ctx    = _global_context(goal, username)
+    try:
+        from services.experience_db import relevant_experience
+        exp = relevant_experience(username, goal)
+        if exp:
+            shared_ctx = (shared_ctx + "\n\n" + exp).strip()
+    except Exception:
+        pass
     agent_outputs: list[dict] = []
 
     def _step_context() -> str:
@@ -182,9 +235,50 @@ def run_team_stream(goal: str, username: str = "default"):
         % (goal, plan, synthesis_ctx)
     )
     final_reply = ceo.think(synthesis_prompt)
+
+    # ── Continuous thinking: CEO self-critique + optional review round ──────
+    try:
+        import json as _json
+        critique_raw = ceo.think(
+            "You just produced this answer for the goal below. Critique it.\n"
+            'Reply ONLY JSON: {"good_enough": true/false, "issue": "...", '
+            '"fix_agent": "reviewer|researcher|programmer|security", "fix_task": "..."}\n\n'
+            "GOAL: %s\n\nANSWER:\n%s" % (goal, final_reply[:3000]))
+        import re as _re
+        m = _re.search(r"\{[\s\S]*\}", critique_raw)
+        verdict = _json.loads(m.group(0)) if m else {"good_enough": True}
+        if not verdict.get("good_enough", True) and verdict.get("fix_task"):
+            fix_agent = verdict.get("fix_agent", "reviewer")
+            if fix_agent not in _REGISTRY:
+                fix_agent = "reviewer"
+            yield {"status": "working", "agent": fix_agent, "step": len(steps),
+                   "task": "review round: " + str(verdict.get("issue", ""))[:150]}
+            fixer  = get_agent(fix_agent, username)
+            fix_out = fixer.think(verdict["fix_task"],
+                                  context="Goal: %s\n\nDraft answer:\n%s"
+                                          % (goal, final_reply[:4000]))
+            agent_outputs.append({"step": len(steps), "agent": fix_agent,
+                                  "task": verdict["fix_task"], "result": fix_out})
+            yield {"status": "step_done", "agent": fix_agent, "step": len(steps),
+                   "result": fix_out[:400]}
+            final_reply = ceo.think(
+                "Improve your draft answer using the %s's review. Output the final "
+                "answer only.\n\nGOAL: %s\n\nDRAFT:\n%s\n\nREVIEW:\n%s"
+                % (fix_agent, goal, final_reply[:4000], fix_out[:3000]))
+    except Exception as e:
+        log.debug("review round skipped: %s", e)
+
     duration    = round(time.time() - t0, 2)
     bus.emit("team.completed", {"username": username, "goal": goal,
                                 "duration": duration}, async_=True)
+    try:
+        import threading as _th
+        from services.experience_db import learn_from_run
+        _th.Thread(target=learn_from_run,
+                   args=(username, goal, agent_outputs, final_reply),
+                   daemon=True).start()
+    except Exception:
+        pass
     try:
         from services.activity_log import record_task
         record_task(username, "team", goal,

@@ -16,12 +16,14 @@ from .github_models import GitHubModelsProvider
 from .gemini import GeminiProvider
 from .openai_provider import OpenAIProvider
 from .ollama import OllamaProvider
+from .nararouter import NaraRouterProvider
 
 log = logging.getLogger("providers.manager")
 
 _ALL = {
     "github": GitHubModelsProvider(),
     "gemini": GeminiProvider(),
+    "nara":   NaraRouterProvider(),
     "openai": OpenAIProvider(),
     "ollama": OllamaProvider(),
 }
@@ -29,7 +31,7 @@ _ALL = {
 
 class ProviderManager:
     def __init__(self):
-        order = os.getenv("AI_PROVIDER_ORDER", "github,gemini,openai,ollama")
+        order = os.getenv("AI_PROVIDER_ORDER", "github,nara,gemini,openai,ollama")
         self.chain = [_ALL[n.strip()] for n in order.split(",") if n.strip() in _ALL]
         self.last_used = None
         self.last_errors = []
