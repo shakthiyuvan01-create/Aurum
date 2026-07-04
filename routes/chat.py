@@ -219,3 +219,38 @@ def memory_route():
 def vector_clear_route():
     _vmem().clear_user_memory(current_user())
     return jsonify({"ok": True})
+
+
+@chat_bp.route("/memory/search")
+@login_required
+def memory_search():
+    """Unified Memory API: search every store (facts, vector, KG, archive, skills)."""
+    from services.memory_api import memory
+    q = (request.args.get("q") or "").strip()
+    if not q:
+        return jsonify({"error": "q parameter required"}), 400
+    uname = session.get("username", "guest")
+    return jsonify({"query": q, "results": memory.search(uname, q),
+                    "grouped": memory.recall(uname, q)})
+
+
+@chat_bp.route("/memory/remember", methods=["POST"])
+@login_required
+def memory_remember():
+    from services.memory_api import memory
+    body = request.get_json(force=True) or {}
+    fact = (body.get("fact") or "").strip()
+    if not fact:
+        return jsonify({"error": "fact required"}), 400
+    return jsonify(memory.remember(session.get("username", "guest"), fact,
+                                   kind=body.get("kind", "fact")))
+
+
+@chat_bp.route("/memory/forget", methods=["POST"])
+@login_required
+def memory_forget():
+    from services.memory_api import memory
+    body = request.get_json(force=True) or {}
+    return jsonify(memory.forget(session.get("username", "guest"),
+                                 fact_id=body.get("fact_id"),
+                                 fact_text=body.get("fact_text", "")))

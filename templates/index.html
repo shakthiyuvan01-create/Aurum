@@ -184,8 +184,8 @@ box-shadow:0 0 15px #00ff88;
   .overlay.show{display:block;}
   .bubble{max-width:92%;}
   .msg{max-width:92%!important;}
-  /* coding panel takes full width on mobile */
-  #codePanel{position:fixed!important;top:0!important;right:0!important;
+  /* coding + canvas panels take full width on mobile */
+  #codePanel, #canvasPanel{position:fixed!important;top:0!important;right:0!important;
     bottom:0!important;left:0!important;width:100%!important;z-index:200;}
   /* input area */
   #bx{font-size:15px;}
@@ -512,12 +512,61 @@ body{
       onmouseleave="this.style.background='transparent'">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="18" x2="12" y2="21"/></svg> Take screenshot
     </button>
+    <button onclick="toggleScreenGuide();togglePlusMenu();"
+      style="display:flex;align-items:center;gap:10px;width:100%;background:transparent;
+      border:0;color:var(--txt);cursor:pointer;padding:10px 14px;border-radius:8px;font-size:14px;"
+      onmouseenter="this.style.background='var(--act)'"
+      onmouseleave="this.style.background='transparent'">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><circle cx="12" cy="10" r="3"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Live Screen Guidance
+    </button>
+    <button onclick="toggleScreenWatch();togglePlusMenu();"
+      style="display:flex;align-items:center;gap:10px;width:100%;background:transparent;
+      border:0;color:var(--txt);cursor:pointer;padding:10px 14px;border-radius:8px;font-size:14px;"
+      onmouseenter="this.style.background='var(--act)'"
+      onmouseleave="this.style.background='transparent'">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Watch Screen for Errors
+    </button>
+    <button onclick="toggleVoiceChat();togglePlusMenu();"
+      style="display:flex;align-items:center;gap:10px;width:100%;background:transparent;
+      border:0;color:var(--txt);cursor:pointer;padding:10px 14px;border-radius:8px;font-size:14px;"
+      onmouseenter="this.style.background='var(--act)'"
+      onmouseleave="this.style.background='transparent'">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg> Voice Conversation
+    </button>
+    <button onclick="toggleMeetingMode();togglePlusMenu();"
+      style="display:flex;align-items:center;gap:10px;width:100%;background:transparent;
+      border:0;color:var(--txt);cursor:pointer;padding:10px 14px;border-radius:8px;font-size:14px;"
+      onmouseenter="this.style.background='var(--act)'"
+      onmouseleave="this.style.background='transparent'">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg> Meeting Mode (record + minutes)
+    </button>
     <button onclick="toggleResearch();togglePlusMenu();"
       style="display:flex;align-items:center;gap:10px;width:100%;background:transparent;
       border:0;color:var(--txt);cursor:pointer;padding:10px 14px;border-radius:8px;font-size:14px;"
       onmouseenter="this.style.background='var(--act)'"
       onmouseleave="this.style.background='transparent'">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg> Deep Research mode
+    </button>
+    <button onclick="bx.value='/team ';grow(bx);updateSendBtn();bx.focus();togglePlusMenu();"
+      style="display:flex;align-items:center;gap:10px;width:100%;background:transparent;
+      border:0;color:var(--txt);cursor:pointer;padding:10px 14px;border-radius:8px;font-size:14px;"
+      onmouseenter="this.style.background='var(--act)'"
+      onmouseleave="this.style.background='transparent'">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Agent Team
+    </button>
+    <button onclick="bx.value='/vibe ';grow(bx);updateSendBtn();bx.focus();togglePlusMenu();"
+      style="display:flex;align-items:center;gap:10px;width:100%;background:transparent;
+      border:0;color:var(--txt);cursor:pointer;padding:10px 14px;border-radius:8px;font-size:14px;"
+      onmouseenter="this.style.background='var(--act)'"
+      onmouseleave="this.style.background='transparent'">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.2H22l-6 4.6 2.3 7.2-6.3-4.5-6.3 4.5L8 13.8 2 9.2h7.6z"/></svg> Vibe Code an App
+    </button>
+    <button onclick="openCanvas();togglePlusMenu();"
+      style="display:flex;align-items:center;gap:10px;width:100%;background:transparent;
+      border:0;color:var(--txt);cursor:pointer;padding:10px 14px;border-radius:8px;font-size:14px;"
+      onmouseenter="this.style.background='var(--act)'"
+      onmouseleave="this.style.background='transparent'">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Document Canvas
     </button>
     <button onclick="document.getElementById('da').click();togglePlusMenu();"
       style="display:flex;align-items:center;gap:10px;width:100%;background:transparent;
@@ -675,6 +724,26 @@ body{
 </div>
 
 <!-- ── Code & Files Panel ─────────────────────────────────────── -->
+<div id="canvasOverlay" onclick="closeCanvas()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;"></div>
+<div id="canvasPanel" style="display:none;position:fixed;top:0;right:0;height:100%;width:760px;max-width:100vw;
+  background:#16161a;border-left:1px solid var(--bdr);z-index:9991;flex-direction:column;">
+  <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--bdr);flex-wrap:wrap;">
+    <strong style="color:var(--txt);font-size:14px;">Document Canvas</strong>
+    <input id="cvTitle" placeholder="Title..." style="background:#21262d;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:5px 10px;font-size:13px;width:170px;outline:none;">
+    <select id="cvDocs" onchange="canvasOpenSelected()" style="background:#21262d;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:5px 8px;font-size:12px;max-width:150px;">
+      <option value="">New document</option>
+    </select>
+    <button onclick="canvasSave()" style="background:#238636;border:0;border-radius:6px;padding:5px 12px;color:#fff;font-size:12px;cursor:pointer;">Save</button>
+    <button onclick="canvasRevise()" style="background:#6e40c9;border:0;border-radius:6px;padding:5px 12px;color:#fff;font-size:12px;cursor:pointer;">Revise selection</button>
+    <select id="cvVersions" onchange="canvasLoadVersion()" style="background:#21262d;border:1px solid #30363d;color:#8b949e;border-radius:6px;padding:5px 8px;font-size:12px;max-width:130px;">
+      <option value="">History</option>
+    </select>
+    <button onclick="closeCanvas()" style="margin-left:auto;background:transparent;border:0;color:#8b949e;font-size:18px;cursor:pointer;">&#10005;</button>
+  </div>
+  <div id="cvStatus" style="padding:4px 14px;font-size:12px;color:#8b949e;"></div>
+  <div id="cvEditor" contenteditable="true" spellcheck="false"
+    style="flex:1;overflow-y:auto;padding:20px 26px;color:var(--txt);font-size:15px;line-height:1.65;outline:none;white-space:pre-wrap;"></div>
+</div>
 <div id="codeOverlay" onclick="closeCodePanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9990;"></div>
 <div id="codePanel" style="display:none;position:fixed;top:0;right:0;height:100%;width:820px;max-width:100vw;
   background:#0d1117;border-left:1px solid #30363d;z-index:9991;flex-direction:column;overflow:hidden;">
@@ -1173,6 +1242,10 @@ async function send() {
   if (isBusy) return;
   const msg = bx.value.trim();
   if (!msg && !_attachedB64) return;
+  // Live screen guidance: attach a fresh frame of the shared screen
+  if (_guideStream && !_attachedB64) {
+    try { await _grabGuideFrame(); } catch (e) { /* stream may have ended */ }
+  }
 
   isBusy = true;
   bx.value = ''; grow(bx); updateSendBtn();
@@ -1189,6 +1262,105 @@ async function send() {
   clearAttachedImage();
 
   try {
+    // ── Thinking modes: /innovate /strategy /resolve /textbook ────
+    if (msg.startsWith('/innovate ')) {
+      await runAsyncToolCard('thinking_modes', { mode: 'innovate', topic: msg.slice(10) },
+        'Innovation Engine', 'Inventing: ideas, feasibility, patent potential...');
+      return;
+    }
+    if (msg.startsWith('/strategy ')) {
+      await runAsyncToolCard('thinking_modes', { mode: 'strategize', topic: msg.slice(10) },
+        'Strategy Mode', 'Scenarios, risks, critical path, failure odds...');
+      return;
+    }
+    if (msg.startsWith('/resolve ')) {
+      await runAsyncToolCard('thinking_modes', { mode: 'resolve', topic: msg.slice(9) },
+        'Conflict Resolver', 'Comparing sources, isolating the contradiction...');
+      return;
+    }
+    if (msg.startsWith('/textbook ')) {
+      await runAsyncToolCard('thinking_modes', { mode: 'textbook', topic: msg.slice(10) },
+        'Automatic Textbook', 'Writing chapters, examples, quiz...');
+      return;
+    }
+    if (msg.startsWith('/negotiate ')) {
+      await runAsyncToolCard('thinking_modes', { mode: 'negotiate', topic: msg.slice(11) },
+        'AI Negotiator', 'Reviewing terms, risks, counter-proposals...');
+      return;
+    }
+    if (msg.startsWith('/audit')) {
+      await runAsyncToolCard('code_auditor', { path: '' },
+        'Code Audit', 'Scanning for duplicates, dead code, oversized functions...');
+      return;
+    }
+    if (msg.startsWith('/docs')) {
+      await runAsyncToolCard('doc_generator', { path: '' },
+        'Self-Documentation', 'Writing README + architecture + diagrams...');
+      return;
+    }
+
+    // ── Twin / mission / lab / detective shortcuts ────────────────
+    if (msg.startsWith('/twin ')) {
+      const t = typing();
+      try {
+        const r = await fetch('/twin/ask', { method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: msg.slice(6) }) });
+        const d = await r.json();
+        t.remove();
+        const { m, b } = addMsg('', 'bot');
+        b.innerHTML = '<div style="font-size:11px;color:#c084fc;margin-bottom:6px;">DIGITAL TWIN - answering as you would</div>' +
+          parseMarkdown(d.answer || d.error || 'No answer');
+        addActions(m, d.answer || '', 'bot');
+      } catch (e) { t.remove(); addMsg('Twin error: ' + e, 'bot'); }
+      return;
+    }
+    if (msg.startsWith('/mission ')) {
+      await runAsyncToolCard('mission_mode', { action: 'create', goal: msg.slice(9) },
+        'Mission Mode', 'Creating mission, objectives, roadmap, tasks...');
+      return;
+    }
+    if (msg.startsWith('/detective ')) {
+      await runAsyncToolCard('detective', { problem: msg.slice(11) },
+        'AI Detective', 'Gathering evidence, weighing hypotheses...');
+      return;
+    }
+    if (msg.startsWith('/lab ')) {
+      await runAsyncToolCard('ai_lab', { action: 'run', prompt: msg.slice(5) },
+        'AI Laboratory', 'Running the prompt across models...');
+      return;
+    }
+
+    // ── Project manager (/pm) and deep research (/deep) shortcuts ─
+    if (msg.startsWith('/pm ')) {
+      await runAsyncToolCard('project_manager', { description: msg.slice(4) },
+        'Project Manager', 'Roadmap, code, tests, fixes...');
+      return;
+    }
+    if (msg.startsWith('/deep ')) {
+      await runAsyncToolCard('auto_research', { topic: msg.slice(6), make_ppt: 'false' },
+        'Deep Research', 'Searching, reading, synthesizing report...');
+      return;
+    }
+    if (msg.startsWith('/deepppt ')) {
+      await runAsyncToolCard('auto_research', { topic: msg.slice(9), make_ppt: 'true' },
+        'Deep Research + PPT', 'Researching and building slides...');
+      return;
+    }
+
+    // ── Vibe coding shortcut (/vibe <app description>) ───────────
+    if (msg.startsWith('/vibe ')) {
+      await vibeCode(msg.slice(6));
+      return;
+    }
+
+    // ── Agent team shortcut (/team or /agents) ───────────────────
+    if (msg.startsWith('/team ') || msg.startsWith('/agents ')) {
+      const goal = msg.replace(/^\/(team|agents)\s+/, '');
+      await runAgentTeam(goal);
+      return;
+    }
+
     // ── Research shortcut (/research or /r) ──────────────────────
     if (_researchMode || msg.startsWith('/research ') || msg.startsWith('/r ')) {
       const query = msg.replace(/^\/(research|r)\s+/, '');
@@ -1301,6 +1473,14 @@ async function send() {
           addActions(msgEl, fullText, 'bot');
           chatId = data.chat_id || chatId;
           loadChats();
+          if (data.trace_id) _addThinkingLink(msgEl, data.trace_id);
+          _addSmartQuestionsBtn(msgEl, msg);
+          if (data.confidence != null) _addConfidenceBar(msgEl, data.confidence);
+          _addPredictionChips(msgEl, msg, fullText);
+          if (window._voiceChatMode) {
+            const pb = msgEl.querySelector('.ab');
+            if (pb) pb.click();
+          }
         }
       }
     }
@@ -2199,6 +2379,9 @@ function upload() {
   const name = file.name.toLowerCase();
   if (file.type.startsWith('image/')) { attachImage(input); return; }
   if (/\.(csv|xlsx|xls)$/.test(name)) { _analyzeFile(file); input.value = ''; return; }
+  if (/\.(mp4|mkv|avi|mov|webm|m4v|wmv|mp3|wav|m4a|ogg|flac|aac)$/.test(name)) {
+    _videoToSop(file); input.value = ''; return;
+  }
   if (/\.(txt|py|js|html|md)$/.test(name)) {
     const reader = new FileReader();
     reader.onload = e => {
@@ -2367,6 +2550,1162 @@ async function dbgAnalyze() {
     const d = await r.json();
     res.innerHTML = parseMarkdown(d.reply || d.error || 'No response');
   } catch (e) { res.innerHTML = 'Error: ' + e; }
+}
+
+
+// ── Multi-agent team runner with live status dashboard (/team <goal>) ───────
+async function runAgentTeam(goal) {
+  hideWelcome();
+  const card = document.createElement('div');
+  card.style.cssText = 'background:#1b1b20;border:1px solid var(--bdr);border-radius:12px;' +
+    'padding:14px 16px;margin:8px 0;font-size:13px;max-width:92%;';
+  card.innerHTML = '<div style="font-weight:600;margin-bottom:8px;color:var(--txt);">' +
+    'Agent Team</div><div class="team-rows" style="display:flex;flex-direction:column;' +
+    'gap:6px;color:var(--muted);">CEO is routing your goal...</div>';
+  th.appendChild(card);
+  sc.scrollTop = sc.scrollHeight;
+  const rows = card.querySelector('.team-rows');
+  const state = {};
+
+  function render() {
+    rows.innerHTML = Object.entries(state).map(([agent, st]) => {
+      const color = st === 'done' ? '#52d68a' : (st === 'working' ? 'var(--acc)' : '#8b949e');
+      const mark  = st === 'done' ? '&#10003;' : (st === 'working' ? '&#9679;' : '&#9675;');
+      const label = st === 'working' ? 'working...' : st;
+      return '<div style="display:flex;gap:8px;align-items:center;">' +
+        '<span style="color:' + color + ';width:14px;">' + mark + '</span>' +
+        '<span style="text-transform:capitalize;color:var(--txt);">' + agent + '</span>' +
+        '<span style="color:#8b949e;font-size:12px;">' + label + '</span></div>';
+    }).join('');
+    sc.scrollTop = sc.scrollHeight;
+  }
+
+  let bubbleRef = null, acc = '';
+  try {
+    const resp = await fetch('/agents/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ goal })
+    });
+    if (!resp.ok) { rows.innerHTML = 'Error ' + resp.status; return; }
+    const reader = resp.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n'); buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let d; try { d = JSON.parse(line.slice(6)); } catch { continue; }
+
+        if (d.error) { rows.innerHTML = 'Error: ' + escHtml(d.error); return; }
+        if (d.status === 'plan' && d.agents) {
+          d.agents.forEach(a => { if (!(a in state)) state[a] = 'waiting'; });
+          render();
+        }
+        if (d.status === 'working' && d.agent) { state[d.agent] = 'working'; render(); }
+        if (d.status === 'step_done' && d.agent) {
+          state[d.agent] = 'done'; render();
+          if (d.result) {
+            rows.insertAdjacentHTML('beforeend',
+              '<div style="margin:2px 0 6px 22px;padding:6px 10px;background:#141419;' +
+              'border-left:2px solid var(--acc);border-radius:0 6px 6px 0;color:#8b949e;' +
+              'font-size:12px;"><b style="color:var(--txt);text-transform:capitalize;">' +
+              d.agent + ':</b> ' + escHtml(d.result.slice(0, 220)) +
+              (d.result.length > 220 ? '...' : '') + '</div>');
+            sc.scrollTop = sc.scrollHeight;
+          }
+        }
+        if (d.synthesising) {
+          Object.keys(state).forEach(a => state[a] = 'done'); render();
+          rows.insertAdjacentHTML('beforeend',
+            '<div style="color:#8b949e;margin-top:4px;">CEO is writing the final answer...</div>');
+        }
+        if (d.delta) {
+          if (!bubbleRef) { bubbleRef = addMsg('', 'bot'); }
+          acc += d.delta;
+          bubbleRef.b.textContent = acc;
+          sc.scrollTop = sc.scrollHeight;
+        }
+        if (d.done) {
+          const reply = d.reply || acc;
+          if (!bubbleRef) bubbleRef = addMsg('', 'bot');
+          bubbleRef.b.innerHTML = parseMarkdown(reply);
+          addActions(bubbleRef.m, reply, 'bot');
+          rows.insertAdjacentHTML('beforeend',
+            '<div style="color:#52d68a;margin-top:4px;">Done in ' + (d.duration || '?') + 's</div>');
+          sc.scrollTop = sc.scrollHeight;
+        }
+      }
+    }
+  } catch (e) {
+    rows.innerHTML = 'Error: ' + escHtml(String(e));
+  }
+}
+
+
+// ── Multimodal: video/audio walkthrough -> SOP / minutes (async job) ─────────
+async function _videoToSop(file) {
+  hideWelcome();
+  const kind = confirm('OK = Standard Operating Procedure (SOP)\nCancel = Meeting minutes')
+    ? 'sop' : 'minutes';
+  addMsg('Process recording: ' + escHtml(file.name) + ' -> ' + kind.toUpperCase(), 'user');
+  const t = typing();
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const up = await fetch('/upload/file', { method: 'POST', body: fd });
+    const u = await up.json();
+    if (!u.ok) throw new Error(u.error || 'upload failed');
+
+    const start = await fetch('/tools/run_async', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tool: 'video_sop', args: { file_path: u.path, output: kind } })
+    });
+    const job = await start.json();
+    if (!job.ok) throw new Error(job.error || 'could not start job');
+
+    // Poll in the background - transcription of long videos takes minutes
+    const poll = setInterval(async () => {
+      try {
+        const r = await fetch('/tasks/' + job.job_id);
+        const d = await r.json();
+        if (d.status === 'finished' || d.status === 'failed') {
+          clearInterval(poll);
+          t.remove();
+          const { m, b } = addMsg('', 'bot');
+          const res = d.result || {};
+          if (d.status === 'failed' || res.error) {
+            b.textContent = 'Processing failed: ' + (d.error || res.error);
+          } else {
+            b.innerHTML = parseMarkdown(res.result || 'No output');
+            addActions(m, res.result || '', 'bot');
+          }
+          sc.scrollTop = sc.scrollHeight;
+        }
+      } catch (e) { /* keep polling */ }
+    }, 4000);
+  } catch (e) {
+    t.remove();
+    addMsg('Error: ' + escHtml(String(e.message || e)), 'bot');
+  }
+}
+
+
+// ── Vibe coding: describe an app, dev_agent builds it (async job) ───────────
+async function vibeCode(description) {
+  hideWelcome();
+  const card = document.createElement('div');
+  card.style.cssText = 'background:#1b1b20;border:1px solid var(--bdr);border-radius:12px;' +
+    'padding:14px 16px;margin:8px 0;font-size:13px;max-width:92%;color:var(--muted);';
+  card.innerHTML = '<div style="font-weight:600;color:var(--txt);margin-bottom:6px;">Vibe Coding</div>' +
+    '<div class="vc-status">Planning architecture, writing files, reviewing... this can take a few minutes.</div>';
+  th.appendChild(card); sc.scrollTop = sc.scrollHeight;
+  const status = card.querySelector('.vc-status');
+  try {
+    const start = await fetch('/tools/run_async', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tool: 'dev_agent', args: { description: description } })
+    });
+    const job = await start.json();
+    if (!job.ok) throw new Error(job.error || 'could not start');
+    let ticks = 0;
+    const poll = setInterval(async () => {
+      ticks++;
+      status.textContent = 'Building... ' + (ticks * 5) + 's elapsed';
+      try {
+        const r = await fetch('/tasks/' + job.job_id);
+        const d = await r.json();
+        if (d.status === 'finished' || d.status === 'failed') {
+          clearInterval(poll);
+          const res = d.result || {};
+          if (d.status === 'failed' || res.error) {
+            status.textContent = 'Build failed: ' + (d.error || res.error);
+            return;
+          }
+          status.innerHTML = '<span style="color:#52d68a">Project built.</span> ' +
+            'Open <b>Code &amp; Files</b> (+ menu) to browse and run it.';
+          const { m, b } = addMsg('', 'bot');
+          b.innerHTML = parseMarkdown(res.message || res.result || JSON.stringify(res).slice(0, 800));
+          addActions(m, res.message || res.result || '', 'bot');
+          sc.scrollTop = sc.scrollHeight;
+        }
+      } catch (e) { /* keep polling */ }
+    }, 5000);
+  } catch (e) {
+    status.textContent = 'Error: ' + (e.message || e);
+  }
+}
+
+
+// ── Live Screen Guidance: share screen once; every message sees it ──────────
+let _guideStream = null, _guideVideo = null;
+
+async function toggleScreenGuide() {
+  if (_guideStream) { _stopScreenGuide(); return; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+    alert('Screen sharing is not supported on this browser (desktop only).');
+    return;
+  }
+  try {
+    _guideStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+    _guideVideo = document.createElement('video');
+    _guideVideo.srcObject = _guideStream;
+    _guideVideo.muted = true;
+    await _guideVideo.play();
+    _guideStream.getVideoTracks()[0].onended = _stopScreenGuide;
+    _showGuideBadge(true);
+    hideWelcome();
+    addMsg('Live Screen Guidance is ON. Ask me anything about what is on your ' +
+           'screen - each message includes a fresh screenshot. Example: ' +
+           '"how do I make a pivot table from this data?"', 'bot');
+  } catch (e) {
+    _guideStream = null;
+  }
+}
+
+function _stopScreenGuide() {
+  if (_guideStream) _guideStream.getTracks().forEach(t => t.stop());
+  _guideStream = null; _guideVideo = null;
+  _showGuideBadge(false);
+}
+
+function _showGuideBadge(on) {
+  let b = document.getElementById('guideBadge');
+  if (!b) {
+    b = document.createElement('div');
+    b.id = 'guideBadge';
+    b.style.cssText = 'display:none;position:fixed;top:12px;right:12px;z-index:9500;' +
+      'background:linear-gradient(90deg,#1a2a3a,#0d1a2a);border:1px solid #2d4f6a;' +
+      'border-radius:8px;padding:6px 14px;font-size:12px;color:#52a8d6;cursor:pointer;';
+    b.innerHTML = 'Screen Guidance ON &nbsp;&#10005;';
+    b.onclick = _stopScreenGuide;
+    document.body.appendChild(b);
+  }
+  b.style.display = on ? 'block' : 'none';
+}
+
+async function _grabGuideFrame() {
+  if (!_guideVideo || !_guideVideo.videoWidth) return;
+  const canvas = document.createElement('canvas');
+  const scale = Math.min(1, 1600 / _guideVideo.videoWidth);
+  canvas.width  = _guideVideo.videoWidth * scale;
+  canvas.height = _guideVideo.videoHeight * scale;
+  canvas.getContext('2d').drawImage(_guideVideo, 0, 0, canvas.width, canvas.height);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+  _attachedB64  = dataUrl.slice(dataUrl.indexOf(',') + 1);
+  _attachedMime = 'image/jpeg';
+}
+
+
+// ── Dynamic Document Canvas ──────────────────────────────────────────────────
+let _cvDocId = null;
+
+function openCanvas() {
+  document.getElementById('canvasOverlay').style.display = 'block';
+  document.getElementById('canvasPanel').style.display = 'flex';
+  canvasRefreshList();
+}
+function closeCanvas() {
+  document.getElementById('canvasOverlay').style.display = 'none';
+  document.getElementById('canvasPanel').style.display = 'none';
+}
+
+async function canvasRefreshList() {
+  try {
+    const r = await fetch('/canvas/docs');
+    const d = await r.json();
+    const sel = document.getElementById('cvDocs');
+    const cur = _cvDocId || '';
+    sel.innerHTML = '<option value="">New document</option>' +
+      (d.docs || []).map(x => '<option value="' + x.id + '"' +
+        (String(x.id) === String(cur) ? ' selected' : '') + '>' +
+        escHtml(x.title) + '</option>').join('');
+  } catch (e) {}
+}
+
+async function canvasOpenSelected() {
+  const id = document.getElementById('cvDocs').value;
+  const ed = document.getElementById('cvEditor');
+  const vs = document.getElementById('cvVersions');
+  if (!id) { _cvDocId = null; ed.textContent = ''; document.getElementById('cvTitle').value = '';
+             vs.innerHTML = '<option value="">History</option>'; return; }
+  const r = await fetch('/canvas/docs/' + id);
+  const d = await r.json();
+  if (d.doc) {
+    _cvDocId = d.doc.id;
+    document.getElementById('cvTitle').value = d.doc.title;
+    ed.textContent = d.doc.content;
+    vs.innerHTML = '<option value="">History (' + (d.versions || []).length + ')</option>' +
+      (d.versions || []).map(v => '<option value="' + v.id + '">' +
+        new Date(v.created_at * 1000).toLocaleString() + ' (' + v.size + ' ch)</option>').join('');
+  }
+}
+
+async function canvasSave() {
+  const title = document.getElementById('cvTitle').value.trim() || 'Untitled';
+  const content = document.getElementById('cvEditor').textContent;
+  const st = document.getElementById('cvStatus');
+  const r = await fetch('/canvas/docs', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ doc_id: _cvDocId, title: title, content: content })
+  });
+  const d = await r.json();
+  if (d.ok) { _cvDocId = d.doc_id; st.textContent = 'Saved.'; canvasRefreshList(); canvasOpenSelected2(); }
+  else st.textContent = 'Save failed: ' + (d.error || '');
+  setTimeout(() => st.textContent = '', 2500);
+}
+
+// refresh versions without clobbering the editor
+async function canvasOpenSelected2() {
+  if (!_cvDocId) return;
+  const r = await fetch('/canvas/docs/' + _cvDocId);
+  const d = await r.json();
+  if (d.versions) {
+    document.getElementById('cvVersions').innerHTML =
+      '<option value="">History (' + d.versions.length + ')</option>' +
+      d.versions.map(v => '<option value="' + v.id + '">' +
+        new Date(v.created_at * 1000).toLocaleString() + ' (' + v.size + ' ch)</option>').join('');
+  }
+}
+
+async function canvasLoadVersion() {
+  const vid = document.getElementById('cvVersions').value;
+  if (!vid) return;
+  if (!confirm('Load this older version into the editor? Unsaved edits are lost.')) return;
+  const r = await fetch('/canvas/versions/' + vid);
+  const d = await r.json();
+  if (d.version) document.getElementById('cvEditor').textContent = d.version.content;
+}
+
+async function canvasRevise() {
+  const ed = document.getElementById('cvEditor');
+  const st = document.getElementById('cvStatus');
+  const sel = window.getSelection();
+  const selected = sel && sel.toString().trim();
+  if (!selected) { st.textContent = 'Highlight the text you want revised first.'; return; }
+  const instruction = prompt('How should I revise the highlighted text?',
+                             'Improve clarity and flow');
+  if (!instruction) return;
+  st.textContent = 'Revising...';
+  try {
+    const r = await fetch('/canvas/revise', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ selection: selected, instruction: instruction,
+                             context: ed.textContent.slice(0, 3000) })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(document.createTextNode(d.revised));
+      st.textContent = 'Revised. Save to keep a version snapshot.';
+    } else st.textContent = 'Revision failed: ' + (d.error || '');
+  } catch (e) { st.textContent = 'Error: ' + e; }
+  setTimeout(() => st.textContent = '', 4000);
+}
+
+
+// ── Generic async-tool progress card (used by /pm, /deep, meeting mode) ─────
+async function runAsyncToolCard(tool, args, title, blurb) {
+  hideWelcome();
+  const card = document.createElement('div');
+  card.style.cssText = 'background:#1b1b20;border:1px solid var(--bdr);border-radius:12px;' +
+    'padding:14px 16px;margin:8px 0;font-size:13px;max-width:92%;color:var(--muted);';
+  card.innerHTML = '<div style="font-weight:600;color:var(--txt);margin-bottom:6px;">' +
+    escHtml(title) + '</div><div class="rt-status">' + escHtml(blurb || 'Working...') + '</div>';
+  th.appendChild(card); sc.scrollTop = sc.scrollHeight;
+  const status = card.querySelector('.rt-status');
+  try {
+    const start = await fetch('/tools/run_async', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tool: tool, args: args })
+    });
+    const job = await start.json();
+    if (!job.ok) throw new Error(job.error || 'could not start');
+    let ticks = 0;
+    const poll = setInterval(async () => {
+      ticks++;
+      status.textContent = 'Working... ' + (ticks * 5) + 's';
+      try {
+        const r = await fetch('/tasks/' + job.job_id);
+        const d = await r.json();
+        if (d.status === 'finished' || d.status === 'failed') {
+          clearInterval(poll);
+          const res = d.result || {};
+          if (d.status === 'failed' || res.error) {
+            status.textContent = 'Failed: ' + (d.error || res.error); return;
+          }
+          status.innerHTML = '<span style="color:#52d68a">Done.</span>';
+          const { m, b } = addMsg('', 'bot');
+          const text = res.result || res.message || JSON.stringify(res).slice(0, 1000);
+          b.innerHTML = parseMarkdown(text);
+          if (res.ppt) b.innerHTML += '<div style="margin-top:8px;">' + parseMarkdown(String(res.ppt)) + '</div>';
+          addActions(m, text, 'bot');
+          sc.scrollTop = sc.scrollHeight;
+        }
+      } catch (e) {}
+    }, 5000);
+  } catch (e) { status.textContent = 'Error: ' + (e.message || e); }
+}
+
+// ── Voice Conversation mode: hands-free talk, say "stop" / "continue" ───────
+window._voiceChatMode = false;
+let _vcRec = null;
+
+function toggleVoiceChat() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('Voice conversation needs Chrome/Safari speech recognition.'); return; }
+  window._voiceChatMode = !window._voiceChatMode;
+  if (!window._voiceChatMode) {
+    if (_vcRec) { try { _vcRec.stop(); } catch (e) {} _vcRec = null; }
+    _vcBadge(false);
+    return;
+  }
+  _vcBadge(true);
+  hideWelcome();
+  addMsg('Voice Conversation ON. Just talk - I listen, answer, and speak back. ' +
+         'Say "stop" to silence me, "continue" to resume, or toggle the badge off to exit.', 'bot');
+  _vcListen(SR);
+}
+
+function _vcListen(SR) {
+  if (!window._voiceChatMode) return;
+  _vcRec = new SR();
+  _vcRec.lang = 'en-IN';
+  _vcRec.interimResults = false;
+  _vcRec.onresult = e => {
+    const said = e.results[0][0].transcript.trim();
+    const low = said.toLowerCase().replace(/[.,!]/g, '');
+    if (low === 'stop' || low === 'stop it' || low === 'pause') {
+      if (_ttsAudio) _ttsAudio.pause();
+      window.speechSynthesis.cancel();
+      return;
+    }
+    if (low === 'continue' || low === 'resume') {
+      if (_ttsAudio) _ttsAudio.play().catch(() => {});
+      return;
+    }
+    if (said) { bx.value = said; grow(bx); updateSendBtn(); send(); }
+  };
+  _vcRec.onend = () => {
+    // keep listening while the mode is on
+    if (window._voiceChatMode) setTimeout(() => _vcListen(SR), 400);
+  };
+  try { _vcRec.start(); } catch (e) {}
+}
+
+function _vcBadge(on) {
+  let b = document.getElementById('vcBadge');
+  if (!b) {
+    b = document.createElement('div');
+    b.id = 'vcBadge';
+    b.style.cssText = 'display:none;position:fixed;top:12px;left:50%;transform:translateX(-50%);' +
+      'z-index:9500;background:linear-gradient(90deg,#2a1a3a,#1a0d2a);border:1px solid #6a2d8f;' +
+      'border-radius:8px;padding:6px 14px;font-size:12px;color:#c084fc;cursor:pointer;';
+    b.innerHTML = 'Voice Conversation ON &nbsp;&#10005;';
+    b.onclick = toggleVoiceChat;
+    document.body.appendChild(b);
+  }
+  b.style.display = on ? 'block' : 'none';
+}
+
+// ── Screen Watch: continuous vision check for errors/popups ─────────────────
+let _watchTimer = null;
+
+async function toggleScreenWatch() {
+  if (_watchTimer) {
+    clearInterval(_watchTimer); _watchTimer = null;
+    addMsg('Screen watch stopped.', 'bot');
+    return;
+  }
+  if (!_guideStream) await toggleScreenGuide();
+  if (!_guideStream) return;
+  addMsg('Watching your screen every 25s for errors, dialogs, and warnings. ' +
+         'I will only speak up when I spot a problem. Toggle again to stop.', 'bot');
+  _watchTimer = setInterval(async () => {
+    if (!_guideStream) { clearInterval(_watchTimer); _watchTimer = null; return; }
+    try {
+      await _grabGuideFrame();
+      const b64 = _attachedB64;
+      _attachedB64 = null;  // don't attach to the next manual message
+      if (!b64) return;
+      const r = await fetch('/screen_check', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_b64: b64 })
+      });
+      const d = await r.json();
+      if (d.ok && d.issue) {
+        hideWelcome();
+        const { m, b } = addMsg('', 'bot');
+        b.innerHTML = '<b style="color:#f0a000">Screen alert:</b> ' + escHtml(d.issue);
+        sc.scrollTop = sc.scrollHeight;
+      }
+    } catch (e) {}
+  }, 25000);
+}
+
+// ── Meeting Mode: record tab/system audio, then minutes + action items ──────
+let _meetRec = null, _meetStream = null, _meetChunks = [];
+
+async function toggleMeetingMode() {
+  if (_meetRec) {
+    _meetRec.stop();
+    return;
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+    alert('Meeting mode needs screen/tab sharing with audio (desktop Chrome/Edge).');
+    return;
+  }
+  try {
+    _meetStream = await navigator.mediaDevices.getDisplayMedia({
+      video: true, audio: true });
+    if (!_meetStream.getAudioTracks().length) {
+      alert('No audio captured. When sharing, pick the meeting TAB or screen and tick "Share audio".');
+      _meetStream.getTracks().forEach(t => t.stop());
+      _meetStream = null;
+      return;
+    }
+    const audioStream = new MediaStream(_meetStream.getAudioTracks());
+    _meetChunks = [];
+    _meetRec = new MediaRecorder(audioStream);
+    _meetRec.ondataavailable = e => _meetChunks.push(e.data);
+    _meetRec.onstop = async () => {
+      _meetStream.getTracks().forEach(t => t.stop());
+      _meetStream = null; _meetRec = null;
+      const blob = new Blob(_meetChunks, { type: 'audio/webm' });
+      hideWelcome();
+      addMsg('Meeting recording finished (' + Math.round(blob.size / 1024) + ' KB). Processing...', 'bot');
+      try {
+        const fd = new FormData();
+        fd.append('file', blob, 'meeting.webm');
+        const up = await fetch('/upload/file', { method: 'POST', body: fd });
+        const u = await up.json();
+        if (!u.ok) throw new Error(u.error || 'upload failed');
+        await runAsyncToolCard('meeting_assistant',
+          { action: 'full_pipeline', audio_path: u.path },
+          'Meeting Minutes', 'Transcribing and extracting action items...');
+      } catch (e) { addMsg('Meeting processing failed: ' + escHtml(String(e.message || e)), 'bot'); }
+    };
+    _meetRec.start();
+    hideWelcome();
+    addMsg('Meeting Mode: RECORDING. Share stays active while your meeting runs. ' +
+           'Open the + menu and click Meeting Mode again to stop and get minutes + action items.', 'bot');
+  } catch (e) { _meetStream = null; }
+}
+
+// ── Command Palette (Ctrl+K): one search bar for everything ─────────────────
+let _palTools = null;
+
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault(); openPalette();
+  }
+  if (e.key === 'Escape') closePalette();
+});
+
+const _PAL_COMMANDS = [
+  { label: 'New chat', hint: 'start fresh', act: () => newChat() },
+  { label: 'Open Code & Files', hint: 'editor, git, terminal output', act: () => openCodePanel() },
+  { label: 'Open Document Canvas', hint: 'collaborative doc editing', act: () => openCanvas() },
+  { label: 'Open Tools & Plugins', hint: 'all 39 tools', act: () => openToolsPanel() },
+  { label: 'Open Memory', hint: 'what I remember about you', act: () => toggleMemory() },
+  { label: 'Agent Team', hint: '/team - CEO + specialists with live board', act: () => { bx.value = '/team '; grow(bx); bx.focus(); } },
+  { label: 'Vibe Code an App', hint: '/vibe - describe it, get a project', act: () => { bx.value = '/vibe '; grow(bx); bx.focus(); } },
+  { label: 'Project Manager', hint: '/pm - roadmap, build, test, fix', act: () => { bx.value = '/pm '; grow(bx); bx.focus(); } },
+  { label: 'Deep Research', hint: '/deep - report with sources', act: () => { bx.value = '/deep '; grow(bx); bx.focus(); } },
+  { label: 'Deep Research + PPT', hint: '/deepppt - report and slides', act: () => { bx.value = '/deepppt '; grow(bx); bx.focus(); } },
+  { label: 'Skill Store', hint: 'install expert packs: Excel, IS standards, Solar...', act: () => openSkillStore() },
+  { label: 'AI Timeline', hint: 'everything you did, day by day', act: () => openTimeline() },
+  { label: 'Consciousness Dashboard', hint: 'what the AI knows, waits for, risks', act: () => openConsciousness() },
+  { label: 'Live Dashboard', hint: 'full-page auto-updating command center', act: () => window.open('/live', '_blank') },
+  { label: 'Background AI: toggle', hint: 'switch ambient intelligence on/off', act: () => toggleBackgroundAI() },
+  { label: 'Pattern Hunter', hint: 'hidden habits across your history', act: () => openPatterns() },
+  { label: 'AI Negotiator', hint: '/negotiate - contract risks + counter-draft', act: () => { bx.value = '/negotiate '; grow(bx); bx.focus(); } },
+  { label: 'Memory DNA', hint: 'your identity profile + evolution', act: () => openDNA() },
+  { label: 'Compress Memories', hint: 'facts -> clusters -> beliefs', act: () => runCompress() },
+  { label: 'Run Benchmark', hint: 'AI tests itself: coding, math, planning', act: () => runBenchmark() },
+  { label: 'Experience Database', hint: 'strategies learned from solved problems', act: () => openExperience() },
+  { label: 'Research Database', hint: 'past research + open questions', act: () => openResearchGraph() },
+  { label: 'Hired Agents', hint: 'specialists the CEO created', act: () => openHired() },
+  { label: 'Innovation Engine', hint: '/innovate - invent solutions', act: () => { bx.value = '/innovate '; grow(bx); bx.focus(); } },
+  { label: 'Strategy Mode', hint: '/strategy - scenarios + risks + critical path', act: () => { bx.value = '/strategy '; grow(bx); bx.focus(); } },
+  { label: 'Conflict Resolver', hint: '/resolve - when sources disagree', act: () => { bx.value = '/resolve '; grow(bx); bx.focus(); } },
+  { label: 'Automatic Textbook', hint: '/textbook - learn any topic as a book', act: () => { bx.value = '/textbook '; grow(bx); bx.focus(); } },
+  { label: 'Code Audit', hint: '/audit - refactoring report', act: () => { bx.value = '/audit'; grow(bx); updateSendBtn(); send(); } },
+  { label: 'Generate Docs', hint: '/docs - README + architecture from code', act: () => { bx.value = '/docs'; grow(bx); updateSendBtn(); send(); } },
+  { label: 'Memory Map', hint: 'live knowledge graph of your world', act: () => openMemoryMap() },
+  { label: 'AI Universe', hint: 'your topics as planets', act: () => openUniverse() },
+  { label: 'Command Center', hint: 'live system + agents + tasks', act: () => openCommandCenter() },
+  { label: 'Skill Levels', hint: 'XP for every capability', act: () => openSkillLevels() },
+  { label: 'AI Company', hint: 'meet your agent employees', act: () => openCompany() },
+  { label: 'Personality Designer', hint: 'tune logic, creativity, humor', act: () => openPersonality() },
+  { label: 'Digital Twin', hint: '/twin - answers as you would', act: () => { bx.value = '/twin '; grow(bx); bx.focus(); } },
+  { label: 'Mission Mode', hint: '/mission - goals become missions', act: () => { bx.value = '/mission '; grow(bx); bx.focus(); } },
+  { label: 'AI Detective', hint: '/detective - investigate a problem', act: () => { bx.value = '/detective '; grow(bx); bx.focus(); } },
+  { label: 'AI Laboratory', hint: '/lab - compare models on a prompt', act: () => { bx.value = '/lab '; grow(bx); bx.focus(); } },
+  { label: 'Voice Conversation', hint: 'hands-free talking', act: () => toggleVoiceChat() },
+  { label: 'Live Screen Guidance', hint: 'AI sees your screen', act: () => toggleScreenGuide() },
+  { label: 'Watch Screen for Errors', hint: 'auto-detect problems', act: () => toggleScreenWatch() },
+  { label: 'Meeting Mode', hint: 'record + minutes + action items', act: () => toggleMeetingMode() },
+];
+
+function openPalette() {
+  let p = document.getElementById('palette');
+  if (!p) {
+    p = document.createElement('div');
+    p.id = 'palette';
+    p.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9998;' +
+      'display:flex;align-items:flex-start;justify-content:center;padding-top:12vh;';
+    p.innerHTML = '<div style="width:560px;max-width:92vw;background:#1b1b20;border:1px solid var(--bdr);' +
+      'border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,.6);overflow:hidden;">' +
+      '<input id="palInput" placeholder="Type a command, tool, or skill..." autocomplete="off" ' +
+      'style="width:100%;box-sizing:border-box;background:transparent;border:0;border-bottom:1px solid var(--bdr);' +
+      'color:var(--txt);padding:14px 18px;font-size:15px;outline:none;">' +
+      '<div id="palList" style="max-height:46vh;overflow-y:auto;padding:6px;"></div></div>';
+    p.onclick = e => { if (e.target === p) closePalette(); };
+    document.body.appendChild(p);
+    document.getElementById('palInput').oninput = renderPalette;
+    document.getElementById('palInput').onkeydown = e => {
+      if (e.key === 'Enter') {
+        const first = document.querySelector('#palList .pal-item');
+        if (first) first.click();
+      }
+    };
+  }
+  p.style.display = 'flex';
+  document.getElementById('palInput').value = '';
+  renderPalette();
+  document.getElementById('palInput').focus();
+  if (_palTools === null) {
+    _palTools = [];
+    fetch('/tools').then(r => r.json()).then(d => {
+      _palTools = (d.tools || []).map(t => ({
+        label: 'Tool: ' + t.name, hint: (t.description || '').slice(0, 70),
+        act: () => { closePalette(); openToolsPanel(); } }));
+    }).catch(() => {});
+  }
+}
+
+function closePalette() {
+  const p = document.getElementById('palette');
+  if (p) p.style.display = 'none';
+}
+
+function renderPalette() {
+  const q = (document.getElementById('palInput').value || '').toLowerCase();
+  const all = _PAL_COMMANDS.concat(_palTools || []);
+  const hits = all.filter(c => !q || c.label.toLowerCase().includes(q) ||
+                               c.hint.toLowerCase().includes(q)).slice(0, 12);
+  document.getElementById('palList').innerHTML = hits.map((c, i) =>
+    '<div class="pal-item" data-i="' + i + '" style="display:flex;justify-content:space-between;' +
+    'gap:12px;padding:10px 14px;border-radius:8px;cursor:pointer;color:var(--txt);font-size:14px;" ' +
+    'onmouseenter="this.style.background=\'var(--act)\'" onmouseleave="this.style.background=\'transparent\'">' +
+    '<span>' + escHtml(c.label) + '</span><span style="color:#8b949e;font-size:12px;">' +
+    escHtml(c.hint) + '</span></div>').join('') ||
+    '<div style="padding:14px;color:#8b949e;font-size:13px;">No matches</div>';
+  document.querySelectorAll('#palList .pal-item').forEach((el, i) => {
+    el.onclick = () => { closePalette(); hits[i].act(); };
+  });
+}
+
+
+// ── AI Skill Store ───────────────────────────────────────────────────────────
+async function openSkillStore() {
+  let p = document.getElementById('skillStore');
+  if (!p) {
+    p = document.createElement('div');
+    p.id = 'skillStore';
+    p.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9997;' +
+      'display:flex;align-items:center;justify-content:center;';
+    p.innerHTML = '<div style="width:480px;max-width:92vw;max-height:70vh;overflow-y:auto;' +
+      'background:#1b1b20;border:1px solid var(--bdr);border-radius:14px;padding:20px;">' +
+      '<div style="display:flex;align-items:center;margin-bottom:12px;">' +
+      '<strong style="color:var(--txt);font-size:16px;">Skill Store</strong>' +
+      '<button onclick="document.getElementById(\'skillStore\').style.display=\'none\'" ' +
+      'style="margin-left:auto;background:transparent;border:0;color:#8b949e;font-size:18px;cursor:pointer;">&#10005;</button></div>' +
+      '<div id="ssList" style="display:flex;flex-direction:column;gap:10px;"></div></div>';
+    p.onclick = e => { if (e.target === p) p.style.display = 'none'; };
+    document.body.appendChild(p);
+  }
+  p.style.display = 'flex';
+  const list = document.getElementById('ssList');
+  list.innerHTML = '<div style="color:#8b949e;">Loading...</div>';
+  try {
+    const r = await fetch('/skillstore');
+    const d = await r.json();
+    list.innerHTML = (d.packs || []).map(pk =>
+      '<div style="border:1px solid var(--bdr);border-radius:10px;padding:12px 14px;">' +
+      '<div style="display:flex;align-items:center;gap:8px;">' +
+      '<b style="color:var(--txt);font-size:14px;">' + escHtml(pk.name) + '</b>' +
+      '<span style="color:#8b949e;font-size:11px;">' + pk.skills + ' skills</span>' +
+      (pk.installed
+        ? '<span style="margin-left:auto;color:#52d68a;font-size:12px;">Installed</span>'
+        : '<button onclick="installPack(\'' + pk.id + '\', this)" style="margin-left:auto;' +
+          'background:#238636;border:0;border-radius:6px;padding:4px 12px;color:#fff;' +
+          'font-size:12px;cursor:pointer;">Install</button>') +
+      '</div><div style="color:#8b949e;font-size:12px;margin-top:4px;">' +
+      escHtml(pk.description) + '</div></div>').join('');
+  } catch (e) { list.innerHTML = 'Failed to load: ' + escHtml(String(e)); }
+}
+
+async function installPack(id, btn) {
+  btn.disabled = true; btn.textContent = '...';
+  try {
+    const r = await fetch('/skillstore/install', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pack: id })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      btn.outerHTML = '<span style="margin-left:auto;color:#52d68a;font-size:12px;">Installed</span>';
+    } else { btn.textContent = 'Failed'; }
+  } catch (e) { btn.textContent = 'Failed'; }
+}
+
+
+// ── Shared modal factory ─────────────────────────────────────────────────────
+function _aurumModal(id, title) {
+  let p = document.getElementById(id);
+  if (!p) {
+    p = document.createElement('div');
+    p.id = id;
+    p.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9996;' +
+      'display:flex;align-items:center;justify-content:center;';
+    p.innerHTML = '<div style="width:640px;max-width:94vw;max-height:76vh;overflow-y:auto;' +
+      'background:#1b1b20;border:1px solid var(--bdr);border-radius:14px;padding:20px;">' +
+      '<div style="display:flex;align-items:center;margin-bottom:12px;">' +
+      '<strong style="color:var(--txt);font-size:16px;">' + title + '</strong>' +
+      '<button style="margin-left:auto;background:transparent;border:0;color:#8b949e;' +
+      'font-size:18px;cursor:pointer;" onclick="this.closest(\'[id]\').style.display=\'none\'">&#10005;</button>' +
+      '</div><div class="am-body" style="color:var(--txt);font-size:13px;"></div></div>';
+    p.onclick = e => { if (e.target === p) p.style.display = 'none'; };
+    document.body.appendChild(p);
+  }
+  p.style.display = 'flex';
+  const body = p.querySelector('.am-body');
+  body.innerHTML = '<div style="color:#8b949e;">Loading...</div>';
+  return body;
+}
+
+// ── AI Timeline ──────────────────────────────────────────────────────────────
+async function openTimeline() {
+  const body = _aurumModal('tlModal', 'AI Timeline - what you did');
+  try {
+    const d = await (await fetch('/timeline?days=14')).json();
+    const days = Object.entries(d.timeline || {});
+    body.innerHTML = days.length ? days.map(([day, evs]) =>
+      '<div style="margin-bottom:14px;"><div style="color:var(--acc);font-weight:600;' +
+      'margin-bottom:6px;">' + escHtml(day) + '</div>' +
+      evs.map(e => '<div style="padding:3px 0 3px 14px;color:#c9d1d9;font-size:13px;">' +
+        (e.status === 'done' || !e.status ? '<span style="color:#52d68a">&#10003;</span> ' :
+         '<span style="color:#f0a000">&#9679;</span> ') +
+        '<span style="color:#8b949e;font-size:11px;">[' + e.kind + ']</span> ' +
+        escHtml(e.text || '') + '</div>').join('') + '</div>').join('')
+      : '<div style="color:#8b949e;">Nothing recorded yet - your work will appear here.</div>';
+  } catch (e) { body.textContent = 'Failed: ' + e; }
+}
+
+// ── Thinking Screen: visual trace of how the answer was made ────────────────
+function _addThinkingLink(msgEl, traceId) {
+  const a = document.createElement('div');
+  a.style.cssText = 'font-size:11px;color:#8b949e;cursor:pointer;padding:2px 0;';
+  a.innerHTML = '&#129504; Show thinking';
+  a.onclick = async () => {
+    const body = _aurumModal('thinkModal', 'AI Thinking Screen');
+    try {
+      const d = await (await fetch('/traces/' + traceId + '/graph')).json();
+      const spans = d.spans || d.nodes || [];
+      body.innerHTML = spans.length ? '<div style="font-family:monospace;font-size:12px;">' +
+        spans.map((s, i) =>
+          '<div style="padding:4px 0 4px ' + (i ? 18 : 0) + 'px;color:#c9d1d9;">' +
+          (i ? '&#9492;&#9472; ' : '') + escHtml(s.name || s.event || 'step') +
+          (s.duration_ms ? ' <span style="color:#8b949e">(' + s.duration_ms + 'ms)</span>' : '') +
+          '</div>').join('') + '</div>'
+        : '<pre style="color:#8b949e;font-size:11px;white-space:pre-wrap;">' +
+          escHtml(JSON.stringify(d, null, 2).slice(0, 3000)) + '</pre>';
+    } catch (e) { body.textContent = 'Trace unavailable: ' + e; }
+  };
+  msgEl.appendChild(a);
+}
+
+// ── Prediction chips: likely next requests ───────────────────────────────────
+async function _addPredictionChips(msgEl, msg, reply) {
+  try {
+    const r = await fetch('/predict', { method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ msg: msg, reply: (reply || '').slice(0, 600) }) });
+    const d = await r.json();
+    if (!d.suggestions || !d.suggestions.length) return;
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;padding:6px 0;';
+    d.suggestions.forEach(s => {
+      const c = document.createElement('button');
+      c.textContent = s;
+      c.style.cssText = 'background:#21262d;border:1px solid #30363d;border-radius:14px;' +
+        'padding:4px 12px;color:#8b949e;font-size:12px;cursor:pointer;';
+      c.onmouseenter = () => c.style.color = 'var(--txt)';
+      c.onmouseleave = () => c.style.color = '#8b949e';
+      c.onclick = () => { bx.value = s; grow(bx); updateSendBtn(); send(); };
+      wrap.appendChild(c);
+    });
+    msgEl.appendChild(wrap);
+  } catch (e) {}
+}
+
+// ── Memory Map / Live Knowledge Graph ────────────────────────────────────────
+async function openMemoryMap() {
+  const body = _aurumModal('mmModal', 'Memory Map - live knowledge graph');
+  try {
+    const d = await (await fetch('/memory_map')).json();
+    if (!d.edges.length && !d.nodes.length) {
+      body.innerHTML = '<div style="color:#8b949e;">The graph builds itself as you chat. ' +
+        'Facts and relationships from every conversation land here automatically.</div>';
+      return;
+    }
+    const bySource = {};
+    d.edges.forEach(e => { (bySource[e.source] = bySource[e.source] || []).push(e); });
+    body.innerHTML = '<div style="font-family:monospace;font-size:13px;">' +
+      Object.entries(bySource).map(([src, edges]) =>
+        '<div style="margin-bottom:10px;"><b style="color:var(--acc);">' + escHtml(src) + '</b>' +
+        edges.map(e => '<div style="padding-left:16px;color:#c9d1d9;">&#9492;&#9472; ' +
+          '<span style="color:#8b949e;">' + escHtml(e.relation) + '</span> &#8594; ' +
+          escHtml(e.target) + '</div>').join('') + '</div>').join('') + '</div>' +
+      '<div style="color:#8b949e;font-size:11px;margin-top:8px;">' + d.nodes.length +
+      ' entities, ' + d.edges.length + ' relations</div>';
+  } catch (e) { body.textContent = 'Failed: ' + e; }
+}
+
+// ── AI Universe ──────────────────────────────────────────────────────────────
+const _PLANETS = ['🌍','🌎','🌕','🪐','☄️','⭐','🌌','🌑','🌓','🌗','☀️','💫'];
+async function openUniverse() {
+  const body = _aurumModal('uvModal', 'AI Universe - your world as planets');
+  try {
+    const d = await (await fetch('/universe')).json();
+    if (!(d.planets || []).length) {
+      body.innerHTML = '<div style="color:#8b949e;">Your universe forms as you work - chat a while and come back.</div>';
+      return;
+    }
+    body.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center;padding:10px 0;">' +
+      d.planets.map((p, i) =>
+        '<div class="uv-planet" data-i="' + i + '" style="text-align:center;cursor:pointer;width:96px;">' +
+        '<div style="font-size:' + Math.min(28 + p.size * 3, 52) + 'px;">' + _PLANETS[i % _PLANETS.length] + '</div>' +
+        '<div style="color:var(--txt);font-size:13px;margin-top:4px;">' + escHtml(p.topic) + '</div>' +
+        '<div style="color:#8b949e;font-size:11px;">' + p.size + ' orbits</div></div>').join('') +
+      '</div><div id="uvDetail" style="margin-top:10px;"></div>';
+    document.querySelectorAll('.uv-planet').forEach(el => {
+      el.onclick = () => {
+        const p = d.planets[+el.dataset.i];
+        document.getElementById('uvDetail').innerHTML =
+          '<div style="border-top:1px solid var(--bdr);padding-top:10px;">' +
+          '<b style="color:var(--acc);">' + escHtml(p.topic) + '</b>' +
+          p.items.map(it => '<div style="padding:3px 0 3px 12px;color:#c9d1d9;font-size:12px;">' +
+            '<span style="color:#8b949e;">[' + it.kind + ']</span> ' + escHtml(it.text) + '</div>').join('') +
+          '</div>';
+      };
+    });
+  } catch (e) { body.textContent = 'Failed: ' + e; }
+}
+
+// ── Command Center ───────────────────────────────────────────────────────────
+async function openCommandCenter() {
+  const body = _aurumModal('ccModal', 'Command Center');
+  try {
+    const d = await (await fetch('/command_center')).json();
+    const sys = d.system || {};
+    const sysText = sys.result || sys.message || (sys.error ? 'System: ' + sys.error : '');
+    body.innerHTML =
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">' +
+      '<div style="background:#141419;border-radius:10px;padding:12px;text-align:center;">' +
+      '<div style="font-size:22px;color:var(--acc);">' + (d.tasks_today ?? 0) + '</div>' +
+      '<div style="color:#8b949e;font-size:11px;">tasks today</div></div>' +
+      '<div style="background:#141419;border-radius:10px;padding:12px;text-align:center;">' +
+      '<div style="font-size:22px;color:var(--acc);">' + (d.chats_total ?? 0) + '</div>' +
+      '<div style="color:#8b949e;font-size:11px;">total chats</div></div>' +
+      '<div style="background:#141419;border-radius:10px;padding:12px;text-align:center;">' +
+      '<div style="font-size:22px;color:var(--acc);">' + (d.memories ?? 0) + '</div>' +
+      '<div style="color:#8b949e;font-size:11px;">memories</div></div></div>' +
+      (sysText ? '<pre style="background:#141419;border-radius:10px;padding:12px;color:#c9d1d9;' +
+        'font-size:12px;white-space:pre-wrap;">' + escHtml(String(sysText).slice(0, 1500)) + '</pre>' : '') +
+      '<div style="color:#8b949e;font-size:11px;margin-top:6px;">Live metrics: /analytics &middot; ' +
+      'Traces: /traces &middot; Agent health: /agents/health</div>';
+  } catch (e) { body.textContent = 'Failed: ' + e; }
+}
+
+// ── Skill Levels ─────────────────────────────────────────────────────────────
+async function openSkillLevels() {
+  const body = _aurumModal('slModal', 'Skill Evolution - XP levels');
+  try {
+    const d = await (await fetch('/skills/levels')).json();
+    if (!(d.levels || []).length) {
+      body.innerHTML = '<div style="color:#8b949e;">Use tools and they gain XP. Levels appear here.</div>';
+      return;
+    }
+    const max = Math.max(...d.levels.map(l => l.xp));
+    body.innerHTML = d.levels.map(l =>
+      '<div style="margin-bottom:10px;"><div style="display:flex;gap:8px;font-size:13px;">' +
+      '<span style="color:var(--txt);">' + escHtml(l.skill) + '</span>' +
+      '<span style="color:var(--acc);">Level ' + l.level + '</span>' +
+      '<span style="margin-left:auto;color:#8b949e;font-size:11px;">' + l.xp + ' XP &middot; ' +
+      l.calls + ' uses</span></div>' +
+      '<div style="height:6px;background:#141419;border-radius:3px;margin-top:4px;">' +
+      '<div style="height:6px;width:' + Math.max(4, Math.round(100 * l.xp / max)) +
+      '%;background:var(--acc);border-radius:3px;"></div></div></div>').join('');
+  } catch (e) { body.textContent = 'Failed: ' + e; }
+}
+
+// ── AI Company ───────────────────────────────────────────────────────────────
+async function openCompany() {
+  const body = _aurumModal('coModal', 'AI Aurum Inc. - your agent employees');
+  try {
+    const d = await (await fetch('/company')).json();
+    body.innerHTML = (d.org || []).map(a =>
+      '<div style="border:1px solid var(--bdr);border-radius:10px;padding:10px 14px;margin-bottom:8px;">' +
+      '<b style="color:var(--txt);text-transform:capitalize;">' + escHtml(a.agent) + '</b> ' +
+      '<span style="color:var(--acc);font-size:12px;">' + escHtml(a.title) + '</span>' +
+      '<div style="color:#8b949e;font-size:12px;margin-top:3px;">' + escHtml(a.personality) + '</div></div>').join('');
+  } catch (e) { body.textContent = 'Failed: ' + e; }
+}
+
+// ── Personality Designer ─────────────────────────────────────────────────────
+const _TRAITS = ['Logic', 'Creativity', 'Humor', 'Coding detail', 'Brevity'];
+async function openPersonality() {
+  const body = _aurumModal('pdModal', 'Personality Designer');
+  body.innerHTML = _TRAITS.map((t, i) =>
+    '<div style="margin-bottom:12px;"><div style="display:flex;font-size:13px;">' +
+    '<span>' + t + '</span><span id="pdv' + i + '" style="margin-left:auto;color:var(--acc);">5</span></div>' +
+    '<input type="range" min="0" max="10" value="5" id="pds' + i + '" style="width:100%;" ' +
+    'oninput="document.getElementById(\'pdv' + i + '\').textContent=this.value"></div>').join('') +
+    '<button onclick="savePersonality()" style="background:#238636;border:0;border-radius:8px;' +
+    'padding:8px 18px;color:#fff;font-size:13px;cursor:pointer;">Save personality</button>' +
+    '<div id="pdStatus" style="color:#8b949e;font-size:12px;margin-top:8px;"></div>';
+  // preload existing values if saved
+  try {
+    const d = await (await fetch('/settings/personality')).json();
+    const m = (d.custom_instructions || '').match(/\[PERSONALITY ([\d,]+)\]/);
+    if (m) m[1].split(',').forEach((v, i) => {
+      const s = document.getElementById('pds' + i);
+      if (s) { s.value = v; document.getElementById('pdv' + i).textContent = v; }
+    });
+  } catch (e) {}
+}
+
+async function savePersonality() {
+  const vals = _TRAITS.map((t, i) => document.getElementById('pds' + i).value);
+  const desc = _TRAITS.map((t, i) => t + ' ' + vals[i] + '/10').join(', ');
+  try {
+    const cur = await (await fetch('/settings/personality')).json();
+    let ci = (cur.custom_instructions || '').replace(/\n?\[PERSONALITY [\d,]+\][^\n]*/g, '').trim();
+    ci = (ci ? ci + '\n' : '') + '[PERSONALITY ' + vals.join(',') + '] Adjust your style: ' + desc +
+      '. High logic = rigorous reasoning; high creativity = novel ideas; high humor = light jokes; ' +
+      'high coding detail = thorough code comments; high brevity = short answers.';
+    const r = await fetch('/settings/personality', { method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ persona_name: cur.persona_name || '',
+        custom_instructions: ci, model_routing: cur.model_routing ?? 1,
+        self_reflect: cur.self_reflect ?? 0 }) });
+    const d = await r.json();
+    document.getElementById('pdStatus').textContent =
+      d.ok ? 'Saved - every future answer uses this personality.' : 'Failed';
+  } catch (e) { document.getElementById('pdStatus').textContent = 'Error: ' + e; }
+}
+
+
+// ── Consciousness Dashboard ──────────────────────────────────────────────────
+async function openConsciousness() {
+  const body = _aurumModal('csModal', 'Consciousness Dashboard - internal state');
+  try {
+    const d = await (await fetch('/consciousness')).json();
+    const stat = (label, val, color) =>
+      '<div style="background:#141419;border-radius:10px;padding:12px;text-align:center;">' +
+      '<div style="font-size:20px;color:' + (color || 'var(--acc)') + ';">' + val + '</div>' +
+      '<div style="color:#8b949e;font-size:11px;">' + label + '</div></div>';
+    body.innerHTML =
+      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;">' +
+      stat('confidence', (d.confidence ?? '?') + '%') +
+      stat('memories loaded', d.memories_loaded ?? 0) +
+      stat('knowledge entities', d.knowledge_entities ?? 0) +
+      stat('experiences', d.experiences ?? 0) +
+      stat('standing rules', d.standing_rules ?? 0) +
+      stat('open missions', d.missions_open ?? 0) +
+      stat('active agents', d.active_agents ?? 12) +
+      stat('risk level', d.risk_level || '?',
+           d.risk_level === 'low' ? '#52d68a' : '#f0a000') +
+      '</div>' +
+      '<div style="color:#8b949e;font-size:12px;">Providers: ' +
+      Object.entries(d.providers || {}).map(([k, v]) =>
+        '<span style="color:' + (v ? '#52d68a' : '#8b949e') + ';margin-right:8px;">' +
+        k + (v ? ' up' : ' down') + '</span>').join('') +
+      (d.risky_permissions && d.risky_permissions.length ?
+        '<div style="margin-top:6px;color:#f0a000;">Elevated permissions on: ' +
+        d.risky_permissions.join(', ') + '</div>' : '') + '</div>';
+  } catch (e) { body.textContent = 'Failed: ' + e; }
+}
+
+// ── Memory DNA ───────────────────────────────────────────────────────────────
+async function openDNA() {
+  const body = _aurumModal('dnaModal', 'Memory DNA - your identity profile');
+  try {
+    const d = await (await fetch('/dna')).json();
+    if (d.error) { body.textContent = d.error; return; }
+    const p = d.profile || {};
+    const row = (k, v) => '<div style="display:flex;gap:10px;padding:5px 0;border-bottom:1px solid #26262c;">' +
+      '<span style="color:#8b949e;font-size:12px;width:150px;flex-shrink:0;">' + k + '</span>' +
+      '<span style="color:var(--txt);font-size:13px;">' + escHtml(String(v)) + '</span></div>';
+    body.innerHTML =
+      row('Learning style', p.learning_style || '?') +
+      row('Decision style', p.decision_style || '?') +
+      row('Communication', p.communication_style || '?') +
+      row('Risk profile', p.risk_profile || '?') +
+      row('Coding style', p.coding_style || '?') +
+      row('Favorite topics', (p.favorite_topics || []).join(', ')) +
+      row('Strengths', (p.strengths || []).join(', ')) +
+      row('Gaps to fill', (p.gaps || []).join(', ')) +
+      row('Next month forecast', p.forecast || '?') +
+      (d.previous ? '<div style="margin-top:10px;color:#8b949e;font-size:12px;">' +
+        'Evolution: compared with your previous snapshot, topics were: ' +
+        escHtml((d.previous.favorite_topics || []).join(', ')) + '</div>' : '') +
+      '<div style="margin-top:10px;color:#8b949e;font-size:11px;">' +
+      (d.cached ? 'Cached (refreshes daily).' : 'Freshly computed.') + '</div>';
+  } catch (e) { body.textContent = 'Failed: ' + e; }
+}
+
+// ── Memory compression ───────────────────────────────────────────────────────
+async function runCompress() {
+  if (!confirm('Compress old memory facts into clusters + core beliefs?\nStanding rules are kept as-is.')) return;
+  hideWelcome();
+  const t = typing();
+  try {
+    const d = await (await fetch('/memory/compress', { method: 'POST' })).json();
+    t.remove();
+    addMsg(d.ok ? (d.message || ('Compressed ' + d.compressed + ' memories into ' +
+      d.clusters + ' clusters and ' + d.beliefs + ' core beliefs.')) :
+      ('Compression failed: ' + d.error), 'bot');
+  } catch (e) { t.remove(); addMsg('Error: ' + e, 'bot'); }
+}
+
+// ── Benchmark ────────────────────────────────────────────────────────────────
+async function runBenchmark() {
+  const body = _aurumModal('bmModal', 'Autonomous Benchmark');
+  body.innerHTML = '<div style="color:#8b949e;">Testing coding, math, research, planning, reasoning... ~30s</div>';
+  try {
+    const d = await (await fetch('/benchmark', { method: 'POST' })).json();
+    const max = 100;
+    body.innerHTML = Object.entries(d.scores || {}).map(([k, v]) =>
+      '<div style="margin-bottom:10px;"><div style="display:flex;font-size:13px;">' +
+      '<span style="text-transform:capitalize;">' + k + '</span>' +
+      '<span style="margin-left:auto;color:var(--acc);">' + v + '%</span></div>' +
+      '<div style="height:6px;background:#141419;border-radius:3px;margin-top:4px;">' +
+      '<div style="height:6px;width:' + v + '%;background:' +
+      (v >= 80 ? '#52d68a' : v >= 60 ? 'var(--acc)' : '#f0a000') +
+      ';border-radius:3px;"></div></div></div>').join('') +
+      (d.weakest ? '<div style="color:#f0a000;font-size:12px;margin-top:8px;">Weakest area: ' +
+        d.weakest + ' - worth a focused skill pack or better prompts.</div>' : '');
+  } catch (e) { body.textContent = 'Failed: ' + e; }
+}
+
+// ── Experience database ──────────────────────────────────────────────────────
+async function openExperience() {
+  const body = _aurumModal('exModal', 'Experience Database');
+  try {
+    const d = await (await fetch('/experience')).json();
+    body.innerHTML = (d.experiences || []).length ? d.experiences.map(e =>
+      '<div style="border:1px solid var(--bdr);border-radius:10px;padding:10px 14px;margin-bottom:8px;">' +
+      '<div style="color:var(--txt);font-size:13px;">' + escHtml(e.problem) + '</div>' +
+      '<div style="color:var(--acc);font-size:12px;margin-top:4px;">Strategy: ' + escHtml(e.strategy) + '</div>' +
+      (e.lesson ? '<div style="color:#8b949e;font-size:12px;">Lesson: ' + escHtml(e.lesson) + '</div>' : '') +
+      '<div style="color:#8b949e;font-size:11px;margin-top:3px;">reused ' + e.uses + 'x</div></div>').join('')
+      : '<div style="color:#8b949e;">Every /team run teaches me a reusable strategy. They collect here.</div>';
+  } catch (e) { body.textContent = 'Failed: ' + e; }
+}
+
+// ── Research database ────────────────────────────────────────────────────────
+async function openResearchGraph() {
+  const body = _aurumModal('rgModal', 'Research Database');
+  try {
+    const d = await (await fetch('/research_graph')).json();
+    body.innerHTML = (d.sessions || []).length ? d.sessions.map(s =>
+      '<div style="border:1px solid var(--bdr);border-radius:10px;padding:10px 14px;margin-bottom:8px;">' +
+      '<div style="color:var(--txt);font-size:13px;">' + escHtml(s.question) + '</div>' +
+      (s.open_questions ? '<div style="color:#f0a000;font-size:12px;margin-top:4px;">Open: ' +
+        escHtml(s.open_questions.split(String.fromCharCode(10))[0] || '') + '</div>' : '') +
+      '<div style="color:#8b949e;font-size:11px;">' +
+      new Date(s.created_at * 1000).toLocaleDateString() + '</div></div>').join('')
+      : '<div style="color:#8b949e;">Run /deep on a topic - every session lands here with its open questions.</div>';
+  } catch (e) { body.textContent = 'Failed: ' + e; }
+}
+
+// ── Hired agents ─────────────────────────────────────────────────────────────
+async function openHired() {
+  const body = _aurumModal('haModal', 'Hired Agents - grown by the CEO');
+  try {
+    const d = await (await fetch('/agents/hired')).json();
+    body.innerHTML = (d.hired || []).length ? d.hired.map(a =>
+      '<div style="border:1px solid var(--bdr);border-radius:10px;padding:10px 14px;margin-bottom:8px;">' +
+      '<b style="color:var(--txt);">' + escHtml(a.name) + '</b> ' +
+      '<span style="color:var(--acc);font-size:12px;">' + escHtml(a.title) + '</span>' +
+      '<span style="color:#8b949e;font-size:11px;margin-left:8px;">' + a.model + '</span></div>').join('')
+      : '<div style="color:#8b949e;">When a /team run needs a specialist that does not exist ' +
+        '(CFO, legal, robotics...), the CEO hires one automatically. New employees appear here.</div>';
+  } catch (e) { body.textContent = 'Failed: ' + e; }
+}
+
+// ── Smarter questions button ─────────────────────────────────────────────────
+function _addSmartQuestionsBtn(msgEl, msg) {
+  const a = document.createElement('span');
+  a.style.cssText = 'font-size:11px;color:#8b949e;cursor:pointer;padding:2px 8px;';
+  a.textContent = '? smarter questions';
+  a.onclick = async () => {
+    a.remove();
+    await runAsyncToolCard('thinking_modes', { mode: 'questions', topic: msg },
+      'Smarter Questions', 'What an expert would ask about this...');
+  };
+  msgEl.appendChild(a);
+}
+
+
+// ── Per-reply confidence bar ─────────────────────────────────────────────────
+function _addConfidenceBar(msgEl, conf) {
+  const c = Math.max(0, Math.min(100, conf));
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;align-items:center;gap:6px;padding:2px 0;';
+  wrap.innerHTML = '<div style="width:70px;height:4px;background:#141419;border-radius:2px;">' +
+    '<div style="width:' + c + '%;height:4px;border-radius:2px;background:' +
+    (c >= 75 ? '#52d68a' : c >= 50 ? 'var(--acc)' : '#f0a000') + ';"></div></div>' +
+    '<span style="font-size:10px;color:#8b949e;">' + c + '% confident</span>';
+  wrap.title = 'Self-evaluated confidence. Low scores mean: verify before relying on this.';
+  msgEl.appendChild(wrap);
+}
+
+// ── Background AI toggle ─────────────────────────────────────────────────────
+async function toggleBackgroundAI() {
+  try {
+    const cur = await (await fetch('/permissions')).json();
+    const now = !cur.background_ai;
+    const r = await fetch('/permissions', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ capability: 'background_ai', allowed: now })
+    });
+    const d = await r.json();
+    hideWelcome();
+    addMsg('Background intelligence is now ' + (d.background_ai ? 'ON' : 'OFF') +
+      '. This controls: knowledge-graph extraction, prediction chips, and ' +
+      'experience learning. Smart titles and self-evaluation stay on (cheap).', 'bot');
+  } catch (e) { addMsg('Toggle failed: ' + e, 'bot'); }
+}
+
+// ── Pattern Hunter ───────────────────────────────────────────────────────────
+async function openPatterns() {
+  const body = _aurumModal('phModal', 'Pattern Hunter - your hidden habits');
+  try {
+    const d = await (await fetch('/patterns')).json();
+    body.innerHTML = '<div style="font-size:13px;line-height:1.6;">' +
+      parseMarkdown(d.result || d.error || 'No patterns found') + '</div>';
+  } catch (e) { body.textContent = 'Failed: ' + e; }
 }
 
 </script>

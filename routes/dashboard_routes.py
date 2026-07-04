@@ -5,7 +5,7 @@ SSE stream for real-time updates.
 """
 from __future__ import annotations
 import json, logging, os, time
-from flask import Blueprint, jsonify, Response, session, stream_with_context
+from flask import Blueprint, jsonify, Response, session, stream_with_context, render_template
 from services.auth_service import login_required
 
 dashboard_bp = Blueprint("dashboard", __name__)
@@ -166,3 +166,10 @@ def dashboard_stream():
 @login_required
 def recent_logs():
     return jsonify({"logs": _recent_logs()})
+
+
+@dashboard_bp.route("/live")
+@login_required
+def live_dashboard():
+    """Full-page live dashboard (SSE system stats + 30s intelligence refresh)."""
+    return render_template("dashboard.html")

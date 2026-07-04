@@ -53,6 +53,25 @@ def upload_image():
                     "url": "/uploads/%s" % name})
 
 
+@upload_bp.route("/upload/file", methods=["POST"])
+@login_required
+@no_guests
+def upload_file():
+    """Generic file upload (video/audio/docs) for tools. Returns server path."""
+    f = request.files.get("file")
+    if not f:
+        return jsonify({"error": "No file"}), 400
+    ext  = os.path.splitext(f.filename)[1].lower()
+    if not re.fullmatch(r"\.[a-z0-9]{1,6}", ext or ""):
+        return jsonify({"error": "invalid extension"}), 400
+    name = uuid.uuid4().hex + ext
+    path = os.path.abspath(os.path.join(_upload_dir(), name))
+    f.save(path)
+    log.info("upload_file: %s -> %s (%d bytes)", f.filename, name, os.path.getsize(path))
+    return jsonify({"ok": True, "filename": name, "path": path,
+                    "original": f.filename, "size": os.path.getsize(path)})
+
+
 @upload_bp.route("/uploads/<path:filename>")
 def serve_upload(filename):
     if re.search(r"[/\\\.]{2,}|^\.", filename):

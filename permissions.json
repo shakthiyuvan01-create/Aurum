@@ -1,0 +1,11 @@
+{
+  "browser": true,
+  "shell": false,
+  "files_write": true,
+  "files_delete": false,
+  "packages": false,
+  "messaging": false,
+  "network": true,
+  "self_improve": false,
+  "background_ai": true
+}

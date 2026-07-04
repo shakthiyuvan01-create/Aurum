@@ -32,27 +32,21 @@ def run_team():
     import agents as _agents
 
     def generate():
-        yield "data: " + json.dumps({"status": "starting", "message": "CEO is routing your goal..."}) + "\n\n"
         try:
-            result = _agents.run_team(goal, username=username)
-            # Stream agent outputs
-            for output in result.get("agent_outputs", []):
-                yield "data: " + json.dumps({
-                    "agent_output": True,
-                    "agent":  output["agent"],
-                    "step":   output["step"],
-                    "result": output["result"][:400],
-                }) + "\n\n"
-            # Stream final reply word by word
-            yield "data: " + json.dumps({"synthesising": True}) + "\n\n"
-            for word in result["reply"].split():
-                yield "data: " + json.dumps({"delta": word + " "}) + "\n\n"
-            yield "data: " + json.dumps({
-                "done":     True,
-                "reply":    result["reply"],
-                "plan":     result["plan"],
-                "duration": result["duration"],
-            }) + "\n\n"
+            for event in _agents.run_team_stream(goal, username=username):
+                if event.get("done"):
+                    # Stream final reply word by word, then the done payload
+                    yield "data: " + json.dumps({"synthesising": True}) + "\n\n"
+                    for word in event["reply"].split():
+                        yield "data: " + json.dumps({"delta": word + " "}) + "\n\n"
+                    yield "data: " + json.dumps({
+                        "done":     True,
+                        "reply":    event["reply"],
+                        "plan":     event["plan"],
+                        "duration": event["duration"],
+                    }) + "\n\n"
+                else:
+                    yield "data: " + json.dumps(event) + "\n\n"
         except Exception as e:
             log.error("run_team error: %s", e)
             yield "data: " + json.dumps({"error": str(e)}) + "\n\n"
@@ -86,7 +80,7 @@ def agents_health():
     from services.agent_health import health
     from services.capability_registry import registry
     out = {}
-    for name in registry.capabilities:
+    for name in registry._agents:
         stats = health.stats(name)
         out[name] = {
             "score":        round(health.score(name), 3),
@@ -115,3 +109,25 @@ def best_agent():
         "best":    best,
         "ranked":  [{"agent": n, "score": round(s, 3)} for n, s in ranked],
     })
+
+
+@agents_bp.route("/history")
+@login_required
+def task_history():
+    """Task history: team runs, background jobs (newest first)."""
+    from services import activity_log
+    username = session.get("username", "guest")
+    return jsonify({"history": activity_log.get_history(
+        username, limit=int(request.args.get("limit", 50)))})
+
+
+@agents_bp.route("/agents/logs")
+@login_required
+def agent_logs():
+    """Persisted agent event logs (from the event bus)."""
+    from services import activity_log
+    username = session.get("username", "guest")
+    return jsonify({"logs": activity_log.get_logs(
+        username=username,
+        limit=int(request.args.get("limit", 100)),
+        event_prefix=request.args.get("event", ""))})

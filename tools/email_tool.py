@@ -31,6 +31,10 @@ def configured() -> bool:
     return bool(c["user"] and c["pw"])
 
 def run(to: str, subject: str, body: str) -> dict:
+    from services.permission_manager import perms
+    if not perms.check("messaging"):
+        return perms.deny_message("messaging")
+
     cfg = _cfg()
     if not cfg["user"] or not cfg["pw"]:
         return {

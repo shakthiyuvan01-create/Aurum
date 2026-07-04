@@ -29,23 +29,8 @@ INPUTS = [
 
 
 def _ai(prompt: str, max_tokens: int = 1200) -> str:
-    token = os.getenv("GITHUB_TOKEN", "")
-    if not token:
-        return "[GITHUB_TOKEN not set]"
-    try:
-        import requests
-        r = requests.post(
-            "https://models.inference.ai.azure.com/chat/completions",
-            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-            json={"model": "gpt-4o", "messages": [{"role": "user", "content": prompt}],
-                  "max_tokens": max_tokens, "temperature": 0.3},
-            timeout=90,
-        )
-        if r.status_code == 200:
-            return r.json()["choices"][0]["message"]["content"].strip()
-        return f"[AI error {r.status_code}]"
-    except Exception as e:
-        return f"[Exception: {e}]"
+    from providers import AI
+    return AI.generate(prompt, model="gpt-4o", max_tokens=max_tokens, temperature=0.3)
 
 
 def _transcribe(audio_path: str, language: str = "en") -> str:

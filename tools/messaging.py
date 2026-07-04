@@ -110,6 +110,10 @@ def run(
     title:       str = "",
     username:    str = "",
 ) -> dict:
+    from services.permission_manager import perms
+    if not perms.check("messaging"):
+        return perms.deny_message("messaging")
+
     platform = (platform or "telegram").lower().strip()
     message  = (message  or "").strip()
 

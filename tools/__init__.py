@@ -239,7 +239,15 @@ def _load_plugins() -> None:
             _desc = getattr(_module, "DESCRIPTION", None)
             _run  = getattr(_module, "run", None)
             if _name and _desc and callable(_run):
-                _REGISTRY[_name] = _module
+                _TOOLS[_name] = {
+                    "name":        _name,
+                    "description": _desc,
+                    "category":    getattr(_module, "CATEGORY", "plugin"),
+                    "icon":        getattr(_module, "ICON", "puzzle"),
+                    "inputs":      getattr(_module, "INPUTS", []),
+                    "run":         _run,
+                    "module":      "plugins." + _path.stem,
+                }
                 log.info("Plugin auto-loaded: %s", _name)
         except Exception as _pe:
             log.warning("Plugin load error (%s): %s", _path.name, _pe)

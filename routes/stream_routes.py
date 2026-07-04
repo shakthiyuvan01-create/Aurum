@@ -27,6 +27,80 @@ def _current_user() -> str:
 def _route_model(msg: str, settings: dict) -> str:
     return _deps["route_model"](msg, settings)
 
+_RULE_RE = None
+
+def _maybe_learn_rule(uname: str, msg: str, db) -> bool:
+    """Detect standing instructions ("always...", "never...", "from now on...",
+    "remember that...") and store them as rules. Stored rules are auto-injected
+    into every future prompt via the existing memory step."""
+    global _RULE_RE
+    import re as _re
+    if _RULE_RE is None:
+        _RULE_RE = _re.compile(
+            r"^(always|never|from now on|remember (that|to)|rule\s*:|going forward)\b",
+            _re.I)
+    m = (msg or "").strip()
+    if len(m) < 12 or len(m) > 400 or not _RULE_RE.search(m):
+        return False
+    try:
+        db.add_memory(uname, "STANDING RULE: " + m)
+        log.info("learned rule for %s: %s", uname, m[:80])
+        return True
+    except Exception as e:
+        log.debug("rule store failed: %s", e)
+        return False
+
+
+def _extract_knowledge(uname: str, msg: str, reply: str) -> None:
+    """Background: update the live knowledge graph from this conversation."""
+    try:
+        from services.permission_manager import perms
+        if not perms.check("background_ai"):
+            return
+        from providers import AI
+        import json as _json, re as _re
+        raw = AI.generate(
+            "Extract factual entity relationships from this exchange as JSON:\n"
+            '{"relations": [["source", "relation", "target"], ...]}\n'
+            "Max 4 relations, only real facts about people/projects/companies/"
+            "technologies. Reply ONLY JSON, or {\"relations\": []} if none.\n\n"
+            "User: %s\nAssistant: %s" % (msg[:500], reply[:800]),
+            model="gpt-4o-mini", max_tokens=150, temperature=0.1)
+        m = _re.search(r"\{[\s\S]*\}", raw)
+        if not m:
+            return
+        rels = _json.loads(m.group(0)).get("relations", [])[:4]
+        if rels:
+            from services.memory_layers import mem
+            for r in rels:
+                if isinstance(r, list) and len(r) == 3 and all(isinstance(x, str) for x in r):
+                    mem.knowledge.add_relation(uname, r[0][:60], r[1][:40], r[2][:60])
+            log.debug("kg: +%d relations for %s", len(rels), uname)
+    except Exception as e:
+        log.debug("kg extraction skipped: %s", e)
+
+
+def _smart_title(msg: str, reply: str) -> str:
+    """AI-generated descriptive chat title: 'hi' -> 'Greeting exchange',
+    'what is coding' -> 'Coding basics'. Falls back to the raw message."""
+    try:
+        from providers import AI
+        t = AI.generate(
+            "Create a short descriptive title (2-4 words) for a chat that starts "
+            "with this exchange. Examples: 'hi' -> Greeting exchange; "
+            "'what is coding' -> Coding basics; 'fix my python error' -> Python debugging.\n"
+            "Reply with ONLY the title, no quotes, no punctuation at the end.\n\n"
+            "User: %s\nAssistant: %s" % (msg[:300], reply[:300]),
+            model=os.getenv("FAST_MODEL", "gpt-4o-mini"),
+            max_tokens=12, temperature=0.2)
+        t = t.strip().strip('"').strip("'").rstrip(".")
+        if t and not t.startswith("[AI error") and 1 <= len(t) <= 60:
+            return t[:40]
+    except Exception as e:
+        log.debug("smart title failed: %s", e)
+    return (msg[:40] if msg else "Chat")
+
+
 def _save_chat(cid, uname, title, messages):
     _deps["db"].save_chat(cid, uname, title, messages)
 
@@ -65,10 +139,14 @@ def stream():
 
     if is_guest:
         chat = {"id": cid, "title": msg[:40] if msg else "Chat", "messages": []}
+        is_new_chat = True
     else:
-        chat = db.get_chat(cid) or {"id": cid, "title": msg[:40] if msg else "Chat", "messages": []}
+        _existing = db.get_chat(cid)
+        is_new_chat = _existing is None
+        chat = _existing or {"id": cid, "title": msg[:40] if msg else "Chat", "messages": []}
 
     settings = db.get_settings(uname) if not is_guest else {}
+    rule_learned = False if is_guest else _maybe_learn_rule(uname, msg, db)
     title    = chat.get("title") or (msg[:40] if msg else "Chat")
 
     model_key  = _route_model(msg, settings)
@@ -184,18 +262,30 @@ def stream():
             return
 
         chat["messages"].append({"role": "assistant", "text": reply_text})
+        if is_new_chat and msg:
+            title = _smart_title(msg, reply_text)
         if not is_guest:
             _save_chat(cid, uname, title, chat["messages"])
             try:
                 vmem.store_conversation(uname, msg, reply_text, cid)
             except Exception as ve:
                 log.warning("vector store failed: %s", ve)
+            # live knowledge graph update (background thread, zero latency)
+            try:
+                import threading as _th
+                _th.Thread(target=_extract_knowledge,
+                           args=(uname, msg, reply_text), daemon=True).start()
+            except Exception:
+                pass
 
         # self-evaluation -- async, best-effort
         eval_hint = ""
+        _confidence = None
         try:
             import self_eval as _se
             _eval = _se.evaluate(msg, reply_text)
+            if not _eval.get("skipped"):
+                _confidence = round(100 * float(_eval.get("overall", 0)))
             eval_hint = _se.hint_for_next_turn(_eval)
             if eval_hint and not is_guest:
                 try:
@@ -217,6 +307,8 @@ def stream():
 
         done_payload: dict = {
             "done":     True,
+            "confidence": _confidence,
+            "rule_learned": rule_learned,
             "chat_id":  cid,
             "title":    title,
             "model":    model_name,

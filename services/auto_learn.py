@@ -36,28 +36,11 @@ def _conn():
 
 
 def _ai(prompt: str, max_tokens: int = 800) -> str:
-    token = os.getenv("GITHUB_TOKEN","")
-    if not token: return "[]"
-    try:
-        import requests
-        r = requests.post(
-            "https://models.inference.ai.azure.com/chat/completions",
-            headers={"Authorization":f"Bearer {token}","Content-Type":"application/json"},
-            json={
-                "model":"gpt-4o-mini",
-                "messages":[
-                    {"role":"system","content":"You extract learning insights from conversations. Output JSON only."},
-                    {"role":"user","content":prompt},
-                ],
-                "max_tokens":max_tokens,"temperature":0.2,
-            },
-            timeout=30,
-        )
-        if r.status_code == 200:
-            return r.json()["choices"][0]["message"]["content"].strip()
-    except Exception as e:
-        log.error("_ai error: %s", e)
-    return "[]"
+    from providers import AI
+    out = AI.generate(prompt,
+                      system="You extract learning insights from conversations. Output JSON only.",
+                      model="gpt-4o-mini", max_tokens=max_tokens, temperature=0.2)
+    return out if out and not out.startswith("[AI error") else "[]"
 
 
 def _get_todays_chats(username: str) -> list[str]:
@@ -184,3 +167,25 @@ def schedule_daily(scheduler, username: str) -> None:
         log.info("auto_learn: daily job scheduled for %s at 03:00", username)
     except Exception as e:
         log.warning("auto_learn: scheduler failed: %s", e)
+
+
+def run_daily_learning() -> dict:
+    """Scheduler entry point (app.py imports this): run daily_learn_job for
+    every registered user. Was missing -- auto-learn never actually ran."""
+    import sqlite3
+    results = {}
+    try:
+        con = _conn()
+        users = [r[0] for r in con.execute("SELECT username FROM users").fetchall()]
+        con.close()
+    except Exception as e:
+        log.error("run_daily_learning: cannot list users: %s", e)
+        return {"error": str(e)}
+    for u in users:
+        try:
+            results[u] = daily_learn_job(u)
+        except Exception as e:
+            results[u] = {"error": str(e)}
+            log.warning("daily learn failed for %s: %s", u, e)
+    log.info("Daily learning done for %d users", len(users))
+    return results

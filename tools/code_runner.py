@@ -66,6 +66,10 @@ _CMDS = {"python": _python_cmd, "javascript": _node_cmd,
 
 def run(code: str = "", language: str = "python",
         timeout: str = "30", stdin: str = "") -> dict:
+    from services.permission_manager import perms
+    if not perms.check("shell"):
+        return perms.deny_message("shell")
+
     if not code.strip():
         return {"error": "No code provided."}
 

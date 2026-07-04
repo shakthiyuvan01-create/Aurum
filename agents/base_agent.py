@@ -20,23 +20,23 @@ class BaseAgent(ABC):
         self._log = logging.getLogger(f"agents.{self.name}")
 
     def _call_model(self, messages: list[dict], max_tokens: int = 1500) -> str:
-        token = os.getenv("GITHUB_TOKEN", "")
-        if not token:
-            return "[Error: GITHUB_TOKEN not set]"
+        # Unified provider layer: GitHub -> Gemini -> OpenAI -> Ollama fallback
         try:
-            import requests as _r
-            r = _r.post(
-                "https://models.inference.ai.azure.com/chat/completions",
-                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-                json={"model": self.model, "messages": messages, "max_tokens": max_tokens, "temperature": 0.4},
-                timeout=60,
-            )
-            if r.status_code == 200:
-                return r.json()["choices"][0]["message"]["content"].strip()
-            return f"[Model error {r.status_code}]"
+            from providers import AI
+            return AI.chat(messages, model=self.model,
+                           max_tokens=max_tokens, temperature=0.4)
         except Exception as e:
             self._log.error("_call_model: %s", e)
             return f"[Exception: {e}]"
+
+    # ── Agent-to-agent messaging (services/agent_mailbox) ────────────────────
+    def send_message(self, to_agent: str, content: str) -> None:
+        from services.agent_mailbox import mailbox
+        mailbox.send(self.username, self.name, to_agent, content)
+
+    def read_messages(self) -> list[dict]:
+        from services.agent_mailbox import mailbox
+        return mailbox.drain(self.username, self.name)
 
     def _call_tool(self, tool_name: str, **kwargs) -> dict:
         try:
