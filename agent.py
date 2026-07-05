@@ -97,6 +97,23 @@ def _provider_rescue(messages: list, model: str):
     Ollama) without tools. Returns (reply, provider_name) or (None, None)."""
     try:
         from providers import AI
+        # If the last user message contains an image, try Gemini vision first
+        try:
+            last = messages[-1] if messages else {}
+            if isinstance(last.get("content"), list):
+                img = next((x["image_url"]["url"] for x in last["content"]
+                            if isinstance(x, dict) and x.get("type") == "image_url"), None)
+                txt = next((x.get("text", "") for x in last["content"]
+                            if isinstance(x, dict) and x.get("type") == "text"), "")
+                if img and img.startswith("data:"):
+                    header, b64 = img.split(",", 1)
+                    mime = header.split(":")[1].split(";")[0]
+                    from providers.gemini import GeminiProvider
+                    g = GeminiProvider()
+                    if g.available():
+                        return g.vision(txt, b64, mime=mime), "gemini-vision"
+        except Exception as ve:
+            log.debug("vision rescue failed: %s", ve)
         plain = []
         for m in messages:
             c = m.get("content")

@@ -115,9 +115,10 @@ def _qa(text: str, question: str, file_path: str = "", username: str = "") -> st
     except Exception:
         relevant = _chunk_text(text, 6000)[0]
     return _ai(
-        f"Answer this question based ONLY on the document text.\n"
+        f"Answer this question based ONLY on the document text. "
+        f"End with a 'Sources:' line citing the [Source: ...] markers you used.\n"
         f"Question: {question}\n\nDocument:\n{relevant}",
-        max_tokens=600,
+        max_tokens=700,
     )
 
 

@@ -128,6 +128,21 @@ try:
 except Exception as _e:
     log.warning("activity_log init failed: %s", _e)
 
+# ── File watcher: auto-index files dropped in workspace/inbox ────────────────
+try:
+    from services.file_watcher import start as _fw_start
+    _fw_start()
+except Exception as _fwe:
+    log.warning("file watcher failed: %s", _fwe)
+
+# ── Telegram bot (starts only if TELEGRAM_BOT_TOKEN is set) ──────────────────
+try:
+    from services.telegram_bot import start as _tg_start
+    if _tg_start():
+        log.info("Telegram bot: ON")
+except Exception as _tge:
+    log.warning("telegram bot failed: %s", _tge)
+
 # ── APScheduler ──────────────────────────────────────────────────────────────
 try:
     from apscheduler.schedulers.background import BackgroundScheduler
@@ -343,6 +358,10 @@ from routes.trace_routes import trace_bp, _init as _trace_init
 _trace_init({})
 app.register_blueprint(trace_bp)
 
+from routes.api_routes import api_bp, _init as _api_init
+_api_init({"db": _db})
+app.register_blueprint(api_bp)
+
 from routes.aurum_routes import aurum_bp, _init as _aurum_init
 _aurum_init({"db": _db})
 app.register_blueprint(aurum_bp)
@@ -393,6 +412,25 @@ if _sched:
             _sched.add_job(_dream, "cron", hour=2, minute=30,
                            id="dream_mode", replace_existing=True)
             log.info("Dream mode scheduled (02:30 daily, permission-gated)")
+            from services.auto_missions import run_due as _am_run
+            _sched.add_job(_am_run, "interval", minutes=15, id="auto_missions",
+                           replace_existing=True)
+            log.info("Autonomous missions runner scheduled (every 15 min)")
+            def _memory_consolidate():
+                # summarize old conversation memory into archive + prune
+                try:
+                    from services.memory_layers import mem
+                    import db as _dbm
+                    for u in _dbm.get_all_users():
+                        uname = u["username"] if isinstance(u, dict) else u
+                        n = mem.conversation.archive_old(uname, mem.archive)
+                        if n:
+                            log.info("memory consolidation: archived %d rows for %s", n, uname)
+                except Exception as _me:
+                    log.debug("memory consolidation: %s", _me)
+            _sched.add_job(_memory_consolidate, "cron", day=1, hour=3, minute=30,
+                           id="memory_consolidate", replace_existing=True)
+            log.info("Memory consolidation scheduled (monthly)")
         except Exception as _e:
             log.warning("self_improve scheduling failed: %s", _e)
     except Exception as _ale:

@@ -47,3 +47,7 @@ key.pem
 # OS
 .DS_Store
 Thumbs.db
+aiaurum.db.corrupt
+aiaurum.db.salvaged_text.txt
+*.db-wal
+*.db-shm
