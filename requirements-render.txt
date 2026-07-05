@@ -1,0 +1,18 @@
+# Cloud deployment (Render) - lean, no desktop/GUI packages
+flask
+gunicorn>=21.2.0
+python-dotenv
+requests
+flask-limiter
+apscheduler
+psutil
+edge-tts
+beautifulsoup4
+duckduckgo-search
+reportlab
+python-docx
+python-pptx
+openpyxl
+pdfplumber
+pandas
+pillow

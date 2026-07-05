@@ -192,6 +192,17 @@ box-shadow:0 0 15px #00ff88;
   .comp{padding:8px!important;}
   /* make buttons smaller */
   .top-bar .hbg{padding:6px;}
+  /* touch-friendly plus menu + palette */
+  #plusMenu{left:8px!important;right:8px!important;min-width:0!important;}
+  #plusMenu button{padding:13px 14px!important;font-size:15px!important;}
+  #palette{padding-top:6vh!important;}
+  #palette input{font-size:16px!important;}   /* 16px stops iOS zoom-on-focus */
+  .pal-item{padding:13px 14px!important;}
+  /* aurum modals fill phone width */
+  #tlModal>div, #mmModal>div, #uvModal>div, #ccModal>div, #slModal>div,
+  #coModal>div, #pdModal>div, #csModal>div, #dnaModal>div, #bmModal>div,
+  #exModal>div, #rgModal>div, #haModal>div, #phModal>div, #thinkModal>div,
+  #skillStore>div{width:96vw!important;max-height:84vh!important;}
 }
 /* HIDE SCROLLBAR */
 
@@ -497,7 +508,15 @@ body{
   <div class="comp" style="position:relative;">
   <div id="plusMenu" style="display:none;position:absolute;bottom:75px;left:16px;
     background:#2a2a30;border:1px solid var(--bdr);border-radius:12px;
-    padding:6px;z-index:999;min-width:210px;box-shadow:0 8px 24px rgba(0,0,0,.4);">
+    padding:6px;z-index:999;min-width:210px;box-shadow:0 8px 24px rgba(0,0,0,.4);
+    max-height:min(58vh,480px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;">
+    <button onclick="openPalette();togglePlusMenu();"
+      style="display:flex;align-items:center;gap:10px;width:100%;background:linear-gradient(90deg,#1f2a2a,#1a2030);
+      border:1px solid var(--bdr);color:var(--txt);cursor:pointer;padding:10px 14px;border-radius:8px;font-size:14px;font-weight:600;"
+      onmouseenter="this.style.background='var(--act)'"
+      onmouseleave="this.style.background='linear-gradient(90deg,#1f2a2a,#1a2030)'">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Everything&nbsp;<span style="color:#8b949e;font-weight:400;font-size:11px;">search all features (Ctrl+K)</span>
+    </button>
     <button onclick="document.getElementById('fi').click();togglePlusMenu();"
       style="display:flex;align-items:center;gap:10px;width:100%;background:transparent;
       border:0;color:var(--txt);cursor:pointer;padding:10px 14px;border-radius:8px;font-size:14px;"
@@ -2348,7 +2367,16 @@ function toggleResearch() {
 
 async function captureScreen() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-    alert('Screen capture is not supported on this browser (phones do not allow it). Use Upload photos instead.');
+    // Phone: browsers do not allow web pages to capture the screen.
+    // Fallback: open the gallery so the user picks a screenshot they took.
+    let pick = document.getElementById('ssPick');
+    if (!pick) {
+      pick = document.createElement('input');
+      pick.type = 'file'; pick.id = 'ssPick'; pick.accept = 'image/*'; pick.hidden = true;
+      pick.onchange = () => attachImage(pick);
+      document.body.appendChild(pick);
+    }
+    pick.click();
     return;
   }
   try {

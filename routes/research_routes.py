@@ -183,28 +183,63 @@ def analyze_route():
     """Analyze CSV/Excel files using pandas + LLM."""
     if not session.get("auth"):
         return jsonify({"error": "login"}), 401
-    try:
-        import pandas as _pd
-    except ImportError:
-        return jsonify({"reply": "pandas not installed. Run: pip install pandas openpyxl"})
-
     f = request.files.get("file")
     if not f:
         return jsonify({"reply": "No file received."})
     fname = f.filename.lower()
 
     try:
-        if fname.endswith(".csv"):
-            df = _pd.read_csv(f)
+        try:
+            import pandas as _pd
+        except ImportError:
+            _pd = None
+
+        if _pd is not None:
+            if fname.endswith(".csv"):
+                df = _pd.read_csv(f)
+            elif fname.endswith((".xlsx", ".xls")):
+                df = _pd.read_excel(f)
+            else:
+                return jsonify({"reply": "Only CSV and Excel files are supported."})
+            rows, cols = df.shape
+            col_list   = ", ".join(df.columns.tolist()[:20])
+            sample     = df.head(5).to_string(index=False)
+            stats      = df.describe(include="all").to_string()
+        elif fname.endswith(".csv"):
+            # stdlib fallback: works with no extra installs
+            import csv, io
+            text = f.read().decode("utf-8", errors="ignore")
+            reader = list(csv.reader(io.StringIO(text)))
+            if not reader:
+                return jsonify({"reply": "Empty CSV."})
+            header = reader[0]
+            data   = reader[1:]
+            rows, cols = len(data), len(header)
+            col_list   = ", ".join(header[:20])
+            sample     = "\n".join(", ".join(r[:12]) for r in data[:5])
+            stats      = "(install pandas for full statistics: pip install pandas openpyxl)"
         elif fname.endswith((".xlsx", ".xls")):
-            df = _pd.read_excel(f)
+            try:
+                import openpyxl
+                wb = openpyxl.load_workbook(f, read_only=True, data_only=True)
+                ws = wb.active
+                all_rows = [[("" if c is None else str(c)) for c in row]
+                            for row in ws.iter_rows(values_only=True)]
+                wb.close()
+                if not all_rows:
+                    return jsonify({"reply": "Empty spreadsheet."})
+                header = all_rows[0]
+                data   = all_rows[1:]
+                rows, cols = len(data), len(header)
+                col_list   = ", ".join(header[:20])
+                sample     = "\n".join(", ".join(r[:12]) for r in data[:5])
+                stats      = "(install pandas for full statistics: pip install pandas)"
+            except ImportError:
+                return jsonify({"reply": "Excel needs one install on the PC running the app: "
+                                          "`pip install pandas openpyxl` - then restart. "
+                                          "CSV files work right now with no installs."})
         else:
             return jsonify({"reply": "Only CSV and Excel files are supported."})
-
-        rows, cols = df.shape
-        col_list   = ", ".join(df.columns.tolist()[:20])
-        sample     = df.head(5).to_string(index=False)
-        stats      = df.describe(include="all").to_string()
         prompt = (
             "Analyze this dataset and give a clear, structured report.\n\n"
             "File: %s\nRows: %d | Columns: %d\nColumn names: %s\n\n"
@@ -213,23 +248,15 @@ def analyze_route():
             "and 3 recommendations based on the data."
         ) % (f.filename, rows, cols, col_list, sample, stats)
 
-        asst = _deps["assistant"]
-        r = _rq.post(
-            GITHUB_API,
-            headers=_HEADERS_TMPL(asst.GITHUB_TOKEN or ""),
-            json={
-                "model": os.getenv("MAIN_MODEL", asst.GITHUB_MODEL),
-                "max_tokens": 1500,
-                "messages": [
-                    {"role": "system", "content": "You are a data analyst. Give clear, insightful analysis."},
-                    {"role": "user",   "content": prompt},
-                ],
-            },
-            timeout=60,
-        )
-        if r.status_code == 200:
-            return jsonify({"reply": r.json()["choices"][0]["message"]["content"].strip()})
-        return jsonify({"reply": "(Analysis failed: API error %d)" % r.status_code})
+        # Unified provider chain: GitHub -> Nara -> Gemini -> OpenAI -> Ollama
+        from providers import AI
+        reply = AI.generate(prompt,
+                            system="You are a data analyst. Give clear, insightful analysis.",
+                            model=os.getenv("MAIN_MODEL", "gpt-4o"),
+                            max_tokens=1500, temperature=0.3)
+        if reply.startswith("[AI error"):
+            return jsonify({"reply": "(Analysis failed: %s)" % reply})
+        return jsonify({"reply": reply})
     except Exception as e:
         log.exception("analyze_route")
         return jsonify({"reply": "(Analysis error: %s)" % e})

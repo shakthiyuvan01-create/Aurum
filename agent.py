@@ -92,6 +92,26 @@ def _sse(payload: dict) -> str:
 
 # ── Public entry point ────────────────────────────────────────────────────────
 
+def _provider_rescue(messages: list, model: str):
+    """Last-resort: answer through the provider chain (Nara/Gemini/OpenAI/
+    Ollama) without tools. Returns (reply, provider_name) or (None, None)."""
+    try:
+        from providers import AI
+        plain = []
+        for m in messages:
+            c = m.get("content")
+            if isinstance(c, list):  # multimodal -> keep only the text parts
+                c = " ".join(x.get("text", "") for x in c if isinstance(x, dict))
+            if c and m.get("role") in ("system", "user", "assistant"):
+                plain.append({"role": m["role"], "content": str(c)})
+        reply = AI.chat(plain, model=model, max_tokens=1600, temperature=0.4)
+        if reply and not reply.startswith("[AI error"):
+            return reply, (AI.last_used or "fallback")
+    except Exception as e:
+        log.error("provider rescue failed: %s", e)
+    return None, None
+
+
 def run_stream(
     msg: str,
     system_prompt: str,
@@ -179,9 +199,18 @@ def run_stream(
                     return
 
             else:
+                # Try the full provider chain (NaraRouter, Gemini, OpenAI...)
+                reply, used = _provider_rescue(messages, model)
+                if reply:
+                    yield _sse({"delta": reply})
+                    yield _sse({"done": True, "reply": reply,
+                                "model": used, "tools_used": tools_used})
+                    return
                 err_str = str(e)
                 if "429" in err_str:
                     err_msg = "⚠️ API rate limit hit. Please wait a moment and try again."
+                elif "503" in err_str:
+                    err_msg = "⚠️ The AI service is temporarily unavailable (503) and no fallback provider answered. Check your API keys in .env."
                 elif "timeout" in err_str.lower():
                     err_msg = "⚠️ Request timed out. Please try again."
                 else:
@@ -246,6 +275,12 @@ def run_stream(
                 yield _sse({"error": "⚠️ Ollama also failed: " + str(e2)})
                 return
         else:
+            reply, used = _provider_rescue(messages, model)
+            if reply:
+                yield _sse({"delta": reply})
+                yield _sse({"done": True, "reply": reply,
+                            "model": used, "tools_used": tools_used})
+                return
             err_str = str(e)
             if "401" in err_str or "403" in err_str:
                 err_msg = "⚠️ GitHub token expired or invalid. Update GITHUB_TOKEN in your .env and restart."
