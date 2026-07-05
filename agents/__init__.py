@@ -271,6 +271,16 @@ def run_team_stream(goal: str, username: str = "default"):
     duration    = round(time.time() - t0, 2)
     bus.emit("team.completed", {"username": username, "goal": goal,
                                 "duration": duration}, async_=True)
+    # agent-to-agent eval: score the final answer, log for self_improve
+    try:
+        import self_eval as _se
+        _ev = _se.evaluate(goal, final_reply)
+        if not _ev.get("skipped"):
+            bus.emit("team.evaluated", {"username": username,
+                     "overall": _ev.get("overall"), "issue": _ev.get("issue", "")},
+                     async_=True)
+    except Exception:
+        pass
     try:
         import threading as _th
         from services.experience_db import learn_from_run

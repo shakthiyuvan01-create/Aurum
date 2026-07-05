@@ -107,10 +107,32 @@ def retrieve(query: str, username: str = "default", doc_id: str = None,
 
 def qa_context(file_path: str, text: str, question: str,
                username: str = "default", top_k: int = 5) -> str:
-    """One-call helper: index (if needed) + retrieve. Returns joined context,
-    falling back to the head of the document when RAG is unavailable."""
+    """One-call helper: index (if needed) + retrieve. Returns joined context
+    with source citations, falling back to the head of the document."""
     doc_id = index_document(file_path, text, username)
-    chunks = retrieve(question, username, doc_id=doc_id, top_k=top_k)
+    chunks = retrieve_with_meta(question, username, doc_id=doc_id, top_k=top_k)
     if chunks:
-        return "\n\n---\n\n".join(chunks)
+        return "\n\n---\n\n".join(
+            "[Source: %s, part %s]\n%s" % (c["file"], c["chunk"], c["text"])
+            for c in chunks)
     return text[:6000]
+
+
+def retrieve_with_meta(query: str, username: str = "default", doc_id: str = None,
+                       top_k: int = 5) -> list:
+    """Top-k chunks with their source metadata for citations."""
+    try:
+        col = _col(username)
+        kwargs = {"query_texts": [query], "n_results": top_k,
+                  "include": ["documents", "metadatas"]}
+        if doc_id:
+            kwargs["where"] = {"doc_id": doc_id}
+        res = col.query(**kwargs)
+        docs  = (res.get("documents") or [[]])[0]
+        metas = (res.get("metadatas") or [[]])[0]
+        return [{"text": d, "file": (m or {}).get("file", "?"),
+                 "chunk": (m or {}).get("chunk", "?")}
+                for d, m in zip(docs, metas)]
+    except Exception as e:
+        log.warning("rag retrieve failed: %s", e)
+        return []

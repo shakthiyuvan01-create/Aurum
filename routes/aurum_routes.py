@@ -498,3 +498,89 @@ def patterns():
         % ("; ".join(titles)[:4000], "; ".join("%s:%s" % h for h in hist)[:2000]),
         model="gpt-4o", max_tokens=900, temperature=0.4)
     return jsonify({"result": out})
+
+
+# ── Token/cost usage per provider (the missing piece for a 6-provider chain) ─
+_COST_PER_1K = {"github": 0.0, "nara": 0.0, "bluesminds": 0.0,
+                "gemini": 0.0, "openai": 0.005, "ollama": 0.0}
+
+@aurum_bp.route("/usage")
+@login_required
+def provider_usage():
+    days = min(int(request.args.get("days", 7)), 90)
+    with _conn() as con:
+        try:
+            rows = [dict(r) for r in con.execute(
+                "SELECT day, provider, calls, est_tokens, total_ms, failovers "
+                "FROM provider_usage WHERE day >= date('now', ?) "
+                "ORDER BY day DESC, est_tokens DESC", ("-%d days" % days,))]
+        except sqlite3.OperationalError:
+            rows = []
+    totals = {}
+    for r in rows:
+        t = totals.setdefault(r["provider"], {"calls": 0, "est_tokens": 0,
+                                              "total_ms": 0, "failovers": 0})
+        for k in ("calls", "est_tokens", "total_ms", "failovers"):
+            t[k] += r[k]
+    for prov, t in totals.items():
+        t["avg_latency_ms"] = round(t["total_ms"] / max(t["calls"], 1))
+        t["est_cost_usd"] = round(t["est_tokens"] / 1000 * _COST_PER_1K.get(prov, 0), 4)
+    return jsonify({"days": days, "totals": totals, "daily": rows})
+
+
+# ── Scheduled autonomous missions ────────────────────────────────────────────
+@aurum_bp.route("/auto_missions", methods=["GET", "POST", "DELETE"])
+@login_required
+def auto_missions():
+    from services import auto_missions as am
+    uname = _user()
+    if request.method == "POST":
+        b = request.get_json(force=True) or {}
+        goal = (b.get("goal") or "").strip()
+        if not goal:
+            return jsonify({"error": "goal required"}), 400
+        mid = am.create(uname, goal, hour=int(b.get("hour", 7)),
+                        minute=int(b.get("minute", 0)),
+                        deliver=b.get("deliver", "canvas"),
+                        deliver_to=b.get("deliver_to", ""))
+        return jsonify({"ok": True, "mission_id": mid})
+    if request.method == "DELETE":
+        am.remove(uname, int(request.args.get("id", 0)))
+        return jsonify({"ok": True})
+    return jsonify({"missions": am.list_missions(uname)})
+
+
+# ── One-click backup: memory, chats, settings, canvas, missions -> zip ───────
+@aurum_bp.route("/export")
+@login_required
+def export_all():
+    import io, zipfile, time as _t
+    uname = _user()
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        with _conn() as con:
+            def dump(name, sql, args=()):
+                try:
+                    rows = [dict(r) for r in con.execute(sql, args).fetchall()]
+                    z.writestr(name, json.dumps(rows, indent=1, default=str))
+                except sqlite3.OperationalError as e:
+                    z.writestr(name, json.dumps({"error": str(e)}))
+            dump("memories.json", "SELECT * FROM neo_memories WHERE username=?", (uname,))
+            dump("chats.json",
+                 "SELECT c.id, c.title, c.created_at, m.role, m.text FROM chats c "
+                 "LEFT JOIN messages m ON m.chat_id=c.id WHERE c.username=? "
+                 "ORDER BY c.created_at, m.id", (uname,))
+            dump("canvas.json", "SELECT * FROM canvas_docs WHERE username=?", (uname,))
+            dump("missions.json", "SELECT * FROM missions WHERE username=?", (uname,))
+            dump("auto_missions.json", "SELECT * FROM auto_missions WHERE username=?", (uname,))
+            dump("experiences.json", "SELECT * FROM experiences WHERE username=?", (uname,))
+            dump("knowledge_graph.json",
+                 "SELECT source, relation, target FROM kg_relations WHERE username=?", (uname,))
+            dump("skills.json", "SELECT * FROM user_skills WHERE username=?", (uname,))
+            dump("settings.json", "SELECT * FROM user_settings WHERE username=?", (uname,))
+            dump("timeline.json", "SELECT * FROM task_history WHERE username=?", (uname,))
+    buf.seek(0)
+    from flask import send_file
+    return send_file(buf, mimetype="application/zip", as_attachment=True,
+                     download_name="aurum_backup_%s_%s.zip"
+                                    % (uname, _t.strftime("%Y%m%d")))
