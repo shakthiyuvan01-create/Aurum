@@ -17,6 +17,8 @@ services:
         sync: false
       - key: NARA_API_KEY
         sync: false
+      - key: BLUESMINDS_KEY
+        sync: false
       - key: NARA_MODEL
         value: mistral-large
       - key: GEMINI_API_KEY
@@ -30,7 +32,7 @@ services:
       - key: ADMIN_USERNAMES
         sync: false
       - key: AI_PROVIDER_ORDER
-        value: github,nara,gemini,openai,ollama
+        value: github,nara,bluesminds,gemini,openai,ollama
       - key: RENDER_DATA_DIR
         value: /data
     disk:

@@ -27,3 +27,17 @@ class GeminiProvider(Provider):
         )
         r.raise_for_status()
         return r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+
+    def vision(self, prompt: str, image_b64: str, mime: str = "image/jpeg",
+               max_tokens: int = 900) -> str:
+        """Analyze an image (used as vision fallback when GitHub is down)."""
+        import os as _os, requests as _rq
+        url = ("https://generativelanguage.googleapis.com/v1beta/models/"
+               + self.default_model + ":generateContent?key="
+               + _os.getenv("GEMINI_API_KEY", ""))
+        r = _rq.post(url, json={"contents": [{"parts": [
+            {"text": prompt or "Describe this image in detail."},
+            {"inline_data": {"mime_type": mime, "data": image_b64}}]}],
+            "generationConfig": {"maxOutputTokens": max_tokens}}, timeout=120)
+        r.raise_for_status()
+        return r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()

@@ -1278,6 +1278,9 @@ async function send() {
       (msg ? escHtml(msg) : '<em style="color:var(--muted)">Analyze this image</em>');
   }
   addMsg(displayMsg, 'user');
+  // capture the attachment BEFORE clearing (bug: it was cleared first,
+  // so images were never actually sent to the AI)
+  const _sendB64 = _attachedB64, _sendMime = _attachedMime;
   clearAttachedImage();
 
   try {
@@ -1438,7 +1441,7 @@ async function send() {
     bubble.style.display = 'none';              // hidden until first token
 
     const streamBody = {message: msg, chat_id: chatId};
-    if (_attachedB64) { streamBody.image_b64 = _attachedB64; streamBody.image_mime = _attachedMime; }
+    if (_sendB64) { streamBody.image_b64 = _sendB64; streamBody.image_mime = _sendMime; }
     const resp = await fetch('/stream', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
