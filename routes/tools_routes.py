@@ -363,3 +363,27 @@ def screen_check():
         return jsonify({"ok": True, "issue": None if answer == "OK" else answer})
     except Exception as e:
         return jsonify({"error": str(e)}), 502
+
+
+@tools_bp.route("/providers/test")
+@login_required
+def providers_test():
+    """Live-test every provider with a tiny request. Open this in the browser
+    to see exactly which keys work and why others fail."""
+    from providers.manager import _ALL
+    results = {}
+    for name, prov in _ALL.items():
+        if not prov.available():
+            results[name] = {"status": "skipped", "reason": "no API key set / not running"}
+            continue
+        try:
+            import time as _t
+            t0 = _t.time()
+            out = prov.generate("Reply with exactly: OK", max_tokens=5, temperature=0)
+            results[name] = {"status": "WORKING",
+                             "reply": out[:40],
+                             "latency_ms": int((_t.time() - t0) * 1000),
+                             "model": prov.default_model}
+        except Exception as e:
+            results[name] = {"status": "FAILED", "error": str(e)[:250]}
+    return jsonify(results)

@@ -6,7 +6,11 @@ from .base import Provider
 
 class GeminiProvider(Provider):
     name = "gemini"
-    default_model = "gemini-1.5-flash"
+
+    @property
+    def default_model(self):
+        # gemini-1.5-flash was retired (404s). Override with GEMINI_MODEL env.
+        return os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
     def available(self) -> bool:
         return bool(os.getenv("GEMINI_API_KEY", ""))
