@@ -239,6 +239,8 @@ def stream():
 
     def generate():
         reply_text = ""
+        _acc = []
+        _err_text = ""
         try:
             for chunk in ag.run_stream(
                 msg              = msg,
@@ -255,12 +257,27 @@ def stream():
                 if parsed.get("done"):
                     reply_text = parsed.get("reply", reply_text)
                     continue
+                if parsed.get("delta"):
+                    _acc.append(parsed["delta"])
+                if parsed.get("error"):
+                    _err_text = parsed["error"]
                 yield chunk
         except Exception as e:
             log.error("stream generate error: %s", e)
             yield "data: " + json.dumps({"error": str(e)}) + "\n\n"
+            if not is_guest:
+                try:
+                    chat["messages"].append({"role": "assistant",
+                                             "text": "[error: %s]" % str(e)[:200]})
+                    _save_chat(cid, uname, title, chat["messages"])
+                except Exception:
+                    pass
             return
 
+        if not reply_text and _acc:
+            reply_text = "".join(_acc)
+        if not reply_text and _err_text:
+            reply_text = "[" + _err_text + "]"
         chat["messages"].append({"role": "assistant", "text": reply_text})
         if is_new_chat and msg:
             title = _smart_title(msg, reply_text)

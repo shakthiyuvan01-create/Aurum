@@ -21,7 +21,51 @@ routes/
     stream_routes.py    — /stream  (SSE)
     research_routes.py  — /research  /analyze
 """
-import os, threading, logging
+import os, sys, threading, logging
+
+# ── Render/cloud persistence: keep data on the mounted disk ──────────────────
+# If RENDER_DATA_DIR is set (render.yaml mounts a disk at /data), symlink the
+# SQLite DB, vector store, uploads and settings there so they survive deploys.
+def _wire_data_dir():
+    data_dir = os.getenv("RENDER_DATA_DIR", "")
+    if not data_dir:
+        return
+    here = os.path.dirname(os.path.abspath(__file__))
+    try:
+        os.makedirs(data_dir, exist_ok=True)
+    except OSError:
+        return
+    for name, is_dir in (("aiaurum.db", False), ("chroma_db", True),
+                         ("uploads", True), ("generated_docs", True),
+                         ("workspace", True), ("permissions.json", False)):
+        target = os.path.join(data_dir, name)
+        local  = os.path.join(here, name)
+        try:
+            if is_dir:
+                os.makedirs(target, exist_ok=True)
+            elif not os.path.exists(target):
+                open(target, "ab").close()
+            if os.path.islink(local):
+                continue
+            if os.path.exists(local):
+                # migrate anything committed/created locally on first boot
+                import shutil as _sh
+                if is_dir:
+                    for f in os.listdir(local):
+                        dst = os.path.join(target, f)
+                        if not os.path.exists(dst):
+                            _sh.move(os.path.join(local, f), dst)
+                    _sh.rmtree(local, ignore_errors=True)
+                elif os.path.getsize(target) == 0 and os.path.getsize(local) > 0:
+                    _sh.copy2(local, target)
+                    os.remove(local)
+                else:
+                    os.remove(local)
+            os.symlink(target, local)
+        except OSError as _e:
+            logging.getLogger("app").warning("data dir link %s failed: %s", name, _e)
+
+_wire_data_dir()
 
 # ── env ──────────────────────────────────────────────────────────────────────
 try:
@@ -358,5 +402,18 @@ if _sched:
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
     debug = os.getenv("FLASK_DEBUG", "0") == "1"
-    log.info("Starting AI Aurum on port %d (debug=%s)", port, debug)
-    app.run(host="0.0.0.0", port=port, debug=debug, threaded=True)
+    use_https = os.getenv("USE_HTTPS", "0") == "1" or "--https" in sys.argv
+    if use_https:
+        try:
+            log.info("Starting AI Aurum on port %d with HTTPS (self-signed) - "
+                     "phone mic/voice will work. Accept the browser warning once.", port)
+            app.run(host="0.0.0.0", port=port, debug=debug, threaded=True,
+                    ssl_context="adhoc")
+        except Exception as _ssl_e:
+            log.error("HTTPS failed (%s). Install: pip install pyopenssl. "
+                      "Falling back to HTTP.", _ssl_e)
+            app.run(host="0.0.0.0", port=port, debug=debug, threaded=True)
+    else:
+        log.info("Starting AI Aurum on port %d (debug=%s) - for phone mic use "
+                 "USE_HTTPS=1 or --https", port, debug)
+        app.run(host="0.0.0.0", port=port, debug=debug, threaded=True)

@@ -3,9 +3,11 @@ services:
     name: yuvanaurum
     runtime: python
     region: singapore
-    plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --workers 2 --threads 2 --timeout 120 --bind 0.0.0.0:$PORT
+    plan: starter        # disks need a paid plan; use "free" without the disk block
+    buildCommand: pip install -r requirements-render.txt
+    # ONE worker: APScheduler jobs run once, async task queue + SSE share state.
+    # gthread + 12 threads handles streaming chats concurrently.
+    startCommand: gunicorn app:app --workers 1 --worker-class gthread --threads 12 --timeout 300 --bind 0.0.0.0:$PORT
     envVars:
       - key: FLASK_ENV
         value: production
@@ -13,16 +15,22 @@ services:
         generateValue: true
       - key: GITHUB_TOKEN
         sync: false
+      - key: NARA_API_KEY
+        sync: false
+      - key: NARA_MODEL
+        value: mistral-large
+      - key: GEMINI_API_KEY
+        sync: false
       - key: OPENAI_API_KEY
         sync: false
-      - key: OPENWEATHER_API_KEY
+      - key: ELEVENLABS_API_KEY
         sync: false
-      - key: GOOGLE_API_KEY
-        sync: false
-      - key: GOOGLE_CSE_ID
+      - key: WEB_SEARCH_KEY
         sync: false
       - key: ADMIN_USERNAMES
         sync: false
+      - key: AI_PROVIDER_ORDER
+        value: github,nara,gemini,openai,ollama
       - key: RENDER_DATA_DIR
         value: /data
     disk:
