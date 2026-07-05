@@ -238,6 +238,7 @@ def stream():
     )
 
     def generate():
+        nonlocal title
         reply_text = ""
         _acc = []
         _err_text = ""

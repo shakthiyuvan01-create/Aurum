@@ -25,3 +25,5 @@ openpyxl
 pdfplumber
 pandas
 pyopenssl
+apscheduler
+flask-limiter

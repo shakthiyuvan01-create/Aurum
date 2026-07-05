@@ -224,8 +224,16 @@ def run_stream(
                                 "model": used, "tools_used": tools_used})
                     return
                 err_str = str(e)
-                if "429" in err_str:
-                    err_msg = "⚠️ API rate limit hit. Please wait a moment and try again."
+                try:
+                    from providers import AI as _AIe
+                    if _AIe.last_errors:
+                        err_str += " | fallbacks: " + "; ".join(_AIe.last_errors[-4:])
+                except Exception:
+                    pass
+                if "429" in err_str.split(" | ")[0]:
+                    err_msg = ("⚠️ Rate limit on the primary AI, and every fallback "
+                               "also failed. Details: " + err_str[:400] +
+                               " -- open /providers/test to diagnose keys.")
                 elif "503" in err_str:
                     err_msg = "⚠️ The AI service is temporarily unavailable (503) and no fallback provider answered. Check your API keys in .env."
                 elif "timeout" in err_str.lower():

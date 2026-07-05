@@ -28,6 +28,15 @@ BASE     = os.path.dirname(os.path.abspath(__file__))
 DB_PATH  = os.path.join(BASE, "aiaurum.db")
 CHROMA_DIR = os.path.join(BASE, "chroma_db")
 
+
+def _safe_name(username: str) -> str:
+    """ChromaDB collection names allow only [a-zA-Z0-9._-], 3-512 chars,
+    must start/end alphanumeric. Emails like user@gmail.com broke this."""
+    import re as _re
+    s = _re.sub(r"[^a-zA-Z0-9._-]", "_", str(username or "default"))
+    s = s.strip("._-") or "default"
+    return (s + "_pad") if len(s) < 3 else s[:100]
+
 # ── Try importing ChromaDB ────────────────────────────────────────────────────
 try:
     import chromadb
@@ -185,7 +194,7 @@ def _get_col(username: str):
     if username not in _chroma_cols:
         client = _get_chroma_client()
         _chroma_cols[username] = client.get_or_create_collection(
-            name=f"mem_{username}",
+            name=f"mem_{_safe_name(username)}",
             metadata={"hnsw:space": "cosine"}
         )
     return _chroma_cols[username]
@@ -228,7 +237,7 @@ def _chroma_retrieve(username: str, query: str, n: int = 4) -> list:
 
 def _chroma_clear(username: str):
     try:
-        _get_chroma_client().delete_collection(f"mem_{username}")
+        _get_chroma_client().delete_collection(f"mem_{_safe_name(username)}")
         _chroma_cols.pop(username, None)
     except Exception as e:
         log.warning("ChromaDB clear failed: %s", e)
