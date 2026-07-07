@@ -121,6 +121,35 @@ _db.migrate_json(
 )
 _vmem.init()
 
+# ── Seed users from env (survives Render free-tier filesystem wipes) ─────────
+# SEED_USERS="alice:secret123,bob:hunter2"  -> accounts recreated on every boot
+def _seed_users():
+    seed = os.getenv("SEED_USERS", "")
+    if not seed:
+        return
+    from services.auth_service import hash_password
+    made = 0
+    for pair in seed.split(","):
+        if ":" not in pair:
+            continue
+        uname, pw = pair.split(":", 1)
+        uname, pw = uname.strip(), pw.strip()
+        if not uname or not pw:
+            continue
+        try:
+            import sqlite3 as _sq
+            with _sq.connect(_db.DB_PATH, timeout=10) as con:
+                cur = con.execute(
+                    "INSERT OR IGNORE INTO users (username, nick, pw_hash) VALUES (?,?,?)",
+                    (uname, uname.split("@")[0].capitalize(), hash_password(pw)))
+                made += cur.rowcount
+        except Exception as _se:
+            log.warning("seed user %s failed: %s", uname, _se)
+    if made:
+        log.info("Seeded %d user account(s) from SEED_USERS", made)
+
+_seed_users()
+
 # ── Activity log: persist agent/team events, task history ───────────────────
 try:
     from services.activity_log import init_subscribers as _al_init
