@@ -387,3 +387,12 @@ def providers_test():
         except Exception as e:
             results[name] = {"status": "FAILED", "error": str(e)[:250]}
     return jsonify(results)
+
+
+@tools_bp.route("/forge", methods=["POST"])
+@login_required
+def forge_tool():
+    """Self-extension: AI writes, tests and registers a new tool."""
+    from services.tool_forge import forge
+    body = request.get_json(force=True) or {}
+    return jsonify(forge((body.get("capability") or "").strip(), current_user()))

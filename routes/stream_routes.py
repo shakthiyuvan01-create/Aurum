@@ -242,6 +242,23 @@ def stream():
         reply_text = ""
         _acc = []
         _err_text = ""
+        # ── Semantic cache: near-duplicate question -> instant answer ────────
+        if not image_b64 and not msg.startswith("/"):
+            try:
+                from services.semantic_cache import lookup as _cache_get
+                cached = _cache_get(uname, msg)
+            except Exception:
+                cached = None
+            if cached:
+                yield "data: " + json.dumps({"delta": cached}) + "\n\n"
+                chat["messages"].append({"role": "assistant", "text": cached})
+                if is_new_chat and msg:
+                    title = _smart_title(msg, cached)
+                if not is_guest:
+                    _save_chat(cid, uname, title, chat["messages"])
+                yield "data: " + json.dumps({"done": True, "chat_id": cid,
+                    "title": title, "model": "cache", "cached": True}) + "\n\n"
+                return
         try:
             for chunk in ag.run_stream(
                 msg              = msg,
@@ -288,6 +305,11 @@ def stream():
                 vmem.store_conversation(uname, msg, reply_text, cid)
             except Exception as ve:
                 log.warning("vector store failed: %s", ve)
+            try:
+                from services.semantic_cache import store as _cache_put
+                _cache_put(uname, msg, reply_text)
+            except Exception:
+                pass
             # live knowledge graph update (background thread, zero latency)
             try:
                 import threading as _th

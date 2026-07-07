@@ -584,3 +584,11 @@ def export_all():
     return send_file(buf, mimetype="application/zip", as_attachment=True,
                      download_name="aurum_backup_%s_%s.zip"
                                     % (uname, _t.strftime("%Y%m%d")))
+
+
+@aurum_bp.route("/eval_harness", methods=["POST"])
+@login_required
+def eval_harness_run():
+    """Run the golden-set quality eval right now (8 prompts, ~1 min)."""
+    from services.eval_harness import run_eval
+    return jsonify(run_eval(alert=False))

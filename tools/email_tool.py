@@ -30,10 +30,16 @@ def configured() -> bool:
     c = _cfg()
     return bool(c["user"] and c["pw"])
 
-def run(to: str, subject: str, body: str) -> dict:
+def run(to: str, subject: str, body: str, confirmed: str = "false") -> dict:
     from services.permission_manager import perms
     if not perms.check("messaging"):
         return perms.deny_message("messaging")
+    # Simulation before action: irreversible sends need explicit confirmation
+    if str(confirmed).lower() not in ("true", "1", "yes"):
+        return {"simulated": True,
+                "result": "PREVIEW - nothing sent yet.\n\nTo: %s\nSubject: %s\n\n%s"
+                          "\n\nRun again with confirmed=true to actually send."
+                          % (to, subject, body[:1500])}
 
     cfg = _cfg()
     if not cfg["user"] or not cfg["pw"]:

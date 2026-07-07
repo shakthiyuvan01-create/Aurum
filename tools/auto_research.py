@@ -51,15 +51,15 @@ def run(topic: str = "", make_ppt: str = "false", username: str = "default") -> 
         except Exception as e:
             findings.append("### Query: %s\n(search failed: %s)" % (q, e))
 
-    # 3. Synthesize report
-    report = AI.generate(
+    # 3. Synthesize report (draft-and-verify: mini drafts, gpt-4o verifies)
+    report = AI.draft_verify(
         "Write a professional research report on '%s' using ONLY the research "
         "notes below. Structure: Executive Summary, Background, Key Findings "
         "(with specifics and figures), Comparison/Analysis, Outlook, and a "
         "Sources section listing every source URL or reference that appears in "
         "the notes. Use markdown.\n\nRESEARCH NOTES:\n%s"
         % (topic, "\n\n".join(findings)[:26000]),
-        model="gpt-4o", max_tokens=3000, temperature=0.25)
+        max_tokens=3000)
 
     out = {"result": report, "queries": queries}
 

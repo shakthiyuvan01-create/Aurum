@@ -119,6 +119,47 @@ class ProviderManager:
                 log.warning("provider %s chat failed: %s", p.name, e)
         return "[AI error: all providers failed - " + "; ".join(self.last_errors[-3:]) + "]"
 
+    def generate_json(self, prompt: str, system: str = "", model: str = None,
+                      max_tokens: int = 800, retries: int = 2) -> dict:
+        """Schema-disciplined generation: always returns a parsed dict or {}.
+        Retries with an explicit repair instruction on parse failure."""
+        import json as _json, re as _re
+        sys_p = (system + "\n\nReply with ONLY a valid JSON object. "
+                 "No prose, no markdown fences.").strip()
+        text = prompt
+        for attempt in range(retries + 1):
+            raw = self.generate(text, system=sys_p, model=model,
+                                max_tokens=max_tokens, temperature=0.1)
+            m = _re.search(r"\{[\s\S]*\}", raw)
+            if m:
+                try:
+                    return _json.loads(m.group(0))
+                except _json.JSONDecodeError as e:
+                    text = ("Your previous output was invalid JSON (%s). "
+                            "Output the corrected JSON only:\n%s"
+                            % (e, m.group(0)[:2000]))
+            else:
+                text = prompt + "\n\nIMPORTANT: reply with ONLY the JSON object."
+        return {}
+
+    def draft_verify(self, prompt: str, system: str = "",
+                     max_tokens: int = 2000) -> str:
+        """Cheap-draft / big-verify: a small model writes the draft, the big
+        model only reviews and patches it. 3-5x cheaper long outputs."""
+        draft = self.generate(prompt, system=system,
+                              model="gpt-4o-mini", max_tokens=max_tokens,
+                              temperature=0.4)
+        if draft.startswith("[AI error"):
+            return self.generate(prompt, system=system, model="gpt-4o",
+                                 max_tokens=max_tokens, temperature=0.3)
+        fixed = self.generate(
+            "Review this draft against the original request. Fix factual "
+            "errors, calculation mistakes and gaps. Output the corrected "
+            "final version ONLY (no commentary).\n\nREQUEST:\n%s\n\nDRAFT:\n%s"
+            % (prompt[:3000], draft[:12000]),
+            system=system, model="gpt-4o", max_tokens=max_tokens, temperature=0.2)
+        return fixed if not fixed.startswith("[AI error") else draft
+
     def status(self) -> dict:
         return {
             "chain": [p.name for p in self.chain],
