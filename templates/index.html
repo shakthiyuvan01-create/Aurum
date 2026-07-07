@@ -3172,7 +3172,10 @@ const _PAL_COMMANDS = [
   { label: 'Memory Map', hint: 'live knowledge graph of your world', act: () => openMemoryMap() },
   { label: 'AI Universe', hint: 'your topics as planets', act: () => openUniverse() },
   { label: 'Command Center', hint: 'live system + agents + tasks', act: () => openCommandCenter() },
-  { label: 'Skill Levels', hint: 'XP for every capability', act: () => openSkillLevels() },
+  { label: 'Skill Levels', hint: 'XP, level, rank', act: () => openSkillLevels() },
+  { label: 'Persona / Soul', hint: 'edit SOUL, IDENTITY, MEMORY', act: () => openPersona() },
+  { label: 'Heartbeat: self-maintenance', hint: 'AI updates its own memory now', act: () => runHeartbeat() },
+  { label: 'Forge a Tool', hint: 'AI writes + installs a new tool', act: () => forgeTool() },
   { label: 'AI Company', hint: 'meet your agent employees', act: () => openCompany() },
   { label: 'Personality Designer', hint: 'tune logic, creativity, humor', act: () => openPersonality() },
   { label: 'Digital Twin', hint: '/twin - answers as you would', act: () => { bx.value = '/twin '; grow(bx); bx.focus(); } },
@@ -3469,15 +3472,21 @@ async function openCommandCenter() {
 
 // ── Skill Levels ─────────────────────────────────────────────────────────────
 async function openSkillLevels() {
-  const body = _aurumModal('slModal', 'Skill Evolution - XP levels');
+  const body = _aurumModal('slModal', 'Skill Evolution - level & rank');
   try {
     const d = await (await fetch('/skills/levels')).json();
+    const header = '<div style="background:#141419;border-radius:10px;padding:14px;margin-bottom:12px;text-align:center;">' +
+      '<div style="font-size:22px;color:var(--acc);">Level ' + (d.level || 1) + ' - ' + escHtml(d.rank || 'Novice') + '</div>' +
+      '<div style="color:#8b949e;font-size:12px;margin:4px 0;">' + (d.total_xp || 0) + ' XP</div>' +
+      '<div style="height:8px;background:#0d0d10;border-radius:4px;"><div style="height:8px;width:' +
+      (d.progress_pct || 0) + '%;background:var(--acc);border-radius:4px;"></div></div></div>';
     if (!(d.levels || []).length) {
-      body.innerHTML = '<div style="color:#8b949e;">Use tools and they gain XP. Levels appear here.</div>';
+      body.innerHTML = header + '<div style="color:#8b949e;">Use tools and they gain XP.</div>';
       return;
     }
+    body.innerHTML = header;
     const max = Math.max(...d.levels.map(l => l.xp));
-    body.innerHTML = d.levels.map(l =>
+    body.innerHTML += d.levels.map(l =>
       '<div style="margin-bottom:10px;"><div style="display:flex;gap:8px;font-size:13px;">' +
       '<span style="color:var(--txt);">' + escHtml(l.skill) + '</span>' +
       '<span style="color:var(--acc);">Level ' + l.level + '</span>' +
@@ -3737,6 +3746,73 @@ async function openPatterns() {
     body.innerHTML = '<div style="font-size:13px;line-height:1.6;">' +
       parseMarkdown(d.result || d.error || 'No patterns found') + '</div>';
   } catch (e) { body.textContent = 'Failed: ' + e; }
+}
+
+
+// ── Persona / Soul editor ────────────────────────────────────────────────────
+async function openPersona() {
+  const body = _aurumModal('personaModal', 'Persona / Soul - who Aurum is');
+  try {
+    const d = await (await fetch('/persona')).json();
+    const files = ['SOUL', 'IDENTITY', 'MEMORY', 'HEARTBEAT'];
+    body.innerHTML = files.map(f =>
+      '<div style="margin-bottom:14px;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">' +
+      '<b style="color:var(--acc);">' + f + '.md</b>' +
+      (f === 'MEMORY' ? '<span style="color:#8b949e;font-size:11px;">(Aurum edits this itself)</span>' : '') +
+      '<button onclick="savePersona(\'' + f + '\')" style="margin-left:auto;background:#238636;border:0;' +
+      'border-radius:6px;padding:3px 10px;color:#fff;font-size:11px;cursor:pointer;">Save</button></div>' +
+      '<textarea id="pf_' + f + '" style="width:100%;box-sizing:border-box;height:110px;background:#141419;' +
+      'border:1px solid var(--bdr);border-radius:8px;color:var(--txt);padding:8px;font-size:12px;' +
+      'font-family:monospace;resize:vertical;">' + escHtml(d[f] || '') + '</textarea></div>').join('');
+  } catch (e) { body.textContent = 'Failed: ' + e; }
+}
+
+async function savePersona(f) {
+  const content = document.getElementById('pf_' + f).value;
+  try {
+    const r = await fetch('/persona/' + f, { method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: content }) });
+    const d = await r.json();
+    if (!d.ok) alert('Save failed: ' + (d.error || '?'));
+  } catch (e) { alert('Error: ' + e); }
+}
+
+// ── Heartbeat manual trigger ─────────────────────────────────────────────────
+async function runHeartbeat() {
+  hideWelcome();
+  const t = typing();
+  try {
+    const d = await (await fetch('/heartbeat/run', { method: 'POST' })).json();
+    t.remove();
+    if (d.skipped) addMsg('Heartbeat is off. Enable it: Ctrl+K -> Permissions, or ' +
+      'POST /permissions {"capability":"heartbeat","allowed":true}. It then reads your ' +
+      'recent activity on a timer and updates its own MEMORY.', 'bot');
+    else if (d.updated) addMsg('Heartbeat done - I updated my MEMORY.md with ' +
+      (d.memory_chars || '?') + ' chars of durable facts from your recent activity. ' +
+      'View it in Persona / Soul.', 'bot');
+    else addMsg('Heartbeat ran - my memory was already accurate, nothing to add.', 'bot');
+  } catch (e) { t.remove(); addMsg('Heartbeat error: ' + e, 'bot'); }
+}
+
+// ── Forge a tool ─────────────────────────────────────────────────────────────
+async function forgeTool() {
+  const cap = prompt('Describe the tool Aurum should build for itself:',
+                     'convert any currency to INR using a public API');
+  if (!cap) return;
+  hideWelcome();
+  const t = typing();
+  try {
+    const d = await (await fetch('/forge', { method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ capability: cap }) })).json();
+    t.remove();
+    if (d.error) addMsg('Forge: ' + escHtml(d.error) + (d.detail ? '\n' + escHtml(d.detail) : ''), 'bot');
+    else if (d.ok) addMsg('Forged new tool "' + d.tool + '"' +
+      (d.installed && d.installed.length ? ' (installed: ' + d.installed.join(', ') + ')' : '') +
+      '. Find it in Tools & Plugins.', 'bot');
+    else addMsg(JSON.stringify(d).slice(0, 300), 'bot');
+  } catch (e) { t.remove(); addMsg('Forge error: ' + e, 'bot'); }
 }
 
 </script>

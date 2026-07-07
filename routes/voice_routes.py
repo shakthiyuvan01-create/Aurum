@@ -38,15 +38,61 @@ def text_to_speech():
     voice = data.get("voice", "en-US-AriaNeural")
     if not text:
         return jsonify({"error": "text required"}), 400
-    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tmp:
-        result = _vs.speak(text, voice=voice, output_path=tmp.name)
+    # Windows fix: NamedTemporaryFile keeps the handle OPEN inside the with-
+    # block, so ElevenLabs/edge-tts could not write to it (PermissionError)
+    # and TTS silently fell back to the robotic device voice.
+    import uuid as _uuid
+    tmp_path = os.path.join(tempfile.gettempdir(), "tts_" + _uuid.uuid4().hex + ".mp3")
+    result = _vs.speak(text, voice=voice, output_path=tmp_path)
     if "error" in result:
+        log.warning("TTS failed: %s", result["error"])
         return jsonify(result), 500
-    return send_file(result["audio_path"], mimetype="audio/mpeg",
+    log.info("TTS backend: %s", result.get("backend", "?"))
+    resp = send_file(result["audio_path"], mimetype="audio/mpeg",
                      as_attachment=True, download_name="speech.mp3")
+    resp.headers["X-TTS-Backend"] = result.get("backend", "?")
+    return resp
 
 
 @voice_bp.route("/voice/voices")
 def list_voices():
     import services.voice_service as _vs
     return jsonify({"voices": _vs.list_voices()})
+
+
+@voice_bp.route("/voice/test")
+@login_required
+def voice_test():
+    """Diagnose the TTS chain: is ElevenLabs working? Which voices do you have?"""
+    import os as _os, requests as _rq
+    out = {"elevenlabs_key_set": bool(_os.getenv("ELEVENLABS_API_KEY", "")),
+           "active_voice_id": _os.getenv("ELEVENLABS_VOICE_ID", "21m00Tcm4TlvDq8ikWAM (Rachel, default)"),
+           "model": _os.getenv("ELEVENLABS_MODEL", "eleven_multilingual_v2")}
+    key = _os.getenv("ELEVENLABS_API_KEY", "")
+    if key:
+        try:
+            r = _rq.get("https://api.elevenlabs.io/v1/voices",
+                        headers={"xi-api-key": key}, timeout=20)
+            if r.status_code == 200:
+                out["elevenlabs"] = "WORKING"
+                out["your_voices"] = [
+                    {"name": v["name"], "voice_id": v["voice_id"],
+                     "category": v.get("category", "")}
+                    for v in r.json().get("voices", [])[:20]]
+                try:
+                    s = _rq.get("https://api.elevenlabs.io/v1/user/subscription",
+                                headers={"xi-api-key": key}, timeout=15).json()
+                    out["quota"] = "%s / %s characters used" % (
+                        s.get("character_count", "?"), s.get("character_limit", "?"))
+                except Exception:
+                    pass
+            else:
+                out["elevenlabs"] = "FAILED: HTTP %d %s" % (r.status_code, r.text[:150])
+        except Exception as e:
+            out["elevenlabs"] = "FAILED: %s" % str(e)[:150]
+    else:
+        out["elevenlabs"] = "no key - set ELEVENLABS_API_KEY"
+    out["fallback_chain"] = "ElevenLabs -> edge-tts (free) -> device voice"
+    out["how_to_change_voice"] = ("pick a voice_id from your_voices and set "
+                                  "ELEVENLABS_VOICE_ID=<id> in .env, then restart")
+    return jsonify(out)

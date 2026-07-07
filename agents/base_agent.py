@@ -20,11 +20,12 @@ class BaseAgent(ABC):
         self._log = logging.getLogger(f"agents.{self.name}")
 
     def _call_model(self, messages: list[dict], max_tokens: int = 1500) -> str:
-        # Unified provider layer: GitHub -> Gemini -> OpenAI -> Ollama fallback
+        # Unified provider layer with optional per-instance provider pinning
         try:
             from providers import AI
             return AI.chat(messages, model=self.model,
-                           max_tokens=max_tokens, temperature=0.4)
+                           max_tokens=max_tokens, temperature=0.4,
+                           provider=getattr(self, "_force_provider", None))
         except Exception as e:
             self._log.error("_call_model: %s", e)
             return f"[Exception: {e}]"

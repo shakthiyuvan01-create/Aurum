@@ -80,6 +80,27 @@ def _extract_knowledge(uname: str, msg: str, reply: str) -> None:
         log.debug("kg extraction skipped: %s", e)
 
 
+def _persona_block() -> str:
+    try:
+        from services.persona import system_block
+        return system_block()
+    except Exception:
+        return ""
+
+
+def _self_opt_overlay() -> str:
+    """The self-optimization overlay: an AI-tuned instruction block that only
+    gets applied after it measurably beat the golden-set eval. Empty by default."""
+    try:
+        import sqlite3, db as _db
+        con = sqlite3.connect(_db.DB_PATH, timeout=3)
+        row = con.execute("SELECT value FROM app_config WHERE key='system_overlay'").fetchone()
+        con.close()
+        return ("\n\n" + row[0]) if row and row[0] else ""
+    except Exception:
+        return ""
+
+
 def _smart_title(msg: str, reply: str) -> str:
     """AI-generated descriptive chat title: 'hi' -> 'Greeting exchange',
     'what is coding' -> 'Coding basics'. Falls back to the raw message."""
@@ -230,7 +251,9 @@ def stream():
         "No filler, no sycophancy, no trailing questions. "
         "Use markdown: **bold**, `code`, code blocks with language tags, "
         "LaTeX for math ($...$).\n"
+        + _persona_block()
         + (f"\n\nCustom instructions from user:\n{custom_inst}" if custom_inst else "")
+        + _self_opt_overlay()
         + proj_ctx
         + mem_ctx
         + skills_ctx
@@ -242,6 +265,23 @@ def stream():
         reply_text = ""
         _acc = []
         _err_text = ""
+        # ── Semantic cache: near-duplicate question -> instant answer ────────
+        if not image_b64 and not msg.startswith("/"):
+            try:
+                from services.semantic_cache import lookup as _cache_get
+                cached = _cache_get(uname, msg)
+            except Exception:
+                cached = None
+            if cached:
+                yield "data: " + json.dumps({"delta": cached}) + "\n\n"
+                chat["messages"].append({"role": "assistant", "text": cached})
+                if is_new_chat and msg:
+                    title = _smart_title(msg, cached)
+                if not is_guest:
+                    _save_chat(cid, uname, title, chat["messages"])
+                yield "data: " + json.dumps({"done": True, "chat_id": cid,
+                    "title": title, "model": "cache", "cached": True}) + "\n\n"
+                return
         try:
             for chunk in ag.run_stream(
                 msg              = msg,
@@ -288,6 +328,11 @@ def stream():
                 vmem.store_conversation(uname, msg, reply_text, cid)
             except Exception as ve:
                 log.warning("vector store failed: %s", ve)
+            try:
+                from services.semantic_cache import store as _cache_put
+                _cache_put(uname, msg, reply_text)
+            except Exception:
+                pass
             # live knowledge graph update (background thread, zero latency)
             try:
                 import threading as _th

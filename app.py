@@ -404,14 +404,16 @@ try:
     from flask_limiter import Limiter
     from flask_limiter.util import get_remote_address
     _limiter = Limiter(
-        app,
-        key_func=get_remote_address,
+        get_remote_address,
+        app=app,
         default_limits=["600 per hour", "60 per minute"],
         storage_uri="memory://",
     )
     log.info("Flask-Limiter active")
 except ImportError:
     log.info("flask-limiter not installed -- rate limiting disabled")
+except Exception as _le:
+    log.warning("flask-limiter init failed (%s) -- rate limiting disabled", _le)
 
 # -- Session age enforcement -------------------------------------------------------
 import time as _time
@@ -460,6 +462,19 @@ if _sched:
             _sched.add_job(_memory_consolidate, "cron", day=1, hour=3, minute=30,
                            id="memory_consolidate", replace_existing=True)
             log.info("Memory consolidation scheduled (monthly)")
+            from services.eval_harness import run_eval as _eh_run
+            _sched.add_job(lambda: _eh_run(alert=True), "cron", hour=4, minute=30,
+                           id="eval_harness", replace_existing=True)
+            log.info("Continuous eval harness scheduled (04:30 daily)")
+            from services.self_optimize import run_cycle as _so_run
+            _sched.add_job(lambda: _so_run(force=True), "cron",
+                           day_of_week="sun", hour=5, minute=0,
+                           id="self_optimize", replace_existing=True)
+            log.info("Verified self-improvement scheduled (Sun 05:00, permission-gated)")
+            from services.heartbeat import supervisor as _hb_super
+            _sched.add_job(_hb_super, "interval", minutes=15, id="heartbeat",
+                           replace_existing=True)
+            log.info("Heartbeat self-maintenance scheduled (permission-gated)")
         except Exception as _e:
             log.warning("self_improve scheduling failed: %s", _e)
     except Exception as _ale:

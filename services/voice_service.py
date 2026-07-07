@@ -9,6 +9,53 @@ from typing import Callable, Optional
 
 log = logging.getLogger("services.voice")
 
+_ELEVEN_VOICE_CACHE = None
+
+
+def _elevenlabs_pick_voice(key: str, force: bool = False) -> str:
+    """Find a voice this account can ACTUALLY use: list account voices and
+    live-test candidates with a 1-word request until one returns 200."""
+    global _ELEVEN_VOICE_CACHE
+    if _ELEVEN_VOICE_CACHE and not force:
+        return _ELEVEN_VOICE_CACHE
+    try:
+        import requests as _rq
+        r = _rq.get("https://api.elevenlabs.io/v1/voices",
+                    headers={"xi-api-key": key}, timeout=15)
+        if r.status_code != 200:
+            log.warning("ElevenLabs /voices failed: HTTP %d %s",
+                        r.status_code, r.text[:120])
+            return "21m00Tcm4TlvDq8ikWAM"
+        voices = r.json().get("voices", [])
+        log.info("ElevenLabs account has %d voices: %s", len(voices),
+                 ", ".join("%s(%s)" % (v.get("name"), v.get("category"))
+                           for v in voices[:8]))
+        cloned  = [v for v in voices if v.get("category") == "cloned"]
+        premade = [v for v in voices if v.get("category") == "premade"]
+        candidates = (cloned + premade + voices)[:4]
+        model_id = os.getenv("ELEVENLABS_MODEL", "eleven_multilingual_v2")
+        for v in candidates:
+            try:
+                t = _rq.post(
+                    "https://api.elevenlabs.io/v1/text-to-speech/%s" % v["voice_id"],
+                    headers={"xi-api-key": key, "Content-Type": "application/json"},
+                    json={"text": "ok", "model_id": model_id}, timeout=20)
+                if t.status_code == 200:
+                    _ELEVEN_VOICE_CACHE = v["voice_id"]
+                    log.info("ElevenLabs USABLE voice found: %s (%s)",
+                             v.get("name"), v.get("category"))
+                    return _ELEVEN_VOICE_CACHE
+                log.warning("voice %s (%s) rejected: HTTP %d", v.get("name"),
+                            v.get("category"), t.status_code)
+            except Exception as te:
+                log.debug("voice test error: %s", te)
+        log.warning("ElevenLabs: NO usable voice on this plan - "
+                    "falling back to edge-tts permanently this session")
+        _ELEVEN_VOICE_CACHE = "NONE"
+    except Exception as e:
+        log.warning("voice pick failed: %s", e)
+    return _ELEVEN_VOICE_CACHE or "21m00Tcm4TlvDq8ikWAM"
+
 _VOSK_MODEL = None  # cached vosk model (68MB - load once)
 
 
@@ -102,14 +149,32 @@ def speak(text: str, voice: str = "en-US-AriaNeural", output_path: str = None) -
     if elabs_key:
         try:
             import requests
-            voice_id = os.getenv("ELEVENLABS_VOICE_ID", "21m00Tcm4TlvDq8ikWAM")
+            voice_id = os.getenv("ELEVENLABS_VOICE_ID") or _elevenlabs_pick_voice(elabs_key)
+            if voice_id == "NONE":
+                raise RuntimeError("no API-usable ElevenLabs voice on this plan")
+            model_id = os.getenv("ELEVENLABS_MODEL", "eleven_multilingual_v2")
             r = requests.post(
                 f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream",
                 headers={"xi-api-key": elabs_key, "Content-Type": "application/json"},
-                json={"text": text, "model_id": "eleven_monolingual_v1",
+                json={"text": text, "model_id": model_id,
                       "voice_settings": {"stability": 0.5, "similarity_boost": 0.8}},
                 timeout=30,
             )
+            if r.status_code in (402, 403, 404):
+                # configured voice not allowed on this plan -> use an account voice
+                log.warning("ElevenLabs voice %s rejected (%d), picking an "
+                            "account voice", voice_id, r.status_code)
+                alt = _elevenlabs_pick_voice(elabs_key, force=True)
+                if alt and alt != voice_id:
+                    r = requests.post(
+                        f"https://api.elevenlabs.io/v1/text-to-speech/{alt}/stream",
+                        headers={"xi-api-key": elabs_key, "Content-Type": "application/json"},
+                        json={"text": text, "model_id": model_id,
+                              "voice_settings": {"stability": 0.5, "similarity_boost": 0.8}},
+                        timeout=30,
+                    )
+            if r.status_code != 200:
+                log.warning("ElevenLabs HTTP %d: %s", r.status_code, r.text[:200])
             if r.status_code == 200:
                 out = output_path or "/tmp/tts_output.mp3"
                 with open(out, "wb") as f:

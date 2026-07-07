@@ -193,7 +193,25 @@ def skill_levels():
     except Exception as e:
         log.debug("levels: %s", e)
     levels.sort(key=lambda x: -x["xp"])
-    return jsonify({"levels": levels[:20]})
+    total_xp = sum(l["xp"] for l in levels)
+    return jsonify({"levels": levels[:20], **_rank_from_xp(total_xp)})
+
+
+_RANKS = [(0, "Novice"), (500, "Apprentice"), (2000, "Adept"),
+          (5000, "Expert"), (12000, "Master"), (30000, "Grandmaster"),
+          (70000, "Legend")]
+
+def _rank_from_xp(total_xp: int) -> dict:
+    # level 1-50 on a gentle curve
+    level = min(50, int((total_xp / 40) ** 0.5) + 1)
+    rank = _RANKS[0][1]
+    for threshold, title in _RANKS:
+        if total_xp >= threshold:
+            rank = title
+    next_level_xp = ((level) ** 2) * 40
+    return {"total_xp": total_xp, "level": level, "rank": rank,
+            "next_level_at": next_level_xp,
+            "progress_pct": min(100, round(100 * total_xp / max(next_level_xp, 1)))}
 
 
 # ── 7. AI Company org chart ──────────────────────────────────────────────────
@@ -584,3 +602,58 @@ def export_all():
     return send_file(buf, mimetype="application/zip", as_attachment=True,
                      download_name="aurum_backup_%s_%s.zip"
                                     % (uname, _t.strftime("%Y%m%d")))
+
+
+@aurum_bp.route("/eval_harness", methods=["POST"])
+@login_required
+def eval_harness_run():
+    """Run the golden-set quality eval right now (8 prompts, ~1 min)."""
+    from services.eval_harness import run_eval
+    return jsonify(run_eval(alert=False))
+
+
+# ── Verified self-improvement loop ───────────────────────────────────────────
+@aurum_bp.route("/self_optimize/run", methods=["POST"])
+@login_required
+def self_optimize_run():
+    """Run one measure->change->verify->keep-or-revert cycle."""
+    from services.self_optimize import run_cycle
+    return jsonify(run_cycle(force=True))
+
+
+@aurum_bp.route("/self_optimize/history")
+@login_required
+def self_optimize_history():
+    from services.self_optimize import history, _get_overlay
+    return jsonify({"active_overlay": _get_overlay(), "attempts": history()})
+
+
+@aurum_bp.route("/self_optimize/reset", methods=["POST"])
+@login_required
+def self_optimize_reset():
+    from services.self_optimize import reset
+    return jsonify(reset())
+
+
+# ── Persona / soul files ─────────────────────────────────────────────────────
+@aurum_bp.route("/persona")
+@login_required
+def persona_get():
+    from services import persona
+    return jsonify({f: persona.read(f) for f in persona.FILES})
+
+
+@aurum_bp.route("/persona/<name>", methods=["POST"])
+@login_required
+def persona_set(name):
+    from services import persona
+    body = request.get_json(force=True) or {}
+    return jsonify(persona.write(name, body.get("content", "")))
+
+
+@aurum_bp.route("/heartbeat/run", methods=["POST"])
+@login_required
+def heartbeat_run():
+    """Trigger a self-maintenance pass now (reads recent activity -> updates memory)."""
+    from services.heartbeat import run_tick
+    return jsonify(run_tick(force=True))

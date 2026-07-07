@@ -88,11 +88,64 @@ class UnifiedMemory:
         return flat[:limit]
 
     def context(self, username: str, query: str) -> str:
-        """Formatted string ready for a system prompt."""
+        """Formatted string ready for a system prompt (memory + GraphRAG)."""
+        parts = []
         try:
             from services.memory_layers import mem
-            return mem.context_string(username, query)
+            c = mem.context_string(username, query)
+            if c:
+                parts.append(c)
         except Exception:
+            pass
+        g = self.graph_walk(username, query)
+        if g:
+            parts.append("Connected knowledge (graph):\n" + g)
+        return "\n\n".join(parts)
+
+    def graph_walk(self, username: str, query: str, hops: int = 2,
+                   limit: int = 12) -> str:
+        """GraphRAG: find entities mentioned in the query, walk the knowledge
+        graph N hops out, return the connected triples. Answers multi-hop
+        questions flat vector search cannot ("who did I discuss X with, and
+        what did they recommend?")."""
+        try:
+            import sqlite3, db as _db
+            words = {w.lower() for w in query.split() if len(w) > 3}
+            if not words:
+                return ""
+            con = sqlite3.connect(_db.DB_PATH, timeout=5)
+            con.row_factory = sqlite3.Row
+            try:
+                clause = " OR ".join("lower(name) LIKE ?" for _ in words)
+                seeds = {r["name"] for r in con.execute(
+                    "SELECT name FROM kg_entities WHERE username=? AND (%s) LIMIT 5"
+                    % clause, [username] + ["%%%s%%" % w for w in words])}
+                if not seeds:
+                    return ""
+                triples, frontier, seen = [], set(seeds), set(seeds)
+                for _ in range(hops):
+                    if not frontier or len(triples) >= limit:
+                        break
+                    ph = ",".join("?" for _ in frontier)
+                    rows = con.execute(
+                        "SELECT source, relation, target FROM kg_relations "
+                        "WHERE username=? AND (source IN (%s) OR target IN (%s)) "
+                        "LIMIT ?" % (ph, ph),
+                        [username] + list(frontier) * 2 + [limit]).fetchall()
+                    nxt = set()
+                    for r in rows:
+                        t = "%s %s %s" % (r["source"], r["relation"], r["target"])
+                        if t not in triples:
+                            triples.append(t)
+                        for node in (r["source"], r["target"]):
+                            if node not in seen:
+                                nxt.add(node); seen.add(node)
+                    frontier = nxt
+                return "\n".join("- " + t for t in triples[:limit])
+            finally:
+                con.close()
+        except Exception as e:
+            log.debug("graph walk failed: %s", e)
             return ""
 
     # ── delete ───────────────────────────────────────────────────────────────
