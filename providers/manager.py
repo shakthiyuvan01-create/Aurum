@@ -28,6 +28,21 @@ _DB = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                    "aiaurum.db")
 _track_lock = threading.Lock()
 
+# Circuit breaker: after a failure, skip a provider for a cooldown so one dead
+# provider (bad key, 503, 429) can't add 30s to every request.
+_breaker = {}   # provider name -> unix time to retry after
+_BREAKER_COOLDOWN = 90
+
+
+def _tripped(name: str) -> bool:
+    return _breaker.get(name, 0) > time.time()
+
+
+def _trip(name: str, err: str):
+    # rate-limit and auth/plan errors deserve a longer cooldown
+    cd = 300 if any(c in err for c in ("429", "401", "402", "403")) else _BREAKER_COOLDOWN
+    _breaker[name] = time.time() + cd
+
 
 def _track(provider: str, kind: str, prompt_chars: int, reply_chars: int,
            latency_ms: int, failed_over: bool):
@@ -64,7 +79,7 @@ _ALL = {
 class ProviderManager:
     def __init__(self):
         order = os.getenv("AI_PROVIDER_ORDER",
-                          "github,nara,bluesminds,ollama,gemini,openai")
+                          "nara,github,bluesminds,gemini,openai,ollama")
         self.chain = [_ALL[n.strip()] for n in order.split(",") if n.strip() in _ALL]
         self.last_used = None
         self.last_errors = []
@@ -78,7 +93,7 @@ class ProviderManager:
         failed_over = False
         for p in chain:
             try:
-                if not p.available():
+                if not p.available() or _tripped(p.name):
                     continue
                 t0 = time.time()
                 out = p.generate(prompt, system=system, model=model,
@@ -90,6 +105,7 @@ class ProviderManager:
                     return out
             except Exception as e:
                 failed_over = True
+                _trip(p.name, str(e))
                 self.last_errors.append("%s: %s" % (p.name, e))
                 log.warning("provider %s failed: %s", p.name, e)
         return "[AI error: all providers failed - " + "; ".join(self.last_errors[-3:]) + "]"
@@ -102,7 +118,7 @@ class ProviderManager:
         failed_over = False
         for p in chain:
             try:
-                if not p.available():
+                if not p.available() or _tripped(p.name):
                     continue
                 t0 = time.time()
                 out = p.chat(messages, model=model, max_tokens=max_tokens,
@@ -115,6 +131,7 @@ class ProviderManager:
                     return out
             except Exception as e:
                 failed_over = True
+                _trip(p.name, str(e))
                 self.last_errors.append("%s: %s" % (p.name, e))
                 log.warning("provider %s chat failed: %s", p.name, e)
         return "[AI error: all providers failed - " + "; ".join(self.last_errors[-3:]) + "]"
@@ -164,6 +181,8 @@ class ProviderManager:
         return {
             "chain": [p.name for p in self.chain],
             "available": {p.name: p.available() for p in self.chain},
+            "circuit_open": {n: round(t - time.time()) for n, t in _breaker.items()
+                             if t > time.time()},
             "last_used": self.last_used,
             "last_errors": self.last_errors,
         }
