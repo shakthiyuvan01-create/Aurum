@@ -4,13 +4,13 @@
 
 # ✦ AI AURUM
 
-**The Personal AI Operating System**
+**The Personal, Self-Improving AI Operating System**
 
 [![Made by Yuvan Industries](https://img.shields.io/badge/Made%20by-Yuvan%20Industries-gold?style=for-the-badge)](https://github.com)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python)](https://python.org)
-[![Flask](https://img.shields.io/badge/Flask-22%20Blueprints-black?style=for-the-badge&logo=flask)](https://flask.palletsprojects.com)
+[![Flask](https://img.shields.io/badge/Flask-23%20Blueprints-black?style=for-the-badge&logo=flask)](https://flask.palletsprojects.com)
 [![Multi-Agent](https://img.shields.io/badge/AI-12%2B%20Agents%20%7C%2048%20Tools-orange?style=for-the-badge)](https://github.com)
-[![Providers](https://img.shields.io/badge/Providers-GitHub%20%7C%20Nara%20%7C%20Gemini%20%7C%20OpenAI%20%7C%20Ollama-46E3B7?style=for-the-badge)](https://github.com)
+[![Providers](https://img.shields.io/badge/Providers-6--chain%20failover-46E3B7?style=for-the-badge)](https://github.com)
 
 > *"The Future Is Not Coming. We Are Building It."*
 > — Yuvan Industries
@@ -22,148 +22,165 @@
 ## ✨ What is AI Aurum?
 
 **AI Aurum** is a full personal AI operating system that runs in your browser. A CEO agent
-orchestrates a company of specialist agents (and hires new ones when needed), backed by a
+orchestrates a company of specialist agents (and hires new ones on demand), backed by a
 5-tier memory system, a live knowledge graph, an experience database, 48 auto-discovered
 tools, voice conversation, screen guidance, autonomous research, and a command palette that
 puts all of it one keystroke away.
 
-Everything runs against a **unified provider chain** — GitHub Models → NaraRouter → Gemini
-→ OpenAI → Ollama — with automatic failover, so the assistant keeps working even when a
-backend goes down or runs out of quota.
+It **improves itself** in three bounded, verifiable ways: a heartbeat loop that maintains
+its own memory, a self-optimizer that tunes its prompt only when a change measurably raises
+its eval score, and a tool forge that writes, tests and installs new tools at runtime.
+
+Everything runs against a **6-provider chain** — GitHub Models → NaraRouter → BluesMinds →
+Gemini → OpenAI → Ollama — with automatic failover and speculative racing, so it keeps
+working even when a backend rate-limits or goes down.
 
 ---
 
 ## 🚀 Quick Start
 
 ```bash
-pip install -r requirements.txt
-python app.py            # http://localhost:5000
+pip install -r requirements.txt        # or requirements-render.txt on cloud
+python app.py                          # http://localhost:5000
+python app.py --https                  # HTTPS (needed for phone mic)
 ```
 
-`.env` keys (any ONE provider is enough — the chain handles the rest):
+`.env` — any ONE provider key is enough; the chain handles the rest:
 
 | Key | Purpose |
 |---|---|
-| `GITHUB_TOKEN` | GitHub Models (gpt-4o / gpt-4o-mini) — primary |
+| `GITHUB_TOKEN` | GitHub Models (gpt-4o / gpt-4o-mini) |
 | `NARA_API_KEY` + `NARA_MODEL` | NaraRouter gateway (mistral-large, 5M free tokens) |
-| `GEMINI_API_KEY` | Google Gemini + grounded web search |
+| `BLUESMINDS_KEY` | BluesMinds gateway |
+| `GEMINI_API_KEY` + `GEMINI_MODEL` | Google Gemini (default gemini-2.5-flash) + vision fallback |
 | `OPENAI_API_KEY` | OpenAI API + Whisper STT |
-| `ELEVENLABS_API_KEY` | Premium text-to-speech (falls back to edge-tts, then device voice) |
-| `AI_PROVIDER_ORDER` | Optional, e.g. `nara,github,gemini,openai,ollama` |
-| `SMTP_USER` / `SMTP_PASS` | Email tool |
+| `ELEVENLABS_API_KEY` + `ELEVENLABS_VOICE_ID` | Voice (auto-falls back to edge-tts, then device) |
+| `AI_PROVIDER_ORDER` | e.g. `nara,github,bluesminds,gemini,openai,ollama` |
+| `AURUM_API_KEY` | enables the external API + CLI |
+| `TELEGRAM_BOT_TOKEN` + `TELEGRAM_ALLOWED_IDS` | Telegram bot channel |
+| `SEED_USERS` | `name:pass,name2:pass2` — recreates accounts on boot (survives cloud wipes) |
 
 ---
 
-## ⌨️ Command Palette — press **Ctrl+K**
+## 🧬 Self-Improvement (bounded & verifiable)
 
-One search bar controls everything: panels, tools, dashboards, missions, research,
-personalities, and every shortcut below.
+Aurum improves what it *knows* and *does* — never its own core code unattended. Every loop
+is gated (OFF by default), reversible, and human-visible.
+
+| System | What it does | Trigger |
+|---|---|---|
+| **Heartbeat** | On a timer, reads your recent activity and rewrites its own MEMORY.md with durable new facts | Ctrl+K / `/heartbeat/run` — permission `heartbeat` |
+| **Self-optimizer** | Runs the eval, tweaks its system prompt for the weakest area, keeps it ONLY if the score beats baseline by 3+, else reverts | `/self_optimize/run` — permission `self_improve` |
+| **Tool forge** | Writes a new tool, scans it for unsafe ops, tests it in a subprocess, auto-installs missing pip packages, registers it live | Ctrl+K / `/forge` — permission `self_extend` |
+| **Experience DB** | Every team run distills a reusable strategy; failures write "avoid" lessons injected into future runs | automatic |
+| **Eval harness** | 8 golden prompts run nightly; a >15% quality drop alerts you on Telegram | `/eval_harness` (04:30 daily) |
+| **Persona / Soul** | Editable SOUL / IDENTITY / MEMORY / HEARTBEAT markdown shape behavior; AI may self-edit MEMORY only | Ctrl+K → Persona / Soul |
+| **Dream mode** | Nightly: mines the web for discoveries in your topics, writes a Dream Report | 02:30, permission `self_improve` |
+
+> These are the **bounded** rungs of self-improvement that actually work — the system can only
+> climb a hill its evaluator can measure, and any change it cannot verify is rolled back.
+
+---
+
+## ⌨️ Command Palette — press **Ctrl+K** (or "Everything" in the + menu on phone)
 
 ### Chat shortcuts
 
 | Shortcut | What it does |
 |---|---|
-| `/team <goal>` | CEO + specialist agents with a **live status board**, message passing, and a self-critique review round |
-| `/vibe <app idea>` | Vibe coding — dev team builds a working multi-file project |
+| `/team <goal>` | CEO + specialists: live board, message passing, tree-of-thought branching, self-critique review, speculative provider racing |
+| `/vibe <app idea>` | Vibe coding — builds a working multi-file project |
 | `/pm <project>` | Autonomous project manager: roadmap → code → tests → fixes → git |
-| `/deep <topic>` | Autonomous research report with cited sources (`/deepppt` adds a PowerPoint) |
-| `/mission <goal>` | Mission Mode: objectives, roadmap, tasks, deadlines, budget, progress |
-| `/twin <question>` | Your Digital Twin answers the way *you* would |
-| `/detective <problem>` | Evidence → hypotheses with confidence → best explanation |
-| `/lab <prompt>` | AI Laboratory: run one prompt across models, judge the winner |
-| `/innovate` `/strategy` `/resolve` `/textbook` `/negotiate` | Thinking modes: invention, strategy + scenarios + failure odds, source conflicts, mini-textbook, contract review |
-| `/audit` / `/docs` | Code audit report / self-generated README + architecture docs |
-| `/research <q>` or `/r` | Quick deep-research mode |
+| `/deep <topic>` | Deep research (draft-and-verify), cited sources (`/deepppt` adds slides) |
+| `/mission <goal>` | Mission Mode: objectives, roadmap, tasks, budget, progress |
+| `/twin` `/detective` `/lab` | Digital twin · investigation · model comparison |
+| `/innovate` `/strategy` `/resolve` `/textbook` `/negotiate` | Thinking modes |
+| `/audit` `/docs` | Code audit report · self-generated README + architecture |
 
 ### The + menu
-
-Upload files & photos · Take screenshot · **Live Screen Guidance** (AI sees your screen) ·
-**Watch Screen for Errors** (auto-alerts) · **Voice Conversation** (hands-free, say "stop"/"continue") ·
-**Meeting Mode** (record any Teams/Zoom/Meet tab → minutes + action items) · Deep Research ·
-**Agent Team** · **Vibe Code** · **Document Canvas** · Analyze Data · Memory · Tools & Plugins · Code & Files
+Upload files & photos · Screenshot (gallery picker on phone) · **Live Screen Guidance** ·
+**Watch Screen for Errors** · **Voice Conversation** (say "stop"/"continue") ·
+**Meeting Mode** (record → minutes) · Agent Team · Vibe Code · **Document Canvas** ·
+Persona/Soul · Heartbeat · Forge a Tool · Tools & Plugins · Code & Files
 
 ---
 
-## 🧠 Intelligence Systems
+## 🧠 Intelligence & Memory
 
-| System | What it does |
-|---|---|
-| **CEO Orchestrator** | Routes goals to specialists, runs parallel waves, critiques its own answer, dispatches review rounds |
-| **Agent Company** | 12 built-in employees with personalities — and the CEO **hires new specialists** (CFO, legal, robotics…) when a job needs one |
-| **Agent Mailbox** | Agents message each other: `@reviewer: check the SQL` is delivered into the reviewer's context |
-| **5-Tier Memory** | Working → conversation → knowledge graph → vector (ChromaDB) → archive (FTS5), unified behind one Memory API |
-| **Live Knowledge Graph** | Every conversation extracts entities/relations in the background — browse it as the **Memory Map** |
-| **Experience Database** | Every solved problem becomes a reusable strategy, auto-injected into similar future runs |
-| **Standing Rules** | Say *"Always answer electrical questions using IS standards"* — stored and applied forever |
-| **Memory DNA** | Identity profile: learning/decision/coding style, strengths, gaps, monthly evolution |
-| **Memory Compression** | 1000s of facts → clusters → 3 permanent beliefs |
-| **Dream Mode** | Nightly (permission-gated): mines the web for discoveries in your topics, writes a Dream Report |
-| **RAG Pipeline** | Documents: chunk → embed → retrieve top-k instead of stuffing prompts |
-| **Prediction Engine** | Clickable chips predict your next request after every answer |
-| **Confidence Bars** | Every reply shows self-evaluated confidence (green/amber) |
+CEO orchestrator with dynamic hiring · agent mailbox (`@reviewer: ...`) · **speculative
+parallel execution** (races two providers, first good answer wins) · **tree-of-thought**
+planning · 5-tier memory · **GraphRAG** multi-hop retrieval · **semantic cache** (near-
+duplicate questions answered instantly, zero tokens) · live knowledge graph · Memory DNA ·
+standing rules · RAG with citations · **file-watcher** auto-ingestion (`workspace/inbox/`).
 
 ## 📊 Dashboards
-
-| View | Where |
-|---|---|
-| **Live Dashboard** | `/live` — SSE system stats + agents + economics + activity, auto-updating |
-| **Consciousness Dashboard** | Ctrl+K — what the AI knows, is unsure about, and is waiting for; risk level |
-| **AI Timeline** | Everything you did, day by day |
-| **AI Universe** | Your topics as clickable planets |
-| **Command Center / Skill Levels / Pattern Hunter / Research DB / Hired Agents** | Ctrl+K |
-
-## 🛠️ Tools (48, auto-discovered)
-
-Multi-step **web agent** (Playwright, goal-driven) · **video → SOP/minutes** (transcribe + synthesize) ·
-website monitor · electrical engineering (IS/IEC) · document agent (PDF/DOCX/OCR + RAG Q&A) ·
-meeting assistant · dev agent · code auditor · doc generator · simulator (preview destructive ops) ·
-knowledge graph · email/messaging (permission-gated) · scheduler · vision · OCR · Excel/PPT/PDF ·
-weather · news · YouTube · stock price plugin · **+ drop any .py into `plugins/` — zero config**
+`/live` auto-updating command center · Consciousness · Timeline · Universe · Memory Map ·
+Skill Levels (1–50 + rank) · Usage/cost per provider · Pattern Hunter · Research DB · Ctrl+K.
 
 ## 🔐 Safety
+Login + role-based access · **Permission Manager** (browser, shell, files_delete, packages,
+messaging, self_improve, self_extend, heartbeat, background_ai) — dangerous ones OFF by
+default · simulate-before-send on email/deletes · forge sandboxed + scanned · background-AI
+kill switch.
 
-- **Permission Manager** (`/permissions`): browser, shell, file-delete, packages, messaging, self-improve, background-AI — dangerous ones OFF by default
-- **Background AI toggle** — one switch kills all ambient AI calls (Ctrl+K)
-- **Simulator** — destructive operations preview exactly what they'd do first
-- **Self-improvement & Dream Mode** — suggestions only, rate-limited, never auto-commit
-- Web agent refuses payment/password fields; guests are sandboxed
+## 🛠️ Channels & Interfaces
+Web PWA (mobile-ready) · **Telegram bot** · **external API + webhooks** (`/api/ask`,
+`/api/team`, `/api/tool`) · **CLI** (`python aurum_cli.py "..."`) · one-click **`/export`**
+backup zip.
+
+---
 
 ## 🏗️ Architecture
 
 ```
-User ⇄ SSE Chat UI (PWA, mobile-ready, Ctrl+K palette)
+User ⇄ SSE Chat UI (PWA, Ctrl+K palette, persona-shaped)
           │
-Flask (22 blueprints, 129 routes) ── tracer → /traces (thinking screen)
+Flask (23 blueprints, ~145 routes) ── tracer → thinking screen
           │
-CEO Agent ──► Planner · Researcher · Programmer · Reviewer · Debugger
-   │          Browser · Vision · Security · Automation · Memory · Voice
-   │          + dynamically hired specialists          (agent mailbox ⇄)
+CEO Agent ─► Planner · Researcher · Programmer · Reviewer · Debugger · Browser
+   │         Vision · Security · Automation · Memory · Voice + hired specialists
+   │         (mailbox ⇄ · speculative racing · tree-of-thought · review round)
           │
-providers/ ── GitHub → Nara → Gemini → OpenAI → Ollama (auto-failover)
+providers/ ── GitHub → Nara → BluesMinds → Gemini → OpenAI → Ollama (failover + racing)
           │
-SQLite (WAL) + ChromaDB + NetworkX ── memory, experiences, missions,
-timeline, research DB, canvas versions, benchmarks, agent logs
+Self-improvement ── heartbeat · self-optimizer · tool forge · experience DB · eval harness
+          │
+SQLite (WAL) + ChromaDB + NetworkX ── memory, missions, timeline, research DB, canvas,
+                                       usage, benchmarks, persona files
 ```
 
 ## 📁 Key Paths
 
 | Path | Contents |
 |---|---|
-| `app.py` | 22 blueprints, scheduler (auto-learn 03:00, dream 02:30, self-review Sun 04:00) |
+| `app.py` | 23 blueprints; schedulers: auto-learn, dream, self-review, missions, eval, heartbeat |
+| `providers/` | 6-provider chain (`AI.chat` / `generate` / `generate_json` / `draft_verify`) |
 | `agents/` | BaseAgent + 12 specialists + CEO + `run_team_stream` |
-| `providers/` | Unified AI layer — add a provider in ~40 lines |
-| `services/` | memory, mailbox, experience, permissions, RAG, dream, activity log… |
-| `tools/` | 48 tools — each: `NAME`, `DESCRIPTION`, `INPUTS`, `run()` |
-| `routes/` | API blueprints (`aurum_routes.py` = dashboards/DNA/universe…) |
-| `templates/` | `index.html` (single-page app) + `dashboard.html` (`/live`) |
-| `plugins/` | Drop-in plugins, auto-loaded |
+| `services/` | persona, heartbeat, self_optimize, tool_forge, experience_db, semantic_cache, memory_api, permissions… |
+| `persona/` | SOUL / IDENTITY / MEMORY / HEARTBEAT markdown |
+| `tools/` | 48 tools — each `NAME` / `DESCRIPTION` / `INPUTS` / `run()` |
+| `plugins/` | drop-in + AI-forged (`forged_*.py`) tools, auto-loaded |
+| `templates/` | `index.html` app + `dashboard.html` (`/live`) |
+| `aurum_cli.py` | terminal client |
+
+---
+
+## ☁️ Deploy on Render
+
+1. Push to GitHub → Render → New → Blueprint (uses `render.yaml`, `requirements-render.txt`).
+2. In the dashboard **Environment**, set your provider keys + `SEED_USERS` (free tier wipes
+   the disk on redeploy, so seeded accounts recreate on boot).
+3. Render gives HTTPS automatically → phone mic/voice/camera work with no setup.
+4. Start command: `gunicorn app:app --workers 1 --worker-class gthread --threads 12 --timeout 300 --bind 0.0.0.0:$PORT` (1 worker so schedulers and async jobs share state).
+5. Verify providers at `/providers/test`; verify voice at `/voice/test`.
+
+> Persistent disks need a paid plan. On free tier, drop the `disk:` block — everything works,
+> but data resets on redeploy/spin-down.
 
 ---
 
 <div align="center">
 
-**Built with ⚡ by Yuvan Industries**
-
-*104 → 140+ tasks and counting.*
+**Built with ⚡ by Yuvan Industries** — *and increasingly, by itself.*
 
 </div>

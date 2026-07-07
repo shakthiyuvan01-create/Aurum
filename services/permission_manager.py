@@ -31,6 +31,7 @@ DEFAULTS = {
     "self_improve":   False,   # autonomous self-improvement loop (suggestions only)
     "background_ai":  True,    # ambient intelligence: KG extraction, predictions, experience learning
     "self_extend":    False,   # tool forge: AI writes + registers new tools
+    "heartbeat":      False,   # autonomous self-maintenance (updates own memory)
 }
 
 

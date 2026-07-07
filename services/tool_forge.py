@@ -69,26 +69,43 @@ def forge(capability: str, username: str = "default") -> dict:
     name = m.group(1)
     path = os.path.join(PLUGIN_DIR, "forged_%s.py" % name)
 
-    # test in an isolated subprocess: compile + import + shape check
+    # test in an isolated subprocess: compile + import + shape check.
+    # Ada-SI style: on "No module named X", pip-install X and retry (gated).
+    import re as _re2
     test_path = path + ".candidate"
     with open(test_path, "w", encoding="utf-8") as f:
         f.write(code)
-    try:
-        r = subprocess.run(
-            [sys.executable, "-c",
-             "import importlib.util,sys;"
-             "spec=importlib.util.spec_from_file_location('cand', %r);"
-             "m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m);"
-             "assert isinstance(m.NAME,str) and callable(m.run) and m.DESCRIPTION;"
-             "print('SHAPE_OK')" % test_path],
-            capture_output=True, text=True, timeout=10)
-        if "SHAPE_OK" not in r.stdout:
+    installed_pkgs = []
+    allow_pip = os.getenv("FORGE_ALLOW_PIP", "1") == "1"
+    for attempt in range(4):
+        try:
+            r = subprocess.run(
+                [sys.executable, "-c",
+                 "import importlib.util,sys;"
+                 "spec=importlib.util.spec_from_file_location('cand', %r);"
+                 "m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m);"
+                 "assert isinstance(m.NAME,str) and callable(m.run) and m.DESCRIPTION;"
+                 "print('SHAPE_OK')" % test_path],
+                capture_output=True, text=True, timeout=15)
+        except subprocess.TimeoutExpired:
             os.unlink(test_path)
-            return {"error": "candidate failed testing",
-                    "detail": (r.stderr or r.stdout)[-300:]}
-    except subprocess.TimeoutExpired:
+            return {"error": "candidate import timed out (possible infinite loop)"}
+        if "SHAPE_OK" in r.stdout:
+            break
+        err = (r.stderr or r.stdout)
+        m2 = _re2.search(r"No module named ['\"]([a-zA-Z0-9_\-]+)['\"]", err)
+        if m2 and allow_pip and len(installed_pkgs) < 4:
+            pkg = m2.group(1).split(".")[0]
+            log.info("forge: installing missing package %s", pkg)
+            pr = subprocess.run(
+                [sys.executable, "-m", "pip", "install", "--quiet", pkg],
+                capture_output=True, text=True, timeout=300)
+            if pr.returncode == 0:
+                installed_pkgs.append(pkg)
+                continue
         os.unlink(test_path)
-        return {"error": "candidate import timed out (possible infinite loop)"}
+        return {"error": "candidate failed testing", "detail": err[-300:],
+                "installed": installed_pkgs}
 
     os.replace(test_path, path)
     try:
@@ -97,7 +114,9 @@ def forge(capability: str, username: str = "default") -> dict:
     except Exception as e:
         return {"ok": True, "tool": name, "file": path,
                 "note": "registered on next restart (%s)" % e}
-    log.info("forged new tool: %s", name)
-    return {"ok": True, "tool": name, "file": path,
-            "result": "New tool '%s' forged, tested and registered. "
-                      "Run it from Tools & Plugins or /tools/run." % name}
+    log.info("forged new tool: %s (installed: %s)", name, installed_pkgs)
+    return {"ok": True, "tool": name, "file": path, "installed": installed_pkgs,
+            "result": "New tool '%s' forged, tested%s and registered. "
+                      "Run it from Tools & Plugins or /tools/run."
+                      % (name, (" (installed: " + ", ".join(installed_pkgs) + ")")
+                         if installed_pkgs else "")}

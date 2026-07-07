@@ -80,6 +80,27 @@ def _extract_knowledge(uname: str, msg: str, reply: str) -> None:
         log.debug("kg extraction skipped: %s", e)
 
 
+def _persona_block() -> str:
+    try:
+        from services.persona import system_block
+        return system_block()
+    except Exception:
+        return ""
+
+
+def _self_opt_overlay() -> str:
+    """The self-optimization overlay: an AI-tuned instruction block that only
+    gets applied after it measurably beat the golden-set eval. Empty by default."""
+    try:
+        import sqlite3, db as _db
+        con = sqlite3.connect(_db.DB_PATH, timeout=3)
+        row = con.execute("SELECT value FROM app_config WHERE key='system_overlay'").fetchone()
+        con.close()
+        return ("\n\n" + row[0]) if row and row[0] else ""
+    except Exception:
+        return ""
+
+
 def _smart_title(msg: str, reply: str) -> str:
     """AI-generated descriptive chat title: 'hi' -> 'Greeting exchange',
     'what is coding' -> 'Coding basics'. Falls back to the raw message."""
@@ -230,7 +251,9 @@ def stream():
         "No filler, no sycophancy, no trailing questions. "
         "Use markdown: **bold**, `code`, code blocks with language tags, "
         "LaTeX for math ($...$).\n"
+        + _persona_block()
         + (f"\n\nCustom instructions from user:\n{custom_inst}" if custom_inst else "")
+        + _self_opt_overlay()
         + proj_ctx
         + mem_ctx
         + skills_ctx
