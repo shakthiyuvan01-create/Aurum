@@ -32,7 +32,7 @@ services:
       - key: ADMIN_USERNAMES
         sync: false
       - key: AI_PROVIDER_ORDER
-        value: github,nara,bluesminds,gemini,openai,ollama
+        value: nara,github,bluesminds,gemini,openai,ollama
       - key: RENDER_DATA_DIR
         value: /data
     disk:

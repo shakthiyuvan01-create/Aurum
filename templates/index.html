@@ -2383,7 +2383,9 @@ async function captureScreen() {
     return;
   }
   try {
-    const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+    const stream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: 'monitor' }, audio: false,
+      preferCurrentTab: false, selfBrowserSurface: 'exclude',
+      surfaceSwitching: 'include', systemAudio: 'exclude' });
     const track = stream.getVideoTracks()[0];
     const video = document.createElement('video');
     video.srcObject = stream;
@@ -2783,7 +2785,9 @@ async function toggleScreenGuide() {
     return;
   }
   try {
-    _guideStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+    _guideStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: 'monitor' }, audio: false,
+      preferCurrentTab: false, selfBrowserSurface: 'exclude',
+      surfaceSwitching: 'include', systemAudio: 'exclude' });
     _guideVideo = document.createElement('video');
     _guideVideo.srcObject = _guideStream;
     _guideVideo.muted = true;
@@ -3094,7 +3098,9 @@ async function toggleMeetingMode() {
   }
   try {
     _meetStream = await navigator.mediaDevices.getDisplayMedia({
-      video: true, audio: true });
+      video: { displaySurface: 'monitor' }, audio: true,
+      preferCurrentTab: false, selfBrowserSurface: 'exclude',
+      surfaceSwitching: 'include' });
     if (!_meetStream.getAudioTracks().length) {
       alert('No audio captured. When sharing, pick the meeting TAB or screen and tick "Share audio".');
       _meetStream.getTracks().forEach(t => t.stop());

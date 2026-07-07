@@ -10,6 +10,7 @@ from typing import Callable, Optional
 log = logging.getLogger("services.voice")
 
 _ELEVEN_VOICE_CACHE = None
+_ELEVEN_DISABLED = False  # set True after a plan/auth failure -> skip straight to edge-tts
 
 
 def _elevenlabs_pick_voice(key: str, force: bool = False) -> str:
@@ -32,7 +33,7 @@ def _elevenlabs_pick_voice(key: str, force: bool = False) -> str:
                            for v in voices[:8]))
         cloned  = [v for v in voices if v.get("category") == "cloned"]
         premade = [v for v in voices if v.get("category") == "premade"]
-        candidates = (cloned + premade + voices)[:4]
+        candidates = (cloned + premade + voices)[:2]
         model_id = os.getenv("ELEVENLABS_MODEL", "eleven_multilingual_v2")
         for v in candidates:
             try:
@@ -144,13 +145,15 @@ def speak(text: str, voice: str = "en-US-AriaNeural", output_path: str = None) -
     Convert text to speech.
     Tries: ElevenLabs → edge-tts → pyttsx3 → error
     """
-    # ElevenLabs
+    global _ELEVEN_DISABLED
+    # ElevenLabs (skipped instantly once it has failed once this session)
     elabs_key = os.getenv("ELEVENLABS_API_KEY", "")
-    if elabs_key:
+    if elabs_key and not _ELEVEN_DISABLED:
         try:
             import requests
             voice_id = os.getenv("ELEVENLABS_VOICE_ID") or _elevenlabs_pick_voice(elabs_key)
             if voice_id == "NONE":
+                _ELEVEN_DISABLED = True
                 raise RuntimeError("no API-usable ElevenLabs voice on this plan")
             model_id = os.getenv("ELEVENLABS_MODEL", "eleven_multilingual_v2")
             r = requests.post(
@@ -160,20 +163,13 @@ def speak(text: str, voice: str = "en-US-AriaNeural", output_path: str = None) -
                       "voice_settings": {"stability": 0.5, "similarity_boost": 0.8}},
                 timeout=30,
             )
-            if r.status_code in (402, 403, 404):
-                # configured voice not allowed on this plan -> use an account voice
-                log.warning("ElevenLabs voice %s rejected (%d), picking an "
-                            "account voice", voice_id, r.status_code)
-                alt = _elevenlabs_pick_voice(elabs_key, force=True)
-                if alt and alt != voice_id:
-                    r = requests.post(
-                        f"https://api.elevenlabs.io/v1/text-to-speech/{alt}/stream",
-                        headers={"xi-api-key": elabs_key, "Content-Type": "application/json"},
-                        json={"text": text, "model_id": model_id,
-                              "voice_settings": {"stability": 0.5, "similarity_boost": 0.8}},
-                        timeout=30,
-                    )
-            if r.status_code != 200:
+            if r.status_code in (401, 402, 403):
+                # free plan / bad key -> disable for the whole session so every
+                # future Play skips straight to edge-tts (fixes ~10s delay)
+                _ELEVEN_DISABLED = True
+                log.warning("ElevenLabs disabled this session (HTTP %d) - using "
+                            "edge-tts. Details: %s", r.status_code, r.text[:150])
+            elif r.status_code != 200:
                 log.warning("ElevenLabs HTTP %d: %s", r.status_code, r.text[:200])
             if r.status_code == 200:
                 out = output_path or "/tmp/tts_output.mp3"
