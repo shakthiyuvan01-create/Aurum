@@ -13,12 +13,22 @@ services:
         value: production
       - key: SECRET_KEY
         generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
       - key: GITHUB_TOKEN
         sync: false
       - key: NARA_API_KEY
         sync: false
       - key: BLUESMINDS_KEY
         sync: false
+      - key: OMNIROUTE_API_KEY
+        sync: false
+      - key: OMNIROUTE_URL
+        value: https://api.omniroute.online/v1
+      - key: OMNIROUTE_MODEL
+        value: auto
       - key: NARA_MODEL
         value: mistral-large
       - key: GEMINI_API_KEY
@@ -32,7 +42,7 @@ services:
       - key: ADMIN_USERNAMES
         sync: false
       - key: AI_PROVIDER_ORDER
-        value: nara,github,bluesminds,gemini,openai,ollama
+        value: nara,github,bluesminds,gemini,openai,omniroute,ollama
       - key: RENDER_DATA_DIR
         value: /data
     disk:

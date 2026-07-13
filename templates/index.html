@@ -3180,6 +3180,11 @@ const _PAL_COMMANDS = [
   { label: 'Command Center', hint: 'live system + agents + tasks', act: () => openCommandCenter() },
   { label: 'Skill Levels', hint: 'XP, level, rank', act: () => openSkillLevels() },
   { label: 'Persona / Soul', hint: 'edit SOUL, IDENTITY, MEMORY', act: () => openPersona() },
+  { label: 'Content OS', hint: 'sources, AI-ranked feed, studio', act: () => openContentOS() },
+  { label: 'Export report (PDF)', hint: 'this chat -> downloadable PDF', act: () => exportReport('pdf') },
+  { label: 'Export report (Word)', hint: 'this chat -> .docx', act: () => exportReport('docx') },
+  { label: 'Set up 2FA', hint: 'authenticator-app two-factor login', act: () => setup2FA() },
+  { label: 'File snapshots / undo', hint: 'restore a file an agent changed', act: () => openSnapshots() },
   { label: 'Heartbeat: self-maintenance', hint: 'AI updates its own memory now', act: () => runHeartbeat() },
   { label: 'Forge a Tool', hint: 'AI writes + installs a new tool', act: () => forgeTool() },
   { label: 'AI Company', hint: 'meet your agent employees', act: () => openCompany() },
@@ -3819,6 +3824,145 @@ async function forgeTool() {
       '. Find it in Tools & Plugins.', 'bot');
     else addMsg(JSON.stringify(d).slice(0, 300), 'bot');
   } catch (e) { t.remove(); addMsg('Forge error: ' + e, 'bot'); }
+}
+
+
+// ── Export current chat as PDF/DOCX ──────────────────────────────────────────
+async function exportReport(fmt) {
+  if (!chatId) { addMsg('Open or start a chat first, then export it.', 'bot'); return; }
+  const t = typing();
+  try {
+    const d = await (await fetch('/report/export', { method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, format: fmt,
+                             title: (document.title || 'AI Aurum Report') }) })).json();
+    t.remove();
+    if (d.ok) {
+      const link = (d.path || '').replace(/\\/g, '/');
+      addMsg('Report exported as ' + fmt.toUpperCase() + '. ' +
+        (link ? 'Saved to: ' + escHtml(link) : JSON.stringify(d.result).slice(0, 200)), 'bot');
+    } else addMsg('Export failed: ' + (d.error || '?'), 'bot');
+  } catch (e) { t.remove(); addMsg('Export error: ' + e, 'bot'); }
+}
+
+// ── 2FA setup ────────────────────────────────────────────────────────────────
+async function setup2FA() {
+  const body = _aurumModal('twofaModal', 'Two-Factor Authentication');
+  const st = await (await fetch('/2fa/status')).json();
+  if (st.enabled) {
+    body.innerHTML = '<div style="color:#52d68a;margin-bottom:10px;">2FA is ON for your account.</div>' +
+      '<button onclick="disable2FA()" style="background:#8b2020;border:0;border-radius:6px;padding:6px 14px;color:#fff;cursor:pointer;">Disable 2FA</button>';
+    return;
+  }
+  const e = await (await fetch('/2fa/enroll', { method: 'POST' })).json();
+  body.innerHTML =
+    '<div style="font-size:13px;line-height:1.6;">1. Add this to Google Authenticator / Authy:</div>' +
+    '<div style="background:#141419;border-radius:8px;padding:10px;margin:8px 0;font-family:monospace;font-size:12px;word-break:break-all;">' +
+    'Secret: <b>' + escHtml(e.secret) + '</b></div>' +
+    '<div style="color:#8b949e;font-size:11px;margin-bottom:8px;">Manual entry key above, or paste the otpauth URI into your app.</div>' +
+    '<div style="font-size:13px;">2. Enter the 6-digit code to confirm:</div>' +
+    '<input id="twofaCode" maxlength="6" placeholder="123456" style="width:120px;margin:8px 0;background:#141419;border:1px solid var(--bdr);border-radius:6px;color:var(--txt);padding:8px;font-size:16px;letter-spacing:3px;">' +
+    '<button onclick="confirm2FA()" style="background:#238636;border:0;border-radius:6px;padding:8px 14px;color:#fff;cursor:pointer;margin-left:8px;">Enable</button>' +
+    '<div id="twofaMsg" style="color:#8b949e;font-size:12px;margin-top:8px;"></div>';
+}
+async function confirm2FA() {
+  const code = document.getElementById('twofaCode').value.trim();
+  const d = await (await fetch('/2fa/confirm', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) })).json();
+  document.getElementById('twofaMsg').textContent = d.ok ?
+    '2FA enabled. You will need a code at next login.' : (d.error || 'failed');
+  document.getElementById('twofaMsg').style.color = d.ok ? '#52d68a' : '#f0a000';
+}
+async function disable2FA() {
+  if (!confirm('Turn off two-factor auth?')) return;
+  await fetch('/2fa/disable', { method: 'POST' });
+  setup2FA();
+}
+
+// ── File snapshots / undo ────────────────────────────────────────────────────
+async function openSnapshots() {
+  const body = _aurumModal('snapModal', 'File Snapshots - undo agent edits');
+  try {
+    const d = await (await fetch('/files/snapshots')).json();
+    body.innerHTML = (d.snapshots || []).length ? d.snapshots.map(s =>
+      '<div style="display:flex;align-items:center;gap:8px;padding:8px;border-bottom:1px solid #26262c;font-size:13px;">' +
+      '<span style="flex:1;">' + escHtml(s.file) + ' <span style="color:#8b949e;font-size:11px;">(' +
+      escHtml(s.reason) + ', ' + new Date(s.when * 1000).toLocaleString() + ')</span></span>' +
+      '<button onclick="restoreSnap(\'' + s.id + '\', this)" style="background:#6e40c9;border:0;border-radius:6px;padding:4px 10px;color:#fff;font-size:11px;cursor:pointer;">Restore</button></div>').join('')
+      : '<div style="color:#8b949e;">No snapshots yet. They are created automatically before any agent edits or deletes a workspace file.</div>';
+  } catch (e) { body.textContent = 'Failed: ' + e; }
+}
+async function restoreSnap(id, btn) {
+  btn.disabled = true; btn.textContent = '...';
+  const d = await (await fetch('/files/restore', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })).json();
+  btn.textContent = d.ok ? 'Restored' : 'Failed';
+}
+
+
+// ── Content OS: sources -> ranked feed -> studio ────────────────────────────
+async function openContentOS() {
+  const body = _aurumModal('contentModal', 'Content OS - sources & AI-ranked feed');
+  body.innerHTML =
+    '<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">' +
+    '<input id="coUrl" placeholder="RSS URL, article URL, or search phrase" style="flex:1;min-width:180px;background:#141419;border:1px solid var(--bdr);border-radius:6px;color:var(--txt);padding:8px;font-size:13px;">' +
+    '<button onclick="coAddSource()" style="background:#238636;border:0;border-radius:6px;padding:8px 12px;color:#fff;font-size:12px;cursor:pointer;">Add source</button>' +
+    '<button onclick="coScrape()" style="background:#6e40c9;border:0;border-radius:6px;padding:8px 12px;color:#fff;font-size:12px;cursor:pointer;">Scrape now</button>' +
+    '<button onclick="coFeed(1)" style="background:#21262d;border:1px solid #30363d;border-radius:6px;padding:8px 12px;color:#e6edf3;font-size:12px;cursor:pointer;">Show all</button></div>' +
+    '<div id="coSources" style="margin-bottom:10px;"></div>' +
+    '<div id="coFeed" style="color:#8b949e;">Loading feed...</div>';
+  coLoadSources(); coFeed(0);
+}
+async function coLoadSources() {
+  const d = await (await fetch('/content/sources')).json();
+  document.getElementById('coSources').innerHTML = (d.sources || []).map(s =>
+    '<span style="display:inline-flex;align-items:center;gap:4px;background:#141419;border:1px solid var(--bdr);border-radius:12px;padding:3px 10px;margin:2px;font-size:11px;color:#8b949e;">' +
+    escHtml(s.url.slice(0, 40)) + ' <span onclick="coDelSource(' + s.id + ')" style="cursor:pointer;color:#e74c3c;">&#10005;</span></span>').join('') ||
+    '<span style="color:#8b949e;font-size:12px;">No sources yet.</span>';
+}
+async function coAddSource() {
+  const url = document.getElementById('coUrl').value.trim();
+  if (!url) return;
+  await fetch('/content/sources', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url }) });
+  document.getElementById('coUrl').value = '';
+  coLoadSources();
+}
+async function coDelSource(id) {
+  await fetch('/content/sources?id=' + id, { method: 'DELETE' });
+  coLoadSources();
+}
+async function coScrape() {
+  document.getElementById('coFeed').innerHTML = 'Scraping + ranking...';
+  const d = await (await fetch('/content/scrape', { method: 'POST' })).json();
+  coFeed(0);
+}
+async function coFeed(bypass) {
+  const d = await (await fetch('/content/feed?bypass=' + bypass)).json();
+  const f = d.feed || [];
+  document.getElementById('coFeed').innerHTML = f.length ? f.map(a =>
+    '<div style="border-bottom:1px solid #26262c;padding:8px 0;">' +
+    '<div style="display:flex;gap:8px;align-items:center;">' +
+    '<span style="background:' + (a.score >= 70 ? '#1a3a2a' : '#2a2a30') + ';color:' +
+    (a.score >= 70 ? '#52d68a' : '#8b949e') + ';border-radius:6px;padding:2px 7px;font-size:11px;font-weight:600;">' + a.score + '</span>' +
+    '<a href="' + a.url + '" target="_blank" style="flex:1;color:var(--txt);font-size:13px;text-decoration:none;">' + escHtml(a.title) + '</a>' +
+    '<button onclick="coStudio(' + a.id + ',this)" style="background:#238636;border:0;border-radius:6px;padding:3px 10px;color:#fff;font-size:11px;cursor:pointer;">Make post</button></div></div>').join('')
+    : '<span style="color:#8b949e;">Feed empty. Add a source and hit Scrape now.</span>';
+  window._coArticles = {}; f.forEach(a => window._coArticles[a.id] = a);
+}
+async function coStudio(id, btn) {
+  const a = (window._coArticles || {})[id];
+  if (!a) return;
+  btn.disabled = true; btn.textContent = '...';
+  const d = await (await fetch('/content/studio', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title: a.title, summary: a.summary }) })).json();
+  const body = _aurumModal('studioModal', 'Content Studio - ' + escHtml(a.title.slice(0, 40)));
+  body.innerHTML =
+    (d.image ? '<img src="' + d.image + '" style="width:100%;border-radius:8px;margin-bottom:10px;">' : '') +
+    '<textarea style="width:100%;box-sizing:border-box;height:160px;background:#141419;border:1px solid var(--bdr);border-radius:8px;color:var(--txt);padding:10px;font-size:13px;">' +
+    escHtml(d.caption || d.error || '') + '</textarea>' +
+    '<div style="color:#8b949e;font-size:11px;margin-top:8px;">Copy this caption + image to post manually, or set ZERNIO_API_KEY to publish to Instagram/LinkedIn/X.</div>';
 }
 
 </script>

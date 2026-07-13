@@ -93,6 +93,11 @@ def files_write():
     if full is None:
         return jsonify({"error": "Invalid path"}), 400
     os.makedirs(os.path.dirname(full), exist_ok=True)
+    try:
+        from services.snapshots import snapshot as _snap
+        _snap(full, reason="write")
+    except Exception:
+        pass
     with open(full, "w", encoding="utf-8") as fh:
         fh.write(content)
     return jsonify({"ok": True, "path": rel})
@@ -108,6 +113,11 @@ def files_delete():
     if full is None:
         return jsonify({"error": "Invalid path"}), 400
     if os.path.isfile(full):
+        try:
+            from services.snapshots import snapshot as _snap
+            _snap(full, reason="delete")
+        except Exception:
+            pass
         os.unlink(full)
         return jsonify({"ok": True})
     return jsonify({"error": "File not found"}), 404
@@ -247,3 +257,19 @@ def git_run():
     except Exception as e:
         log.error("git_run failed: %s", e)
         return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@files_bp.route("/files/snapshots")
+@login_required
+def files_snapshots():
+    from services.snapshots import list_snapshots
+    return jsonify({"snapshots": list_snapshots()})
+
+
+@files_bp.route("/files/restore", methods=["POST"])
+@login_required
+@no_guests
+def files_restore():
+    from services.snapshots import restore
+    sid = (request.get_json(force=True) or {}).get("id", "")
+    return jsonify(restore(sid))

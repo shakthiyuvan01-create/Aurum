@@ -187,9 +187,49 @@ except ImportError:
 
 # ── Flask config ─────────────────────────────────────────────────────────────
 from services.auth_service import get_secret_key
+# Load the environment config class (dev/prod/test) FIRST so its hardening
+# (SESSION_COOKIE_SECURE / SAMESITE etc.) actually applies. Previously the
+# config/ classes were written but never loaded.
+try:
+    from config import cfg as _cfg_class
+    app.config.from_object(_cfg_class)
+    log.info("Loaded config: %s", _cfg_class.__name__)
+except Exception as _cfg_e:
+    log.warning("config load failed (%s) - using manual defaults", _cfg_e)
 app.secret_key              = get_secret_key()
 app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024
-app.config["PERMANENT_SESSION_LIFETIME"] = 60 * 60 * 24 * 30   # 30 days
+app.config.setdefault("PERMANENT_SESSION_LIFETIME", 60 * 60 * 24 * 30)
+# Belt-and-suspenders: enforce hardened cookie flags in production even if the
+# config object didn't set them.
+if os.getenv("FLASK_ENV", "").lower() in ("production", "prod"):
+    app.config.update(SESSION_COOKIE_HTTPONLY=True,
+                      SESSION_COOKIE_SECURE=True,
+                      SESSION_COOKIE_SAMESITE="Lax")  # Lax so login redirects work
+
+# ── CSRF defense: reject cross-origin state-changing requests ─────────────────
+# Same-origin fetches from the app pass automatically; cross-site POSTs (the
+# CSRF attack vector) are blocked. Applies to POST/PUT/PATCH/DELETE. The
+# external API (/api/*, X-API-Key auth) and webhooks are exempt by design.
+from urllib.parse import urlparse as _urlparse
+
+@app.before_request
+def _csrf_guard():
+    if request.method in ("GET", "HEAD", "OPTIONS"):
+        return
+    path = request.path
+    if path.startswith("/api/") or path.startswith("/login") or path.startswith("/guest"):
+        return  # API-key auth / pre-login endpoints
+    origin = request.headers.get("Origin") or request.headers.get("Referer")
+    if not origin:
+        return  # non-browser clients (curl, CLI) send no Origin
+    host = request.host
+    try:
+        oh = _urlparse(origin).netloc
+    except Exception:
+        oh = ""
+    if oh and oh != host:
+        log.warning("CSRF block: origin %s != host %s (%s)", oh, host, path)
+        return jsonify({"error": "cross-origin request blocked"}), 403
 
 # ── Speech wiring ─────────────────────────────────────────────────────────────
 import services.speech_service as _speech
@@ -225,14 +265,25 @@ PROJECTS = {
     "Robotics": "You are a robotics expert (Arduino, ESP32). Give safe, practical guidance.",
     "Image Creation": "Help create images. Interpret 'create an image of ...' as an image request.",
 }
-CURRENT_PROJECT = "General"
 _orig_brain = _asst.ask_ai_brain
 
 
+def _current_project():
+    # Per-user, not a shared global (was: one var leaking across all sessions)
+    try:
+        from flask import session, has_request_context
+        if has_request_context():
+            return session.get("current_project", "General")
+    except Exception:
+        pass
+    return "General"
+
+
 def _project_brain(q, with_context=False):
-    if CURRENT_PROJECT == "Coding":
+    proj = _current_project()
+    if proj == "Coding":
         return _asst.ask_bluesminds(q, with_context=with_context)
-    ctx = PROJECTS.get(CURRENT_PROJECT, "")
+    ctx = PROJECTS.get(proj, "")
     personality = (
         "You are a natural conversational AI assistant.\n"
         "Speak naturally. Be friendly. Use relevant emojis (1-3 per response).\n"
@@ -242,13 +293,13 @@ def _project_brain(q, with_context=False):
 
 
 def _set_project(name: str):
-    global CURRENT_PROJECT
     if name in PROJECTS:
-        CURRENT_PROJECT = name
-
-
-def _current_project():
-    return CURRENT_PROJECT
+        try:
+            from flask import session, has_request_context
+            if has_request_context():
+                session["current_project"] = name
+        except Exception:
+            pass
 
 
 # ── model routing (from services) ─────────────────────────────────────────────
@@ -259,6 +310,7 @@ from services.ai_service import route_model as _route_model
 @app.before_request
 def _require_login():
     PUBLIC = {"auth.login", "auth.register", "auth.guest_login",
+              "auth.google_login", "auth.google_callback", "auth.google_enabled",
               "upload.serve_upload", "upload.serve_logo", "upload.serve_static"}
     ep = request.endpoint or ""
     if ep in PUBLIC or "static" in ep:
@@ -475,6 +527,10 @@ if _sched:
             _sched.add_job(_hb_super, "interval", minutes=15, id="heartbeat",
                            replace_existing=True)
             log.info("Heartbeat self-maintenance scheduled (permission-gated)")
+            from services.content_os import supervisor as _content_super
+            _sched.add_job(_content_super, "interval", minutes=30,
+                           id="content_scraper", replace_existing=True)
+            log.info("Content OS scraper scheduled (every 30 min)")
         except Exception as _e:
             log.warning("self_improve scheduling failed: %s", _e)
     except Exception as _ale:

@@ -265,6 +265,18 @@ def stream():
         reply_text = ""
         _acc = []
         _err_text = ""
+        try:
+            from services.budget import check as _budget_check
+            _b = _budget_check()
+            if not _b.get("ok", True):
+                yield "data: " + json.dumps({"error":
+                    "Daily token budget reached (%s/%s). Resets at midnight, or "
+                    "raise DAILY_TOKEN_BUDGET." % (_b.get("used"), _b.get("budget"))}) + "\n\n"
+                yield "data: " + json.dumps({"done": True, "chat_id": cid,
+                    "title": title, "model": "budget"}) + "\n\n"
+                return
+        except Exception:
+            pass
         # ── Semantic cache: near-duplicate question -> instant answer ────────
         if not image_b64 and not msg.startswith("/"):
             try:

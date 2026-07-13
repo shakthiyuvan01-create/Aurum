@@ -21,6 +21,7 @@ from .openai_provider import OpenAIProvider
 from .ollama import OllamaProvider
 from .nararouter import NaraRouterProvider
 from .bluesminds import BluesMindsProvider
+from .omniroute import OmniRouteProvider
 
 log = logging.getLogger("providers.manager")
 
@@ -71,6 +72,7 @@ _ALL = {
     "gemini": GeminiProvider(),
     "nara":   NaraRouterProvider(),
     "bluesminds": BluesMindsProvider(),
+    "omniroute": OmniRouteProvider(),
     "openai": OpenAIProvider(),
     "ollama": OllamaProvider(),
 }
@@ -79,7 +81,7 @@ _ALL = {
 class ProviderManager:
     def __init__(self):
         order = os.getenv("AI_PROVIDER_ORDER",
-                          "nara,github,bluesminds,gemini,openai,ollama")
+                          "nara,github,bluesminds,gemini,openai,omniroute,ollama")
         self.chain = [_ALL[n.strip()] for n in order.split(",") if n.strip() in _ALL]
         self.last_used = None
         self.last_errors = []
@@ -87,8 +89,45 @@ class ProviderManager:
     def generate(self, prompt: str, system: str = "", model: str = None,
                  max_tokens: int = 1500, temperature: float = 0.3,
                  provider: str = None) -> str:
-        """Try providers in order until one succeeds."""
+        """Try providers in order; identical concurrent low-temp calls share one result."""
+        if temperature <= 0.35 and len(prompt) < 8000 and provider is None:
+            key = _dedupe_key(prompt, system, model)
+            owner = False
+            with _inflight_lock:
+                holder = _inflight.get(key)
+                if holder is None:
+                    holder = {"event": threading.Event(), "result": None}
+                    _inflight[key] = holder
+                    owner = True
+            if not owner:
+                holder["event"].wait(timeout=60)
+                if holder.get("result") is not None:
+                    return holder["result"]
+                return self._generate_inner(prompt, system, model, max_tokens, temperature, provider)
+            try:
+                res = self._generate_inner(prompt, system, model, max_tokens, temperature, provider)
+                holder["result"] = res
+                return res
+            finally:
+                holder["event"].set()
+                with _inflight_lock:
+                    _inflight.pop(key, None)
+        return self._generate_inner(prompt, system, model, max_tokens, temperature, provider)
+
+    def _generate_inner(self, prompt: str, system: str = "", model: str = None,
+                        max_tokens: int = 1500, temperature: float = 0.3,
+                        provider: str = None) -> str:
         self.last_errors = []
+        # Token compression: shrink long prompts before they hit a model
+        try:
+            from services.compression import compress as _cz
+            if len(prompt) > 1200:
+                r = _cz(prompt)
+                if r.get("saved_pct", 0) >= 5:
+                    prompt = r["text"]
+                    self.last_compression = r
+        except Exception:
+            pass
         chain = [_ALL[provider]] if provider in _ALL else self.chain
         failed_over = False
         for p in chain:
@@ -186,6 +225,15 @@ class ProviderManager:
             "last_used": self.last_used,
             "last_errors": self.last_errors,
         }
+
+
+import hashlib as _hl
+_inflight = {}
+_inflight_lock = threading.Lock()
+
+
+def _dedupe_key(prompt, system, model):
+    return _hl.sha1(("%s|%s|%s" % (model or "", system or "", prompt)).encode()).hexdigest()
 
 
 AI = ProviderManager()
