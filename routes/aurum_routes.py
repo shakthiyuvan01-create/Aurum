@@ -657,3 +657,160 @@ def heartbeat_run():
     """Trigger a self-maintenance pass now (reads recent activity -> updates memory)."""
     from services.heartbeat import run_tick
     return jsonify(run_tick(force=True))
+
+
+# ── One-click report export: a chat (or any markdown) -> PDF / DOCX ──────────
+@aurum_bp.route("/report/export", methods=["POST"])
+@login_required
+def report_export():
+    """Turn a chat or pasted markdown into a downloadable PDF or DOCX using the
+    existing document tools."""
+    body = request.get_json(force=True) or {}
+    fmt  = (body.get("format") or "pdf").lower()
+    title = (body.get("title") or "AI Aurum Report").strip()[:120]
+    content = body.get("content") or ""
+    chat_id = body.get("chat_id")
+    uname = _user()
+
+    if chat_id and not content:
+        with _conn() as con:
+            try:
+                rows = con.execute(
+                    "SELECT role, text FROM messages WHERE chat_id=? ORDER BY id",
+                    (chat_id,)).fetchall()
+                content = "\n\n".join("**%s:** %s" % (r[0].title(), r[1]) for r in rows)
+            except sqlite3.OperationalError:
+                pass
+    if not content.strip():
+        return jsonify({"error": "no content"}), 400
+
+    import tools as _tools
+    try:
+        if fmt == "pdf":
+            r = _tools.call("pdf_tool", action="create", content=content, title=title)
+        else:
+            r = _tools.call("docx_tool", content=content, title=title)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    path = r.get("file") or r.get("path") or r.get("result")
+    return jsonify({"ok": True, "format": fmt, "result": r, "path": path})
+
+
+# ── Eval leaderboard: surface the harness history as a trend ─────────────────
+@aurum_bp.route("/eval/history")
+@login_required
+def eval_history():
+    with _conn() as con:
+        try:
+            rows = con.execute(
+                "SELECT scores, created_at FROM benchmarks ORDER BY id DESC LIMIT 30"
+            ).fetchall()
+        except sqlite3.OperationalError:
+            rows = []
+    trend = []
+    for scores_json, ts in rows:
+        try:
+            d = json.loads(scores_json)
+            overall = d.get("overall") if isinstance(d, dict) else None
+            trend.append({"overall": overall, "at": ts})
+        except Exception:
+            continue
+    trend.reverse()
+    return jsonify({"trend": trend,
+                    "latest": trend[-1]["overall"] if trend else None})
+
+
+# ── Content OS: sources, feed, studio, publish ───────────────────────────────
+@aurum_bp.route("/content/sources", methods=["GET", "POST", "DELETE"])
+@login_required
+def content_sources():
+    from services import content_os as co
+    uname = _user()
+    if request.method == "POST":
+        b = request.get_json(force=True) or {}
+        url = (b.get("url") or "").strip()
+        if not url:
+            return jsonify({"error": "url or search phrase required"}), 400
+        sid = co.add_source(uname, url, tags=b.get("tags", ""),
+                            interval_hours=float(b.get("interval_hours", 6)),
+                            kind=b.get("kind", "auto"))
+        return jsonify({"ok": True, "id": sid})
+    if request.method == "DELETE":
+        co.remove_source(uname, int(request.args.get("id", 0)))
+        return jsonify({"ok": True})
+    return jsonify({"sources": co.list_sources(uname)})
+
+
+@aurum_bp.route("/content/feed")
+@login_required
+def content_feed():
+    from services import content_os as co
+    bypass = request.args.get("bypass") == "1"
+    return jsonify({"feed": co.feed(_user(), bypass_freshness=bypass)})
+
+
+@aurum_bp.route("/content/scrape", methods=["POST"])
+@login_required
+def content_scrape():
+    from services import content_os as co
+    n = co.scrape_due(_user(), force=True)
+    return jsonify({"ok": True, "new_articles": n})
+
+
+@aurum_bp.route("/content/studio", methods=["POST"])
+@login_required
+def content_studio():
+    """Turn an article (or topic) into a social caption + a 4:3 image."""
+    b = request.get_json(force=True) or {}
+    topic = (b.get("title") or b.get("topic") or "").strip()
+    summary = b.get("summary", "")
+    platform = b.get("platform", "instagram")
+    if not topic:
+        return jsonify({"error": "title/topic required"}), 400
+    from providers import AI
+    voice = os.getenv("BRAND_VOICE", "clear, confident, no hype")
+    caption = AI.generate(
+        "Write a %s caption for this article in a %s brand voice. Include a hook, "
+        "2-3 short value lines, a CTA, and 5 relevant hashtags.\n\nTitle: %s\n%s"
+        % (platform, voice, topic, summary[:400]),
+        model="gpt-4o-mini", max_tokens=350, temperature=0.7)
+    image_url = None
+    try:
+        from assistant.image import create_image
+        image_url = create_image("editorial 4:3 illustration for a post about: " + topic[:120])
+    except Exception as e:
+        log.debug("studio image failed: %s", e)
+    return jsonify({"ok": True, "caption": caption, "image": image_url,
+                    "platform": platform})
+
+
+@aurum_bp.route("/content/publish", methods=["POST"])
+@login_required
+def content_publish():
+    """Publish/schedule a post via Zernio (needs ZERNIO_API_KEY). Simulate-first
+    unless confirmed, matching Aurum's send-preview safety pattern."""
+    from services.permission_manager import perms
+    if not perms.check("messaging"):
+        return perms.deny_message("messaging")
+    b = request.get_json(force=True) or {}
+    key = os.getenv("ZERNIO_API_KEY", "")
+    if not key:
+        return jsonify({"error": "ZERNIO_API_KEY not set - add it in .env to publish "
+                                 "to Instagram/LinkedIn/X. The caption + image are "
+                                 "ready to post manually meanwhile."}), 400
+    if str(b.get("confirmed")).lower() not in ("true", "1", "yes"):
+        return jsonify({"simulated": True, "result":
+                        "PREVIEW - nothing published.\nPlatforms: %s\nCaption:\n%s"
+                        % (b.get("platforms", "all"), (b.get("caption") or "")[:400])})
+    try:
+        import requests as _rq
+        r = _rq.post("https://api.zernio.com/v1/posts",
+                     headers={"Authorization": "Bearer " + key,
+                              "Content-Type": "application/json"},
+                     json={"caption": b.get("caption", ""), "image_url": b.get("image", ""),
+                           "platforms": b.get("platforms", ["instagram", "linkedin", "x"]),
+                           "schedule_at": b.get("schedule_at")}, timeout=30)
+        return jsonify({"ok": r.status_code < 300, "status": r.status_code,
+                        "response": r.text[:300]})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502

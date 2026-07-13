@@ -105,12 +105,41 @@ def retrieve(query: str, username: str = "default", doc_id: str = None,
         return []
 
 
+def rerank(question: str, chunks: list, top_n: int = 4) -> list:
+    """LLM-judge rerank: reorder retrieved chunks by true relevance to the
+    question (vector hits are similarity-ordered, not relevance-ordered).
+    The single biggest quality lever for RAG."""
+    if len(chunks) <= top_n:
+        return chunks
+    try:
+        from providers import AI
+        listing = "\n".join("[%d] %s" % (i, c["text"][:400])
+                             for i, c in enumerate(chunks))
+        verdict = AI.generate_json(
+            "Rank these passages by how well they answer the question. "
+            'Reply JSON: {"order": [indices best-first]}. Question: %s\n\n%s'
+            % (question, listing), model="gpt-4o-mini", max_tokens=80)
+        order = verdict.get("order", [])
+        if isinstance(order, list) and order:
+            picked, seen = [], set()
+            for i in order:
+                if isinstance(i, int) and 0 <= i < len(chunks) and i not in seen:
+                    picked.append(chunks[i]); seen.add(i)
+            for i, c in enumerate(chunks):
+                if i not in seen:
+                    picked.append(c)
+            return picked[:top_n]
+    except Exception as e:
+        log.debug("rerank failed: %s", e)
+    return chunks[:top_n]
+
+
 def qa_context(file_path: str, text: str, question: str,
-               username: str = "default", top_k: int = 5) -> str:
-    """One-call helper: index (if needed) + retrieve. Returns joined context
-    with source citations, falling back to the head of the document."""
+               username: str = "default", top_k: int = 8) -> str:
+    """One-call helper: index + retrieve wide -> rerank -> cite."""
     doc_id = index_document(file_path, text, username)
     chunks = retrieve_with_meta(question, username, doc_id=doc_id, top_k=top_k)
+    chunks = rerank(question, chunks, top_n=4)
     if chunks:
         return "\n\n---\n\n".join(
             "[Source: %s, part %s]\n%s" % (c["file"], c["chunk"], c["text"])

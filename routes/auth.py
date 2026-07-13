@@ -39,6 +39,19 @@ def login():
               else request.form.get("password", ""))
         stored = db.get_user(un)
         if un and stored and check_password(pw, stored["pw_hash"]):
+            # Two-factor: if enabled for this account, require a valid TOTP code
+            try:
+                from services.twofa import status as _2fa_status, check_login as _2fa_check
+                if _2fa_status(un).get("enabled"):
+                    code = ((request.json or {}).get("totp", "") if request.is_json
+                            else request.form.get("totp", ""))
+                    if not _2fa_check(un, code):
+                        msg = "2FA code required" if not code else "Invalid 2FA code"
+                        if request.is_json:
+                            return jsonify({"error": msg, "needs_2fa": True}), 401
+                        return _login_page(msg)
+            except Exception as _2e:
+                log.debug("2fa check skipped: %s", _2e)
             nick = stored.get("nick", un.capitalize())
             role = stored.get("role", "user")
             # bootstrap: first registered user or ADMIN_USERNAMES env → admin
@@ -130,6 +143,87 @@ def guest_login():
     return redirect("/")
 
 
+# ── Google OAuth (Sign in with Google) ───────────────────────────────────────
+import os as _os, secrets as _secrets, urllib.parse as _uparse
+
+@auth_bp.route("/auth/google")
+def google_login():
+    cid = _os.getenv("GOOGLE_CLIENT_ID", "")
+    if not cid:
+        return _login_page("Google login not configured (set GOOGLE_CLIENT_ID).")
+    state = _secrets.token_urlsafe(16)
+    session["_oauth_state"] = state
+    redirect_uri = request.url_root.rstrip("/") + "/auth/google/callback"
+    params = {
+        "client_id": cid,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "state": state,
+        "access_type": "online",
+        "prompt": "select_account",
+    }
+    return redirect("https://accounts.google.com/o/oauth2/v2/auth?" +
+                    _uparse.urlencode(params))
+
+
+@auth_bp.route("/auth/google/callback")
+def google_callback():
+    import requests as _rq
+    cid = _os.getenv("GOOGLE_CLIENT_ID", "")
+    csec = _os.getenv("GOOGLE_CLIENT_SECRET", "")
+    if request.args.get("state") != session.pop("_oauth_state", None):
+        return _login_page("Google login failed: state mismatch. Try again.")
+    code = request.args.get("code", "")
+    if not code:
+        return _login_page("Google login cancelled.")
+    redirect_uri = request.url_root.rstrip("/") + "/auth/google/callback"
+    try:
+        tok = _rq.post("https://oauth2.googleapis.com/token", data={
+            "code": code, "client_id": cid, "client_secret": csec,
+            "redirect_uri": redirect_uri, "grant_type": "authorization_code",
+        }, timeout=20).json()
+        access = tok.get("access_token")
+        if not access:
+            return _login_page("Google login failed: no token.")
+        info = _rq.get("https://www.googleapis.com/oauth2/v2/userinfo",
+                       headers={"Authorization": "Bearer " + access}, timeout=20).json()
+    except Exception as e:
+        log.error("google oauth: %s", e)
+        return _login_page("Google login error. Try again.")
+
+    email = (info.get("email") or "").strip().lower()
+    if not email or not info.get("verified_email", True):
+        return _login_page("Google account has no verified email.")
+    nick = info.get("name") or email.split("@")[0]
+    db = _db()
+    stored = db.get_user(email)
+    if not stored:
+        # create a passwordless account (random hash; they log in via Google)
+        db.create_user(email, nick, hash_password(_secrets.token_urlsafe(32)))
+        stored = db.get_user(email)
+    role = (stored or {}).get("role", "user")
+    try:
+        from config import cfg
+        if email in cfg.ADMIN_USERNAMES and role != "admin":
+            db.set_user_role(email, "admin"); role = "admin"
+    except Exception:
+        pass
+    session["auth"] = True
+    session["username"] = email
+    session["nickname"] = nick
+    session["role"] = role
+    session["via"] = "google"
+    session.permanent = True
+    log.info("google login: %s", email)
+    return redirect("/")
+
+
+@auth_bp.route("/auth/google/enabled")
+def google_enabled():
+    return jsonify({"enabled": bool(_os.getenv("GOOGLE_CLIENT_ID", ""))})
+
+
 @auth_bp.route("/logout")
 def logout():
     session.clear()
@@ -144,3 +238,32 @@ def csrf_token():
     if not session.get("_csrf_token"):
         session["_csrf_token"] = secrets.token_hex(24)
     return jsonify({"csrf_token": session["_csrf_token"]})
+
+
+@auth_bp.route("/2fa/status")
+@login_required
+def twofa_status():
+    from services.twofa import status
+    return jsonify(status(session.get("username", "")))
+
+
+@auth_bp.route("/2fa/enroll", methods=["POST"])
+@login_required
+def twofa_enroll():
+    from services.twofa import enroll
+    return jsonify(enroll(session.get("username", "")))
+
+
+@auth_bp.route("/2fa/confirm", methods=["POST"])
+@login_required
+def twofa_confirm():
+    from services.twofa import confirm
+    code = (request.get_json(force=True) or {}).get("code", "")
+    return jsonify(confirm(session.get("username", ""), code))
+
+
+@auth_bp.route("/2fa/disable", methods=["POST"])
+@login_required
+def twofa_disable():
+    from services.twofa import disable
+    return jsonify(disable(session.get("username", "")))

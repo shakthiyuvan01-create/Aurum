@@ -396,3 +396,12 @@ def forge_tool():
     from services.tool_forge import forge
     body = request.get_json(force=True) or {}
     return jsonify(forge((body.get("capability") or "").strip(), current_user()))
+
+
+@tools_bp.route("/compression/test", methods=["POST"])
+@login_required
+def compression_test():
+    """Test the token compressor on a sample of text."""
+    from services.compression import compress
+    body = request.get_json(force=True) or {}
+    return jsonify(compress(body.get("text", ""), body.get("mode", "auto")))
