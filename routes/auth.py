@@ -146,6 +146,17 @@ def guest_login():
 # ── Google OAuth (Sign in with Google) ───────────────────────────────────────
 import os as _os, secrets as _secrets, urllib.parse as _uparse
 
+def _google_redirect_uri():
+    base = _os.getenv("OAUTH_REDIRECT_BASE", "").strip().rstrip("/")
+    if not base:
+        base = request.url_root.rstrip("/")
+        host = request.host.split(":")[0]
+        # anything that is not localhost is served over https in practice
+        if host not in ("localhost", "127.0.0.1") and base.startswith("http://"):
+            base = "https://" + base[len("http://"):]
+    return base + "/auth/google/callback"
+
+
 @auth_bp.route("/auth/google")
 def google_login():
     cid = _os.getenv("GOOGLE_CLIENT_ID", "")
@@ -153,7 +164,7 @@ def google_login():
         return _login_page("Google login not configured (set GOOGLE_CLIENT_ID).")
     state = _secrets.token_urlsafe(16)
     session["_oauth_state"] = state
-    redirect_uri = request.url_root.rstrip("/") + "/auth/google/callback"
+    redirect_uri = _google_redirect_uri()
     params = {
         "client_id": cid,
         "redirect_uri": redirect_uri,
@@ -177,7 +188,7 @@ def google_callback():
     code = request.args.get("code", "")
     if not code:
         return _login_page("Google login cancelled.")
-    redirect_uri = request.url_root.rstrip("/") + "/auth/google/callback"
+    redirect_uri = _google_redirect_uri()
     try:
         tok = _rq.post("https://oauth2.googleapis.com/token", data={
             "code": code, "client_id": cid, "client_secret": csec,
@@ -214,6 +225,7 @@ def google_callback():
     session["nickname"] = nick
     session["role"] = role
     session["via"] = "google"
+    session["avatar"] = info.get("picture", "")
     session.permanent = True
     log.info("google login: %s", email)
     return redirect("/")

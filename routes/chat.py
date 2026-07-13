@@ -26,6 +26,7 @@ def home():
     return render_template("index.html",
                            ANAME=_asst().ASSISTANT_NAME,
                            UNAME=current_nick() or "there",
+                           AVATAR=session.get("avatar", ""),
                            IS_GUEST=session.get("is_guest", False))
 
 
