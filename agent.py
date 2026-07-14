@@ -194,35 +194,16 @@ def run_stream(
 
         except Exception as e:
             log.error("Agent plan call failed (round %d): %s", _round, e)
-
-            # ── Auto-fallback to Ollama on auth error ─────────────────────
-            if _should_fallback(e) and not use_ollama:
-                if _is_ollama_up():
-                    log.info("GitHub token auth failed — falling back to Ollama")
-                    use_ollama = True
-                    note2 = "*(GitHub token expired — switching to local Ollama " + OLLAMA_MODEL + ")*\n\n"
-                    yield _sse({"delta": note2})
-                    try:
-                        resp = _chat(messages, model, token, stream=False, use_ollama=True, ollama_model=ollama_model)
-                        resp.raise_for_status()
-                        data = resp.json()
-                    except Exception as e2:
-                        log.error("Ollama plan fallback also failed: %s", e2)
-                        yield _sse({"error": "⚠️ Ollama also failed: " + str(e2)})
-                        return
-                else:
-                    yield _sse({"error": "⚠️ GitHub token expired and Ollama is not running. "
-                                          "Update GITHUB_TOKEN or start Ollama."})
-                    return
-
-            else:
-                # Try the full provider chain (NaraRouter, Gemini, OpenAI...)
-                reply, used = _provider_rescue(messages, model)
-                if reply:
-                    yield _sse({"delta": reply})
-                    yield _sse({"done": True, "reply": reply,
-                                "model": used, "tools_used": tools_used})
-                    return
+            # UNIVERSAL FALLBACK: on ANY failure (429/401/403/500/503/timeout),
+            # try the full provider chain (Nara -> GitHub -> BluesMinds ->
+            # Gemini -> OpenAI -> Ollama). Works on phone, Render and PC.
+            reply, used = _provider_rescue(messages, model)
+            if reply and not reply.startswith("[AI error"):
+                yield _sse({"delta": reply})
+                yield _sse({"done": True, "reply": reply,
+                            "model": used, "tools_used": tools_used})
+                return
+            if True:
                 err_str = str(e)
                 try:
                     from providers import AI as _AIe
@@ -286,26 +267,14 @@ def run_stream(
         stream_resp.raise_for_status()
 
     except Exception as e:
-        # One last fallback attempt at stream phase
-        if _should_fallback(e) and not use_ollama and _is_ollama_up():
-            log.info("GitHub token failed at stream phase — falling back to Ollama")
-            use_ollama = True
-            note3 = "*(switching to local Ollama " + OLLAMA_MODEL + ")*\n\n"
-            yield _sse({"delta": note3})
-            try:
-                stream_resp = _chat(messages, model, token, stream=True, use_ollama=True, ollama_model=ollama_model)
-                stream_resp.raise_for_status()
-            except Exception as e2:
-                log.error("Ollama stream fallback failed: %s", e2)
-                yield _sse({"error": "⚠️ Ollama also failed: " + str(e2)})
-                return
-        else:
-            reply, used = _provider_rescue(messages, model)
-            if reply:
-                yield _sse({"delta": reply})
-                yield _sse({"done": True, "reply": reply,
-                            "model": used, "tools_used": tools_used})
-                return
+        # UNIVERSAL FALLBACK at stream phase: full provider chain on ANY error.
+        reply, used = _provider_rescue(messages, model)
+        if reply and not reply.startswith("[AI error"):
+            yield _sse({"delta": reply})
+            yield _sse({"done": True, "reply": reply,
+                        "model": used, "tools_used": tools_used})
+            return
+        if True:
             err_str = str(e)
             if "401" in err_str or "403" in err_str:
                 err_msg = "⚠️ GitHub token expired or invalid. Update GITHUB_TOKEN in your .env and restart."

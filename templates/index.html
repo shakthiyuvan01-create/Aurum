@@ -597,6 +597,13 @@ body{
       onmouseleave="this.style.background='transparent'">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg> Analyze Data
     </button>
+    <button onclick="ghiblifyPrompt();togglePlusMenu();"
+      style="display:flex;align-items:center;gap:10px;width:100%;background:transparent;
+      border:0;color:var(--txt);cursor:pointer;padding:10px 14px;border-radius:8px;font-size:14px;"
+      onmouseenter="this.style.background='var(--act)'"
+      onmouseleave="this.style.background='transparent'">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg> Ghiblify an image
+    </button>
     <button onclick="toggleMemory();togglePlusMenu();"
       style="display:flex;align-items:center;gap:10px;width:100%;background:transparent;
       border:0;color:var(--txt);cursor:pointer;padding:10px 14px;border-radius:8px;font-size:14px;"
@@ -1264,6 +1271,18 @@ async function send() {
   if (isBusy) return;
   const msg = bx.value.trim();
   if (!msg && !_attachedB64) return;
+  // Ghiblify / restyle: image attached + a style word in the message
+  if (_sendB64Pending && msg) {
+    const _sm = msg.toLowerCase();
+    const _styles = ['ghibli','anime','cartoon','oil painting','pixar','sketch','cyberpunk'];
+    const _hit = _styles.find(s => _sm.includes(s));
+    if (_hit && /(ghibli|convert|make|turn|style|restyle|ghiblify|into)/.test(_sm)) {
+      const b64 = _sendB64Pending, mime = _sendMimePending;
+      _sendB64Pending = null;
+      await restyleImage(b64, mime, _hit.split(' ')[0]);
+      return;
+    }
+  }
   // Live screen guidance: attach a fresh frame of the shared screen
   if (_guideStream && !_attachedB64) {
     try { await _grabGuideFrame(); } catch (e) { /* stream may have ended */ }
@@ -1284,6 +1303,7 @@ async function send() {
   // capture the attachment BEFORE clearing (bug: it was cleared first,
   // so images were never actually sent to the AI)
   const _sendB64 = _attachedB64, _sendMime = _attachedMime;
+  var _sendB64Pending = _attachedB64, _sendMimePending = _attachedMime;
   clearAttachedImage();
 
   try {
@@ -1377,6 +1397,25 @@ async function send() {
     if (msg.startsWith('/vibe ')) {
       await vibeCode(msg.slice(6));
       return;
+    }
+
+    // ── "Who created you / made Aurum" -> show creator photo + name ──
+    {
+      const _low = msg.toLowerCase();
+      if (/(who|whom)\s+(created|made|built|developed|designed)\b/.test(_low) &&
+          /(you|this|aurum|app|website|it)\b/.test(_low)) {
+        try {
+          const cr = await (await fetch('/creator')).json();
+          const { m, b } = addMsg('', 'bot');
+          b.innerHTML =
+            (cr.has_photo ? '<img src="/creator/photo" style="max-width:220px;border-radius:12px;display:block;margin-bottom:8px;" alt="creator">' : '') +
+            '<b>' + escHtml(cr.name || 'Yuvan') + '</b> — ' + escHtml(cr.title || 'Creator of AI Aurum') +
+            (cr.note ? '<br>' + escHtml(cr.note) : '');
+          addActions(m, (cr.name || 'Yuvan') + ' created AI Aurum.', 'bot');
+          loadChats();
+          return;
+        } catch (e) {}
+      }
     }
 
     // ── Agent team shortcut (/team or /agents) ───────────────────
@@ -3966,6 +4005,50 @@ async function coStudio(id, btn) {
     '<textarea style="width:100%;box-sizing:border-box;height:160px;background:#141419;border:1px solid var(--bdr);border-radius:8px;color:var(--txt);padding:10px;font-size:13px;">' +
     escHtml(d.caption || d.error || '') + '</textarea>' +
     '<div style="color:#8b949e;font-size:11px;margin-top:8px;">Copy this caption + image to post manually, or set ZERNIO_API_KEY to publish to Instagram/LinkedIn/X.</div>';
+}
+
+
+// ── Ghiblify / restyle an uploaded image ─────────────────────────────────────
+let _sendB64Pending = null, _sendMimePending = 'image/jpeg';
+async function restyleImage(b64, mime, style) {
+  hideWelcome();
+  addMsg('<img src="data:' + mime + ';base64,' + b64 + '" style="max-width:200px;border-radius:8px;display:block;margin-bottom:6px;">Convert to ' + escHtml(style) + ' style', 'user');
+  const t = typing(true);
+  try {
+    const d = await (await fetch('/image/restyle', { method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image_b64: b64, mime: mime, style: style }) })).json();
+    t.remove();
+    const { m, b } = addMsg('', 'bot');
+    if (d.ok) {
+      b.innerHTML = '<img src="' + d.url + '" style="max-width:100%;border-radius:10px;display:block;" alt="' + escHtml(style) + ' image">';
+      addActions(m, '[Generated Image]', 'bot');
+    } else {
+      b.textContent = 'Restyle failed: ' + (d.error || '?');
+    }
+    sc.scrollTop = sc.scrollHeight;
+  } catch (e) { t.remove(); addMsg('Restyle error: ' + e, 'bot'); }
+}
+
+
+function ghiblifyPrompt() {
+  let inp = document.getElementById('ghibliPick');
+  if (!inp) {
+    inp = document.createElement('input');
+    inp.type = 'file'; inp.id = 'ghibliPick'; inp.accept = 'image/*'; inp.hidden = true;
+    inp.onchange = () => {
+      const f = inp.files[0]; if (!f) return;
+      const style = (prompt('Style? (ghibli, anime, cartoon, oil, pixar, sketch, cyberpunk)', 'ghibli') || 'ghibli').trim();
+      const r = new FileReader();
+      r.onload = e => {
+        const d = e.target.result; const b64 = d.slice(d.indexOf(',') + 1);
+        restyleImage(b64, f.type || 'image/jpeg', style);
+      };
+      r.readAsDataURL(f); inp.value = '';
+    };
+    document.body.appendChild(inp);
+  }
+  inp.click();
 }
 
 </script>
