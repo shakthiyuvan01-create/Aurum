@@ -72,6 +72,18 @@ def upload_file():
                     "original": f.filename, "size": os.path.getsize(path)})
 
 
+@upload_bp.route("/image/restyle", methods=["POST"])
+@login_required
+def image_restyle():
+    """Convert an uploaded image into a styled version (ghibli/anime/...)."""
+    from services.image_restyle import restyle
+    b = request.get_json(force=True) or {}
+    b64 = b.get("image_b64", "")
+    if not b64:
+        return jsonify({"error": "image_b64 required"}), 400
+    return jsonify(restyle(b64, b.get("style", "ghibli"), b.get("mime", "image/jpeg")))
+
+
 @upload_bp.route("/uploads/<path:filename>")
 def serve_upload(filename):
     if re.search(r"[/\\\.]{2,}|^\.", filename):

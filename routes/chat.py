@@ -26,6 +26,7 @@ def home():
     return render_template("index.html",
                            ANAME=_asst().ASSISTANT_NAME,
                            UNAME=current_nick() or "there",
+                           AVATAR=session.get("avatar", ""),
                            IS_GUEST=session.get("is_guest", False))
 
 
@@ -254,3 +255,28 @@ def memory_forget():
     return jsonify(memory.forget(session.get("username", "guest"),
                                  fact_id=body.get("fact_id"),
                                  fact_text=body.get("fact_text", "")))
+
+
+@chat_bp.route("/creator")
+def creator_info():
+    """Who created AI Aurum -- name, note, and photo URL."""
+    import json as _json, os as _os
+    base = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+    try:
+        cfg = _json.load(open(_os.path.join(base, "creator.json")))
+    except Exception:
+        cfg = {"name": "Yuvan", "title": "Creator of AI Aurum", "photo": "/creator/photo"}
+    cfg["has_photo"] = _os.path.exists(_os.path.join(base, "static", "creator.jpg"))
+    return jsonify(cfg)
+
+
+@chat_bp.route("/creator/photo")
+def creator_photo():
+    import os as _os
+    from flask import send_file, abort
+    base = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+    for ext in ("jpg", "jpeg", "png", "webp"):
+        fp = _os.path.join(base, "static", "creator." + ext)
+        if _os.path.exists(fp):
+            return send_file(fp)
+    return abort(404)

@@ -97,6 +97,13 @@ except ImportError:
     _md = None
 
 app = Flask(__name__)
+# Trust the reverse proxy (Render/nginx) for scheme + host so OAuth redirect
+# URIs are built as https, not http. Fixes redirect_uri_mismatch on Render.
+try:
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+except Exception:
+    pass
 
 # ── Centralised error handling ────────────────────────────────────────────────
 from services.error_handler import register_error_handlers
