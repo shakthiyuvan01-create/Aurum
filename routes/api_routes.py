@@ -79,3 +79,24 @@ def api_webhook(name):
         pass
     log.info("webhook fired: %s", name)
     return jsonify({"ok": True, "event": "webhook." + name})
+
+
+@api_bp.route("/slack/events", methods=["POST"])
+def slack_events():
+    """Slack Event Subscriptions endpoint (set this URL in your Slack app)."""
+    import os as _os
+    body = request.get_json(silent=True) or {}
+    # URL verification handshake
+    if body.get("type") == "url_verification":
+        return jsonify({"challenge": body.get("challenge", "")})
+    ev = body.get("event", {})
+    if ev.get("type") == "message" and not ev.get("bot_id"):
+        text = (ev.get("text") or "").strip()
+        chan = ev.get("channel")
+        if text and chan:
+            try:
+                from services.slack_bot import answer, send
+                send(chan, answer(text, _os.getenv("SLACK_USER", "default")))
+            except Exception as e:
+                log.warning("slack handle: %s", e)
+    return jsonify({"ok": True})

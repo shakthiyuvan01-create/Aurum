@@ -80,6 +80,14 @@ def _extract_knowledge(uname: str, msg: str, reply: str) -> None:
         log.debug("kg extraction skipped: %s", e)
 
 
+def _learning_block(query: str) -> str:
+    try:
+        from services.learning import context
+        return context(query or "")
+    except Exception:
+        return ""
+
+
 def _persona_block() -> str:
     try:
         from services.persona import system_block
@@ -199,8 +207,9 @@ def stream():
     if sem_mems:
         mem_ctx += "\n\nRelevant past conversations:\n" + "\n---\n".join(sem_mems)
 
-    # MemorySystem (5-tier): working + knowledge-graph + archive layers
-    if not is_guest and len(msg) >= 20:
+    # MemorySystem (5-tier): working + knowledge-graph + archive layers.
+    # Skip for short/simple messages (speed) and when FAST_MODE is on for chit-chat.
+    if not is_guest and len(msg) >= 60 and os.getenv("FAST_MODE", "1") != "1":
         try:
             from services.memory_layers import mem as _mem_sys
             extra = _mem_sys.context_string(uname, msg)
@@ -252,6 +261,7 @@ def stream():
         "Use markdown: **bold**, `code`, code blocks with language tags, "
         "LaTeX for math ($...$).\n"
         + _persona_block()
+        + _learning_block(msg)
         + (f"\n\nCustom instructions from user:\n{custom_inst}" if custom_inst else "")
         + _self_opt_overlay()
         + proj_ctx

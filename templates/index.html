@@ -3200,6 +3200,7 @@ const _PAL_COMMANDS = [
   { label: 'Deep Research + PPT', hint: '/deepppt - report and slides', act: () => { bx.value = '/deepppt '; grow(bx); bx.focus(); } },
   { label: 'Skill Store', hint: 'install expert packs: Excel, IS standards, Solar...', act: () => openSkillStore() },
   { label: 'AI Timeline', hint: 'everything you did, day by day', act: () => openTimeline() },
+  { label: 'Search past chats', hint: 'find + recall anything from old conversations', act: () => openConvSearch() },
   { label: 'Consciousness Dashboard', hint: 'what the AI knows, waits for, risks', act: () => openConsciousness() },
   { label: 'Live Dashboard', hint: 'full-page auto-updating command center', act: () => window.open('/live', '_blank') },
   { label: 'Background AI: toggle', hint: 'switch ambient intelligence on/off', act: () => toggleBackgroundAI() },
@@ -3223,6 +3224,8 @@ const _PAL_COMMANDS = [
   { label: 'Skill Levels', hint: 'XP, level, rank', act: () => openSkillLevels() },
   { label: 'Persona / Soul', hint: 'edit SOUL, IDENTITY, MEMORY', act: () => openPersona() },
   { label: 'Content OS', hint: 'sources, AI-ranked feed, studio', act: () => openContentOS() },
+  { label: 'Teach Aurum (Learning)', hint: 'add personal facts it remembers + retrieves', act: () => openLearning() },
+  { label: 'Live Camera Analysis', hint: 'point your phone camera, ask about what it sees', act: () => liveCameraAnalysis() },
   { label: 'Export report (PDF)', hint: 'this chat -> downloadable PDF', act: () => exportReport('pdf') },
   { label: 'Export report (Word)', hint: 'this chat -> .docx', act: () => exportReport('docx') },
   { label: 'Set up 2FA', hint: 'authenticator-app two-factor login', act: () => setup2FA() },
@@ -4049,6 +4052,136 @@ function ghiblifyPrompt() {
     document.body.appendChild(inp);
   }
   inp.click();
+}
+
+
+// ── Learning System: personal knowledge base ────────────────────────────────
+async function openLearning() {
+  const body = _aurumModal('learnModal', 'Teach Aurum - personal knowledge');
+  body.innerHTML =
+    '<div style="font-size:12px;color:#8b949e;margin-bottom:8px;">Add facts, preferences, or context. Aurum embeds them and pulls the relevant bits into every answer - so it stays cheap no matter how much you add. (Or drop .txt files in the <b>learning_data/</b> folder.)</div>' +
+    '<div style="display:flex;gap:6px;margin-bottom:10px;">' +
+    '<input id="learnInput" placeholder="e.g. I prefer IS standards for electrical work" style="flex:1;background:#141419;border:1px solid var(--bdr);border-radius:6px;color:var(--txt);padding:9px;font-size:13px;">' +
+    '<button onclick="addLearn()" style="background:#238636;border:0;border-radius:6px;padding:9px 14px;color:#fff;font-size:13px;cursor:pointer;">Teach</button></div>' +
+    '<div id="learnStats" style="color:#8b949e;font-size:12px;"></div>';
+  document.getElementById('learnInput').onkeydown = e => { if (e.key === 'Enter') addLearn(); };
+  learnRefresh();
+}
+async function learnRefresh() {
+  try {
+    const d = await (await fetch('/learning')).json();
+    document.getElementById('learnStats').innerHTML =
+      (d.chunks || 0) + ' knowledge chunks stored' +
+      (d.files && d.files.length ? '<br>Files: ' + d.files.map(escHtml).join(', ') : '');
+  } catch (e) {}
+}
+async function addLearn() {
+  const inp = document.getElementById('learnInput');
+  const fact = inp.value.trim();
+  if (!fact) return;
+  inp.value = '';
+  await fetch('/learning', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fact }) });
+  learnRefresh();
+}
+
+
+// ── Live Camera Analysis (point phone camera -> AI understands the scene) ────
+let _liveCamStream = null, _liveCamVideo = null;
+async function liveCameraAnalysis() {
+  if (_liveCamStream) { _stopLiveCam(); return; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    alert('Camera not available on this browser.'); return;
+  }
+  try {
+    _liveCamStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' }, audio: false });
+    _liveCamVideo = document.createElement('video');
+    _liveCamVideo.srcObject = _liveCamStream; _liveCamVideo.playsInline = true;
+    await _liveCamVideo.play();
+    hideWelcome();
+    // floating preview + capture button
+    let box = document.getElementById('liveCamBox');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'liveCamBox';
+      box.style.cssText = 'position:fixed;bottom:90px;right:12px;z-index:9600;width:180px;' +
+        'background:#111;border:1px solid var(--bdr);border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.5);';
+      document.body.appendChild(box);
+    }
+    box.innerHTML = '';
+    _liveCamVideo.style.cssText = 'width:100%;display:block;';
+    box.appendChild(_liveCamVideo);
+    const bar = document.createElement('div');
+    bar.style.cssText = 'display:flex;gap:4px;padding:6px;background:#161616;';
+    bar.innerHTML =
+      '<button onclick="askLiveCam()" style="flex:1;background:var(--acc);border:0;border-radius:6px;padding:6px;color:#031;font-size:12px;font-weight:600;cursor:pointer;">Ask about this</button>' +
+      '<button onclick="_stopLiveCam()" style="background:#8b2020;border:0;border-radius:6px;padding:6px 10px;color:#fff;font-size:12px;cursor:pointer;">Stop</button>';
+    box.appendChild(bar);
+    addMsg('Live camera on. Point it at anything and tap "Ask about this" (or type a question and it uses the current frame).', 'bot');
+  } catch (e) { _liveCamStream = null; alert('Could not open camera: ' + e); }
+}
+function _stopLiveCam() {
+  if (_liveCamStream) _liveCamStream.getTracks().forEach(t => t.stop());
+  _liveCamStream = null; _liveCamVideo = null;
+  const box = document.getElementById('liveCamBox'); if (box) box.remove();
+}
+function _grabCamFrame() {
+  if (!_liveCamVideo || !_liveCamVideo.videoWidth) return null;
+  const c = document.createElement('canvas');
+  const scale = Math.min(1, 1280 / _liveCamVideo.videoWidth);
+  c.width = _liveCamVideo.videoWidth * scale; c.height = _liveCamVideo.videoHeight * scale;
+  c.getContext('2d').drawImage(_liveCamVideo, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', 0.8);
+}
+async function askLiveCam() {
+  const frame = _grabCamFrame();
+  if (!frame) return;
+  const q = (bx.value.trim() || 'What am I looking at? Describe the objects and scene.');
+  bx.value = '';
+  _attachedB64 = frame.slice(frame.indexOf(',') + 1);
+  _attachedMime = 'image/jpeg';
+  _showImgPreview(frame);
+  bx.value = q; grow(bx); updateSendBtn();
+  send();
+}
+
+
+// ── Conversation search / cross-session recall (Hermes-style) ───────────────
+async function openConvSearch() {
+  const body = _aurumModal('convSearchModal', 'Search past conversations');
+  body.innerHTML =
+    '<div style="display:flex;gap:6px;margin-bottom:10px;">' +
+    '<input id="csQ" placeholder="Search or ask (e.g. what did we decide about the cable size?)" style="flex:1;background:#141419;border:1px solid var(--bdr);border-radius:6px;color:var(--txt);padding:9px;font-size:13px;">' +
+    '<button onclick="doConvSearch(0)" style="background:#21262d;border:1px solid #30363d;border-radius:6px;padding:9px 12px;color:#e6edf3;font-size:12px;cursor:pointer;">Find</button>' +
+    '<button onclick="doConvSearch(1)" style="background:#6e40c9;border:0;border-radius:6px;padding:9px 12px;color:#fff;font-size:12px;cursor:pointer;">Recall</button></div>' +
+    '<div id="csResults" style="color:#8b949e;font-size:12px;">Type a question and hit Recall for an AI answer from your history, or Find for raw matches.</div>';
+  document.getElementById('csQ').onkeydown = e => { if (e.key === 'Enter') doConvSearch(1); };
+  document.getElementById('csQ').focus();
+}
+async function doConvSearch(recall) {
+  const q = document.getElementById('csQ').value.trim();
+  if (!q) return;
+  const R = document.getElementById('csResults');
+  R.innerHTML = 'Searching...';
+  try {
+    const d = await (await fetch('/search?q=' + encodeURIComponent(q) + (recall ? '&recall=1' : ''))).json();
+    if (recall) {
+      R.innerHTML = '<div style="color:var(--txt);font-size:13px;line-height:1.6;margin-bottom:10px;">' +
+        parseMarkdown(d.answer || 'No answer') + '</div>' +
+        (d.matches || []).map(m => _csRow(m)).join('');
+    } else {
+      const ms = d.matches || [];
+      R.innerHTML = ms.length ? ms.map(m => _csRow(m)).join('') :
+        '<span style="color:#8b949e;">No matches in your past chats.</span>';
+    }
+  } catch (e) { R.textContent = 'Error: ' + e; }
+}
+function _csRow(m) {
+  return '<div onclick="openChat(\'' + m.chat_id + '\');document.getElementById(\'convSearchModal\').style.display=\'none\';" ' +
+    'style="border-bottom:1px solid #26262c;padding:7px 0;cursor:pointer;">' +
+    '<div style="color:var(--acc);font-size:12px;">' + escHtml(m.title || 'chat') + '</div>' +
+    '<div style="color:#c9d1d9;font-size:12px;">' + escHtml(m.snippet) + '</div></div>';
 }
 
 </script>
