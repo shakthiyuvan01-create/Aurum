@@ -280,3 +280,18 @@ def creator_photo():
         if _os.path.exists(fp):
             return send_file(fp)
     return abort(404)
+
+
+@chat_bp.route("/search")
+@login_required
+def conversation_search():
+    """Search across all past conversations (Hermes-style recall)."""
+    from services.conversation_search import search, recall
+    from flask import session as _sess
+    uname = _sess.get("username", "guest")
+    q = (request.args.get("q") or "").strip()
+    if not q:
+        return jsonify({"error": "q required"}), 400
+    if request.args.get("recall") == "1":
+        return jsonify(recall(uname, q))
+    return jsonify({"matches": search(uname, q)})

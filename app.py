@@ -128,6 +128,15 @@ _db.migrate_json(
 )
 _vmem.init()
 
+# ── Learning System: index personal knowledge from learning_data/*.txt ───────
+try:
+    from services.learning import reindex_all as _learn_index
+    _n = _learn_index()
+    if _n:
+        log.info("Learning System: indexed %d chunks from learning_data/", _n)
+except Exception as _le:
+    log.debug("learning index failed: %s", _le)
+
 # ── Seed users from env (survives Render free-tier filesystem wipes) ─────────
 # SEED_USERS="alice:secret123,bob:hunter2"  -> accounts recreated on every boot
 def _seed_users():
@@ -176,6 +185,9 @@ try:
     from services.telegram_bot import start as _tg_start
     if _tg_start():
         log.info("Telegram bot: ON")
+    from services.discord_bot import start as _dc_start
+    if _dc_start():
+        log.info("Discord bot: ON")
 except Exception as _tge:
     log.warning("telegram bot failed: %s", _tge)
 
@@ -538,6 +550,10 @@ if _sched:
             _sched.add_job(_content_super, "interval", minutes=30,
                            id="content_scraper", replace_existing=True)
             log.info("Content OS scraper scheduled (every 30 min)")
+            from services.learning import supervisor as _learn_super
+            _sched.add_job(_learn_super, "interval", minutes=10, id="learning_index",
+                           replace_existing=True)
+            log.info("Learning System watcher scheduled (every 10 min)")
         except Exception as _e:
             log.warning("self_improve scheduling failed: %s", _e)
     except Exception as _ale:

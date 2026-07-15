@@ -178,6 +178,54 @@ def run_stream(
         note = "*(using local Ollama — " + OLLAMA_MODEL + ")*\n\n"
         yield _sse({"delta": note})
 
+    # ── FAST PATH: simple chat -> stream immediately, skip the plan phase ─────
+    # The plan phase adds a whole model round-trip before any token appears.
+    # For plain conversational messages (no tool need, no image), we stream
+    # straight from the fast model -> time-to-first-token ~1-2s instead of 5-8s.
+    def _needs_tools(text: str) -> bool:
+        t = (text or "").lower()
+        kw = ("search", "look up", "google", "weather", "news", "youtube",
+              "browse", "website", "http", "run code", "execute", "email",
+              "calculate", "stock", "price", "flight", "generate image",
+              "create image", "draw ", "make an image", "screenshot", "file",
+              "pdf", "excel", "spreadsheet", "ppt", "presentation", "scrape",
+              "latest", "today", "current", "who won", "score")
+        return any(k in t for k in kw)
+
+    if (os.getenv("FAST_MODE", "1") == "1" and not image_b64
+            and not use_ollama and enable_tools and not _needs_tools(msg)):
+        try:
+            fast_model = os.getenv("FAST_MODEL", "gpt-4o-mini")
+            sresp = _chat(messages, fast_model, token, tools_schema=None,
+                          stream=True, temperature=0.4, use_ollama=False)
+            sresp.raise_for_status()
+            fast_reply = []
+            for line in sresp.iter_lines():
+                if not line:
+                    continue
+                dec = line.decode("utf-8") if isinstance(line, bytes) else line
+                if not dec.startswith("data: "):
+                    continue
+                raw = dec[6:]
+                if raw == "[DONE]":
+                    break
+                try:
+                    ch = json.loads(raw)
+                    d = ch["choices"][0]["delta"].get("content", "")
+                    if d:
+                        fast_reply.append(d)
+                        yield _sse({"delta": d})
+                except Exception:
+                    continue
+            reply_text = "".join(fast_reply)
+            if reply_text.strip():
+                yield _sse({"done": True, "reply": reply_text,
+                            "model": fast_model, "tools_used": []})
+                return
+            # empty -> fall through to the normal path
+        except Exception as _fe:
+            log.info("fast path failed (%s), using full pipeline", _fe)
+
     # ── Phase 1 & 2: Plan + Execute (non-streaming, up to MAX_ROUNDS) ─────────
     # Plan phase uses fewer tokens — we only need tool_call decisions or a
     # short direct answer, not a full streamed response.

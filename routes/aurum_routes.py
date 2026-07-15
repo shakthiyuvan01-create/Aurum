@@ -814,3 +814,24 @@ def content_publish():
                         "response": r.text[:300]})
     except Exception as e:
         return jsonify({"error": str(e)}), 502
+
+
+# ── Learning System (personal knowledge base) ────────────────────────────────
+@aurum_bp.route("/learning", methods=["GET", "POST"])
+@login_required
+def learning():
+    from services import learning as L
+    if request.method == "POST":
+        b = request.get_json(force=True) or {}
+        fact = (b.get("fact") or "").strip()
+        if not fact:
+            return jsonify({"error": "fact required"}), 400
+        return jsonify(L.add_fact(fact))
+    return jsonify(L.stats())
+
+
+@aurum_bp.route("/learning/reindex", methods=["POST"])
+@login_required
+def learning_reindex():
+    from services import learning as L
+    return jsonify({"ok": True, "chunks": L.reindex_all()})
