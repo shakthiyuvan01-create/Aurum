@@ -46,7 +46,7 @@ class NaraRouterProvider(Provider):
                      "Content-Type": "application/json"},
             json={"model": self._map_model(model), "messages": messages,
                   "max_tokens": max_tokens, "temperature": temperature},
-            timeout=30,
+            timeout=8,
         )
         r.raise_for_status()
         return r.json()["choices"][0]["message"]["content"].strip()

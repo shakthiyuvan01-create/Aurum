@@ -16,3 +16,4 @@ openpyxl
 pdfplumber
 pandas
 pillow
+tzdata

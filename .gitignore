@@ -44,6 +44,9 @@ key.pem
 .vscode/
 *.iml
 
+# Claude Code
+.claude/
+
 # OS
 .DS_Store
 Thumbs.db

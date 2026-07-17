@@ -11,6 +11,8 @@ services:
     envVars:
       - key: FLASK_ENV
         value: production
+      - key: AURUM_TZ
+        value: Asia/Kolkata
       - key: SECRET_KEY
         generateValue: true
       - key: GOOGLE_CLIENT_ID

@@ -5,6 +5,17 @@ from __future__ import annotations
 import os, uuid, json, logging
 import datetime as _dt
 
+def _now_local():
+    """Current time in the configured timezone (AURUM_TZ, default Asia/Kolkata /
+    IST). Fixes wrong time on Render/UTC hosts."""
+    tzname = __import__("os").getenv("AURUM_TZ", "Asia/Kolkata")
+    try:
+        from zoneinfo import ZoneInfo
+        return _dt.datetime.now(ZoneInfo(tzname))
+    except Exception:
+        # fallback: fixed IST offset if zoneinfo/tz data unavailable
+        return _dt.datetime.now(_dt.timezone(_dt.timedelta(hours=5, minutes=30)))
+
 from flask import Blueprint, request, session, jsonify, Response, stream_with_context
 from services.auth_service import login_required
 
@@ -254,8 +265,9 @@ def stream():
 
     system_prompt = (
         f"You are {asst_name}, an AI assistant made by Yuvan Industries.\n"
-        f"Today is {_dt.datetime.now().strftime('%A, %d %B %Y')}. "
-        f"Time: {_dt.datetime.now().strftime('%I:%M %p')}.\n\n"
+        f"Today is {_now_local().strftime('%A, %d %B %Y')}. "
+        f"Current time: {_now_local().strftime('%I:%M %p %Z')} "
+        f"(user timezone). Use this when asked the date or time.\n\n"
         "Be direct and genuinely helpful. Match length to complexity. "
         "No filler, no sycophancy, no trailing questions. "
         "Use markdown: **bold**, `code`, code blocks with language tags, "
