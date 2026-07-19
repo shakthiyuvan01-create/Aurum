@@ -26,7 +26,7 @@ DEFAULTS = {
     "files_write":    True,    # workspace file writes
     "files_delete":   False,   # deleting files
     "packages":       False,   # pip/npm installs
-    "messaging":      False,   # sending messages (Telegram etc.)
+    "messaging":      True,   # sending messages (Telegram etc.)
     "network":        True,    # outbound web requests from tools
     "self_improve":   False,   # autonomous self-improvement loop (suggestions only)
     "background_ai":  True,    # ambient intelligence: KG extraction, predictions, experience learning
