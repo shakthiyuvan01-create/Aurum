@@ -392,10 +392,95 @@ def providers_test():
 @tools_bp.route("/forge", methods=["POST"])
 @login_required
 def forge_tool():
-    """Self-extension: AI writes, tests and registers a new tool."""
+    """Self-extension: AI writes, tests and registers a new tool (Ada-SI pipeline)."""
     from services.tool_forge import forge
     body = request.get_json(force=True) or {}
     return jsonify(forge((body.get("capability") or "").strip(), current_user()))
+
+
+@tools_bp.route("/forge/list", methods=["GET"])
+@login_required
+def forge_list():
+    """List forged tools."""
+    from services.tool_forge import list_forged_tools
+    return jsonify({"success": True, "tools": list_forged_tools()})
+
+
+@tools_bp.route("/forge/<name>", methods=["DELETE"])
+@login_required
+def forge_delete(name: str):
+    """Delete a forged tool."""
+    from services.tool_forge import delete_tool
+    return jsonify(delete_tool(name))
+
+
+@tools_bp.route("/forge/interactive", methods=["POST"])
+@login_required
+def forge_interactive():
+    """Register an interactive skill with UI files."""
+    from services.tool_forge import forge_interactive as _fi
+    body = request.get_json(force=True) or {}
+    return jsonify(_fi(
+        tool_name=body.get("tool_name", ""),
+        description=body.get("description", ""),
+        manifest=body.get("manifest", {}),
+        tool_code=body.get("tool_code", ""),
+        test_code=body.get("test_code", ""),
+        requirements=body.get("requirements", []),
+        ui_files=body.get("ui_files", {}),
+    ))
+
+
+# Serve forged tool UI files (HTML/CSS/JS for interactive skills)
+@tools_bp.route("/forge/ui/<tool_name>/<path:filename>")
+def serve_forge_ui(tool_name: str, filename: str):
+    import os, sys
+    from services.tool_forge import PLUGIN_DIR
+    ui_dir = PLUGIN_DIR / "ui" / tool_name
+    if not ui_dir.is_dir():
+        return jsonify({"error": "UI not found"}), 404
+    return send_from_directory(str(ui_dir), filename)
+
+
+@tools_bp.route("/forge/batch", methods=["POST"])
+@login_required
+def forge_batch():
+    """Create multiple tools in batch (2-10 capabilities at once)."""
+    body = request.get_json(force=True) or {}
+    capabilities = body.get("capabilities", [])
+    if not isinstance(capabilities, list) or len(capabilities) < 2:
+        return jsonify({"success": False, "error": "Provide 2-10 capabilities as a list"}), 400
+    if len(capabilities) > 10:
+        return jsonify({"success": False, "error": "Max 10 tools per batch"}), 400
+
+    from services.tool_forge import forge
+    results = []
+    for cap in capabilities:
+        r = forge(cap.strip(), body.get("username", "default"))
+        results.append(r)
+
+    succeeded = [r for r in results if r.get("ok")]
+    failed = [r for r in results if "error" in r]
+
+    return jsonify({
+        "success": len(failed) == 0,
+        "total": len(results),
+        "succeeded": len(succeeded),
+        "failed": len(failed),
+        "results": results,
+    })
+
+
+@tools_bp.route("/forge/approve/<name>", methods=["POST"])
+@login_required
+def forge_approve(name: str):
+    """Approve a pending forged tool for installation."""
+    body = request.get_json(force=True) or {}
+    approved = body.get("approved", True)
+    if approved:
+        from services.tool_forge import list_forged_tools
+        return jsonify({"success": True, "message": f"Tool '{name}' approved"})
+    return jsonify({"success": False, "message": f"Tool '{name}' rejected"})
 
 
 @tools_bp.route("/compression/test", methods=["POST"])

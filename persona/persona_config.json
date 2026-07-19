@@ -1,0 +1,4 @@
+{
+  "heartbeat_enabled": true,
+  "heartbeat_interval_minutes": 30
+}

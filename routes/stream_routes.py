@@ -263,6 +263,16 @@ def stream():
     if not is_guest:
         eval_hint_ctx = session.pop("_eval_hint", "") or ""
 
+    # Bootstrap ritual: if BOOTSTRAP.md exists, trigger onboarding
+    _bootstrap_trigger = ""
+    try:
+        from services.persona import bootstrap_exists, BOOTSTRAP_OPENING_TRIGGER
+        if bootstrap_exists():
+            _bootstrap_trigger = "\n\n" + BOOTSTRAP_OPENING_TRIGGER
+            log.info("bootstrap ritual active for user %s", uname)
+    except Exception:
+        pass
+
     system_prompt = (
         f"You are {asst_name}, an AI assistant made by Yuvan Industries.\n"
         f"Today is {_now_local().strftime('%A, %d %B %Y')}. "
@@ -280,6 +290,7 @@ def stream():
         + mem_ctx
         + skills_ctx
         + eval_hint_ctx
+        + _bootstrap_trigger
     )
 
     def generate():

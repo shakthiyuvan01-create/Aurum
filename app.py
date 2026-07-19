@@ -478,6 +478,14 @@ app.register_blueprint(features_bp)
 from routes.modes_routes import modes_bp
 app.register_blueprint(modes_bp)
 
+# persona system (Ada-SI style: SOUL/IDENTITY/USER/MEMORY/HEARTBEAT/AGENTS/TOOLS)
+from routes.persona_routes import persona_bp
+app.register_blueprint(persona_bp)
+
+# gamification (XP, levels, ranks)
+from routes.gamification_routes import gamification_bp
+app.register_blueprint(gamification_bp)
+
 # -- Flask-Limiter ----------------------------------------------------------------
 try:
     from flask_limiter import Limiter
