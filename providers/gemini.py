@@ -27,7 +27,7 @@ class GeminiProvider(Provider):
             json={"contents": contents,
                   "generationConfig": {"maxOutputTokens": max_tokens,
                                        "temperature": temperature}},
-            timeout=30,
+            timeout=8,
         )
         r.raise_for_status()
         return r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
@@ -42,6 +42,6 @@ class GeminiProvider(Provider):
         r = _rq.post(url, json={"contents": [{"parts": [
             {"text": prompt or "Describe this image in detail."},
             {"inline_data": {"mime_type": mime, "data": image_b64}}]}],
-            "generationConfig": {"maxOutputTokens": max_tokens}}, timeout=30)
+            "generationConfig": {"maxOutputTokens": max_tokens}}, timeout=8)
         r.raise_for_status()
         return r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()

@@ -24,7 +24,7 @@ class GitHubModelsProvider(Provider):
                      "Content-Type": "application/json"},
             json={"model": model, "messages": msgs,
                   "max_tokens": max_tokens, "temperature": temperature},
-            timeout=30,
+            timeout=8,
         )
         r.raise_for_status()
         return r.json()["choices"][0]["message"]["content"].strip()
@@ -37,7 +37,7 @@ class GitHubModelsProvider(Provider):
                      "Content-Type": "application/json"},
             json={"model": model or self.default_model, "messages": messages,
                   "max_tokens": max_tokens, "temperature": temperature},
-            timeout=30,
+            timeout=8,
         )
         r.raise_for_status()
         return r.json()["choices"][0]["message"]["content"].strip()

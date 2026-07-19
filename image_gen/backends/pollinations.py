@@ -1,6 +1,6 @@
 """
-Pollinations.ai image generation backend.
-Free, no API key needed. Uses FLUX and other models.
+Pollinations.ai image generation backend — FAST version.
+Races URLs in parallel with 15s timeout, returns first success.
 """
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ import logging
 import os
 import time
 import urllib.parse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, List, Optional
 
 import requests
@@ -22,11 +23,8 @@ from image_gen.provider import (
 
 logger = logging.getLogger(__name__)
 
-_SIZES = {
-    "landscape": "1024x768",
-    "square": "1024x1024",
-    "portrait": "768x1024",
-}
+_SIZES = {"landscape": "1024x768", "square": "1024x1024", "portrait": "768x1024"}
+_RACE_TIMEOUT = 18  # max seconds to wait for the fastest URL
 
 
 class PollinationsProvider(ImageGenProvider):
@@ -41,7 +39,7 @@ class PollinationsProvider(ImageGenProvider):
         return "Pollinations AI"
 
     def is_available(self) -> bool:
-        return True  # Always available — free service
+        return True
 
     def list_models(self) -> List[Dict[str, Any]]:
         return [
@@ -79,51 +77,50 @@ class PollinationsProvider(ImageGenProvider):
         model = kwargs.get("model", "flux")
         seed = kwargs.get("seed", int(time.time()))
 
+        # Build all URLs
+        quoted = urllib.parse.quote(prompt)
         urls = [
-            f"https://image.pollinations.ai/prompt/{urllib.parse.quote(prompt)}"
-            f"?width={size.split('x')[0]}&height={size.split('x')[1]}&nologo=true&seed={seed}&model={model}",
-            f"https://image.pollinations.ai/prompt/{urllib.parse.quote(prompt)}"
-            f"?width={size.split('x')[0]}&height={size.split('x')[1]}&nologo=true&seed={seed}",
-            f"https://image.pollinations.ai/prompt/{urllib.parse.quote(prompt)}",
+            f"https://image.pollinations.ai/prompt/{quoted}?width={size.split('x')[0]}&height={size.split('x')[1]}&nologo=true&seed={seed}&model={model}",
+            f"https://image.pollinations.ai/prompt/{quoted}?width={size.split('x')[0]}&height={size.split('x')[1]}&nologo=true&seed={seed}",
+            f"https://image.pollinations.ai/prompt/{quoted}",
+            f"https://image.pollinations.ai/prompt/{quoted}?model=flux&nologo=true",
         ]
 
-        for attempt, url in enumerate(urls):
+        # Race all URLs in parallel
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            fut_map = {pool.submit(_fetch_url, url, headers): url for url in urls}
             try:
-                r = requests.get(url, headers=headers, timeout=120)
-                if r.status_code == 429:
-                    logger.warning("Pollinations rate-limited (429), retrying in 3s...")
-                    time.sleep(3)
-                    continue
-                if r.status_code == 200 and len(r.content) > 1000:
-                    with open(out, "wb") as f:
-                        f.write(r.content)
-                    return success_response(
-                        image=out,
-                        model=model,
-                        prompt=prompt,
-                        aspect_ratio=aspect,
-                        provider="pollinations",
-                    )
-            except Exception as e:
-                logger.warning("Pollinations error: %s", e)
-
-        # Last attempt: try without nologo and with different model
-        try:
-            fallback_url = f"https://image.pollinations.ai/prompt/{urllib.parse.quote(prompt)}"
-            r = requests.get(fallback_url, headers=headers, timeout=180)
-            if r.status_code == 200 and len(r.content) > 1000:
-                with open(out, "wb") as f:
-                    f.write(r.content)
-                return success_response(
-                    image=out, model="default", prompt=prompt,
-                    aspect_ratio=aspect, provider="pollinations",
-                )
-        except Exception as e:
-            logger.warning("Pollinations fallback error: %s", e)
+                for fut in as_completed(fut_map, timeout=_RACE_TIMEOUT):
+                    data = fut.result(timeout=2)
+                    if data is not None:
+                        # Cancel remaining
+                        for f in fut_map:
+                            if not f.done():
+                                f.cancel()
+                        with open(out, "wb") as f:
+                            f.write(data)
+                        return success_response(
+                            image=out, model=model, prompt=prompt,
+                            aspect_ratio=aspect, provider="pollinations",
+                        )
+            except TimeoutError:
+                pass
 
         return error_response(
-            error="Pollinations rate-limited or unavailable. Try setting OPENAI_API_KEY, FAL_KEY, or DEEPINFRA_API_KEY for more reliable backends.",
-            error_type="rate_limited",
-            provider="pollinations",
-            aspect_ratio=aspect,
+            error=("Image generation timed out. Pollinations may be rate-limited. "
+                   "Try setting OPENAI_API_KEY for a faster backend."),
+            error_type="timeout", provider="pollinations", aspect_ratio=aspect,
         )
+
+
+def _fetch_url(url: str, headers: dict, timeout: int = 15) -> Optional[bytes]:
+    """Fetch a URL, return bytes if valid image, None otherwise."""
+    try:
+        r = requests.get(url, headers=headers, timeout=timeout)
+        if r.status_code == 200 and len(r.content) > 1000:
+            return r.content
+        if r.status_code == 429:
+            logger.debug("Pollinations 429 for %s", url[:60])
+    except Exception as e:
+        logger.debug("Fetch error for %s: %s", url[:60], e)
+    return None

@@ -69,7 +69,7 @@ def ask():
     if not msg:
         return jsonify({"reply": ""})
 
-    chat = db.get_chat(cid) or {"id": cid, "title": "", "messages": []}
+    chat = db.get_chat(cid, uname) or {"id": cid, "title": "", "messages": []}
 
     # title
     if not chat["title"]:

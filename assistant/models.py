@@ -165,21 +165,42 @@ def ask_ollama(question: str) -> str:
 
 
 def ask_ai_brain(question: str, with_context: bool = False) -> str:
-    """Primary AI call: parallel GPT + Gemini → pick best → Ollama fallback."""
-    results = {"gpt": "", "gemini": ""}
+    """FAST AI call via the ProviderManager (parallel racing, ~6s timeout).
 
-    def _gpt():    results["gpt"]    = ask_github_models(question, with_context)
-    def _gemini(): results["gemini"] = ask_gemini(question)
+    Uses the same system prompt and memory context as before but replaces the
+    old 65s parallel + 60s analyze_and_pick + 30s Ollama chain with a single
+    call to the fast provider manager which races providers in 6 seconds.
+    """
+    now = datetime.datetime.now()
+    system_prompt = (
+        f"You are {ASSISTANT_NAME}, an AI assistant made by Yuvan Industries.\n"
+        f"Today is {now.strftime('%A, %d %B %Y')}. "
+        f"Time: {now.strftime('%I:%M %p')}.\n\n"
+        "Be direct and genuinely helpful. Match length to complexity. "
+        "No filler, no sycophancy, no trailing questions. "
+        "Use markdown: **bold**, `code`, code blocks with language tags, "
+        "LaTeX for math ($...$).\n"
+        + _memory_context()
+    )
 
-    t1 = threading.Thread(target=_gpt,    daemon=True)
-    t2 = threading.Thread(target=_gemini, daemon=True)
-    t1.start(); t2.start()
-    t1.join(timeout=65); t2.join(timeout=65)
+    if with_context and _recent_turns:
+        conv = "\n".join(
+            f"{'User' if r == 'you' else 'Assistant'}: {t}"
+            for r, t in _recent_turns[-14:]
+        ) + f"\nUser: {question}"
+        prompt = conv
+    else:
+        prompt = question
 
-    final = analyze_and_pick(question, results["gpt"], results["gemini"])
-    if not final:
-        final = ask_ollama(question)
-    if not final:
+    try:
+        from providers import AI
+        final = AI.generate(prompt, system=system_prompt,
+                            max_tokens=1500, temperature=0.7)
+    except Exception as e:
+        log.error("ask_ai_brain failed: %s", e)
+        final = ""
+
+    if not final or final.startswith("[AI error"):
         final = "I'm sorry, I couldn't connect to my AI services right now. Please try again."
 
     _remember_turn("you", question)

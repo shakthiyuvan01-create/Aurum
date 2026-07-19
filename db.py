@@ -125,16 +125,20 @@ def list_all_users() -> list[dict]:
         return [dict(r) for r in rows]
 
 # ── Chats ──────────────────────────────────────────────────────────
-def get_chat(chat_id):
+def get_chat(chat_id, username=None):
     with _conn() as db:
         chat = db.execute("SELECT * FROM chats WHERE id=?", (chat_id,)).fetchone()
         if not chat:
+            return None
+        # Security: if username provided, verify ownership
+        if username and chat["username"] != username:
             return None
         msgs = db.execute(
             "SELECT role,text FROM messages WHERE chat_id=? ORDER BY id",
             (chat_id,)).fetchall()
         return {
             "id": chat["id"], "title": chat["title"], "ts": chat["created_at"],
+            "username": chat["username"],
             "messages": [{"role": r["role"], "text": r["text"]} for r in msgs]
         }
 

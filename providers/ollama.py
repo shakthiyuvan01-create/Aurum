@@ -28,7 +28,7 @@ class OllamaProvider(Provider):
             json={"model": model, "prompt": prompt, "system": system,
                   "stream": False,
                   "options": {"num_predict": max_tokens, "temperature": temperature}},
-            timeout=60,
+            timeout=10,
         )
         r.raise_for_status()
         return r.json().get("response", "").strip()
