@@ -22,7 +22,7 @@ _PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 DEFAULTS = {
     "browser":        True,    # Playwright browser automation
-    "shell":          False,   # execute shell / python code (admin tool)
+    "shell":          True,    # execute shell / python code
     "files_write":    True,    # workspace file writes
     "files_delete":   False,   # deleting files
     "packages":       False,   # pip/npm installs

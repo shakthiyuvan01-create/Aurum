@@ -1,6 +1,6 @@
 {
   "browser": true,
-  "shell": false,
+  "shell": true,
   "files_write": true,
   "files_delete": false,
   "packages": false,
