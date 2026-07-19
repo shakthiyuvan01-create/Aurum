@@ -1,8 +1,13 @@
-"""assistant/image.py — Image generation via Pollinations AI."""
+"""assistant/image.py — Image generation with multi-provider support.
+
+Enhanced with the Hermes-style provider-based system (image_gen/).
+Falls back to the original Pollinations-only method if the new system fails.
+"""
 import logging
 import os
 import time
 import urllib.parse
+from typing import Optional
 
 import requests as _requests
 
@@ -14,7 +19,46 @@ log = logging.getLogger("assistant.image")
 _last_image_prompt = ""
 
 
-def create_image(prompt: str) -> str | None:
+def create_image(prompt: str, provider: Optional[str] = None, **kwargs) -> Optional[str]:
+    """Generate an image using the best available provider.
+
+    Uses the new multi-provider image_gen system. Falls back to original
+    Pollinations-only method if new system fails.
+
+    Args:
+        prompt: Text description of the image
+        provider: Preferred provider name ("pollinations", "openai", "fal", etc.)
+        **kwargs: Additional options (aspect_ratio, model, etc.)
+
+    Returns:
+        Path to the generated image, or None on failure.
+    """
+    try:
+        from image_gen.tool import generate_image
+        save_dir = kwargs.pop("save_dir", IMAGE_SAVE_FOLDER)
+        result = generate_image(
+            prompt=prompt,
+            provider=provider,
+            save_dir=save_dir,
+            **kwargs,
+        )
+        if result.get("success") and result.get("image"):
+            path = result["image"]
+            # If it's already a local file path, return it
+            if os.path.exists(path):
+                return path
+            return path
+        # Fall through to legacy method
+        log.warning("New image gen failed (%s), falling back to Pollinations", result.get("error"))
+    except Exception as e:
+        log.debug("New image gen error: %s, falling back to legacy", e)
+
+    # Legacy fallback
+    return _legacy_create_image(prompt)
+
+
+def _legacy_create_image(prompt: str) -> Optional[str]:
+    """Original Pollinations-only image generation (fallback)."""
     os.makedirs(IMAGE_SAVE_FOLDER, exist_ok=True)
     out = os.path.join(IMAGE_SAVE_FOLDER, f"image_{int(time.time())}.png")
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}

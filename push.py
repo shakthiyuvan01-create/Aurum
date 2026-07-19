@@ -39,7 +39,7 @@ if code != 0:
     print("Nothing to commit or error. Trying to push anyway...")
 
 print("[3] Pushing to GitHub...")
-code = run(["git", "push", "origin", "master"])
+code = run(["git", "push", "origin", "HEAD"])
 
 if code == 0:
     print("\nDone! Successfully pushed to GitHub.")

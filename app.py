@@ -332,7 +332,7 @@ def _require_login():
               "auth.google_login", "auth.google_callback", "auth.google_enabled",
               "upload.serve_upload", "upload.serve_logo", "upload.serve_static"}
     ep = request.endpoint or ""
-    if ep in PUBLIC or "static" in ep:
+    if ep in PUBLIC or "static" in ep or ep.startswith("features."):
         return
     if not session.get("auth"):
         if request.is_json or request.method != "GET":
@@ -470,6 +470,9 @@ from routes.canvas_routes import canvas_bp, _init as _canvas_init
 _canvas_init({"db": _db})
 app.register_blueprint(canvas_bp)
 
+from routes.feature_routes import features_bp
+app.register_blueprint(features_bp)
+
 # -- Flask-Limiter ----------------------------------------------------------------
 try:
     from flask_limiter import Limiter
@@ -558,6 +561,21 @@ if _sched:
             log.warning("self_improve scheduling failed: %s", _e)
     except Exception as _ale:
         log.debug("Auto-learn schedule failed: %s", _ale)
+
+# -- Initialize new features (image gen, skills, scheduler) ----------------------------
+try:
+    from skills import discover_skills
+    _sk_count = discover_skills()
+    log.info("Discovered %d skills", _sk_count)
+except Exception as _ske:
+    log.debug("Skills init: %s", _ske)
+
+try:
+    from cron.tool import start_scheduler
+    start_scheduler()
+    log.info("Scheduler started")
+except Exception as _cr:
+    log.debug("Scheduler init: %s", _cr)
 
 # -- Run ---------------------------------------------------------------------------
 if __name__ == "__main__":
