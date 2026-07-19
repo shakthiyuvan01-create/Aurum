@@ -332,7 +332,7 @@ def _require_login():
               "auth.google_login", "auth.google_callback", "auth.google_enabled",
               "upload.serve_upload", "upload.serve_logo", "upload.serve_static"}
     ep = request.endpoint or ""
-    if ep in PUBLIC or "static" in ep or ep.startswith("features."):
+    if ep in PUBLIC or "static" in ep or ep.startswith("features.") or ep.startswith("modes."):
         return
     if not session.get("auth"):
         if request.is_json or request.method != "GET":
@@ -472,6 +472,9 @@ app.register_blueprint(canvas_bp)
 
 from routes.feature_routes import features_bp
 app.register_blueprint(features_bp)
+
+from routes.modes_routes import modes_bp
+app.register_blueprint(modes_bp)
 
 # -- Flask-Limiter ----------------------------------------------------------------
 try:
