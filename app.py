@@ -37,7 +37,9 @@ def _wire_data_dir():
         return
     for name, is_dir in (("aiaurum.db", False), ("chroma_db", True),
                          ("uploads", True), ("generated_docs", True),
-                         ("workspace", True), ("permissions.json", False)):
+                         ("workspace", True), ("permissions.json", False),
+                         ("learning_data", True), ("chats", True),
+                         ("static", True), ("templates", True)):
         target = os.path.join(data_dir, name)
         local  = os.path.join(here, name)
         try:
